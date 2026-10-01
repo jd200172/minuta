@@ -11,7 +11,7 @@ struct Job: Codable, Identifiable {
     var lastError: String?
 }
 
-struct Segment: Codable {
+struct Segment: Codable, Equatable {
     var id: String
     var speaker: String
     var start: Double

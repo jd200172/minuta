@@ -1,6 +1,6 @@
 # 0017. Resumos por tipo de reunião, guardados por modelo
 
-Status: aceita; não implementada
+Status: aceita; implementada
 Data: 2026-10-01
 Substitui: o prompt único e a estrutura única de ata do `docs/decisions/0005-minutes-structure-and-traceability.md`, e o adiamento dos tipos de reunião do `docs/decisions/0007-defer-meeting-types-and-notes.md`. A rastreabilidade do ADR 0005 continua valendo. Notas continuam adiadas (ADR 0007).
 Complementa: `docs/decisions/0015-minutes-library.md` (nome do arquivo e renomeação do título) e `docs/decisions/0016-manual-participant-names.md`.
@@ -34,26 +34,26 @@ Transcrição com menos de 10 palavras continua sem ata e sem classificação (A
 
 | Modelo | Função | Seções específicas |
 |---|---|---|
-| Decisão | decidir | decisões, alternativas descartadas, responsáveis |
+| Decisão | decidir | decisões, alternativas descartadas |
 | Acompanhamento | coordenar o trabalho em curso | progresso, bloqueios, próximos passos |
 | Problemas e ideias | discutir e gerar | problema, ideias, agrupamentos, a aprofundar |
 | Informativa | informar e ensinar | pontos principais, dados citados, perguntas |
 | Geral | propósito misto ou classificação incerta | resumo por tema |
 
-Todos levam o núcleo comum: resumo, participantes, itens de ação, pontos em aberto e transcrição com âncoras. Itens de ação e pontos em aberto entram em todos os modelos porque a reunião costuma ter mais de um propósito, e o erro de classificação fica menos caro.
+Todos levam o núcleo comum: resumo, participantes, itens de ação, pontos em aberto e transcrição com âncoras. O responsável por cada ação fica nos itens de ação, não numa seção própria. As seções específicas vêm entre Participantes e Itens de ação. Itens de ação e pontos em aberto entram em todos os modelos porque a reunião costuma ter mais de um propósito, e o erro de classificação fica menos caro.
 
 Brainstorm e resolução de problemas formam um modelo só: a frequência de brainstorm isolado é 3,3% e as duas funções produzem a mesma estrutura.
 
-**Prompts e schemas.** Um prompt comum em `MinutesPrompt` (rastreabilidade, uso dos nomes, prazo relativo com a data da reunião, núcleo da saída) mais um bloco específico por modelo. Um schema por modelo, montado a partir do núcleo e do trecho do modelo. A validação de IDs continua no app e percorre toda seção que cita segmentos. O classificador usa um prompt à parte, com uma descrição de uma linha de cada modelo, tirada do próprio modelo.
+**Prompts e schemas.** Um prompt comum em `MinutesPrompt` (rastreabilidade, uso dos nomes, prazo relativo com a data da reunião, núcleo da saída) mais um bloco específico por modelo. Um schema por modelo, montado a partir do núcleo e do trecho do modelo. Os modelos são dados em `SummaryModels.swift` (seções, bloco de instruções e descrição para o classificador), e o schema, o prompt e a renderização leem dessa definição. Nomes informados pelo usuário entram na mensagem do pedido como evidência; `label` e `owner` continuam com o rótulo original e o texto corrido usa o nome. A validação de IDs continua no app e percorre toda seção que cita segmentos. O classificador usa um prompt à parte, com uma descrição de uma linha de cada modelo, tirada do próprio modelo.
 
-**Modelo de LLM.** O classificador usa o mesmo modelo e a mesma configuração do resumo (`.env`, ADR 0012). Sem variável própria.
+**Modelo de LLM.** O classificador usa o mesmo modelo e a mesma configuração do resumo (`.env`, ADR 0012). Sem variável própria. O esforço de raciocínio do pedido é `low` na classificação e `medium` no resumo. A classificação devolve `model`, `confidence` (`alta` ou `baixa`), `reason` e `title`; confiança baixa vale como sem sugestão.
 
 **Armazenamento: dois arquivos por reunião.**
-- Principal, `AAAA-MM-DD HHmm Título.md`: frontmatter, cópia renderizada do resumo escolhido e transcrição. É legível sozinho, fora do app. O frontmatter tem `inicio`, `titulo`, `duracao_segundos`, `modelo` (o escolhido) e, quando houver, `participantes` (ADR 0016). A seção do resumo vem marcada como gerada pelo app.
-- Secundário, `AAAA-MM-DD HHmm.resumos.json`: todos os resumos gerados da reunião, inclusive o escolhido, como saída estruturada (JSON com os IDs de segmento), com os rótulos originais dos participantes. É o armazém: a cópia no principal deriva dele.
+- Principal, `AAAA-MM-DD HHmm Título.md`: frontmatter, cópia renderizada do resumo escolhido e transcrição. É legível sozinho, fora do app. O frontmatter tem `inicio`, `duracao_segundos`, `titulo` (quando houver), `modelo` (o escolhido) ou `resumo: nenhum` (ainda sem resumo) e, quando houver, `participantes` (ADR 0016). A presença de `modelo` ou `resumo` distingue o arquivo deste fluxo das atas anteriores, que continuam abrindo como antes, sem o controle de modelos.
+- Secundário, `AAAA-MM-DD HHmm.resumos.json`: a transcrição segmentada com os rótulos originais, a classificação (modelo, confiança, justificativa e título) e todos os resumos gerados, como saída estruturada (JSON com os IDs de segmento). É o armazém: o principal, inclusive a transcrição e os nomes dos participantes, é renderizado a partir dele, então trocar de modelo não depende do texto do principal.
 - Trocar de modelo: se o resumo desse modelo existe no secundário, o app o reaproveita sem chamar o LLM. Se não existe, gera, grava no secundário e então reescreve a seção do principal e o campo `modelo`. Os nomes dos participantes valem na renderização, então um resumo guardado antes da correção de nomes sai com os nomes atuais.
 - Refazer: ação explícita "Refazer este resumo" substitui o resumo guardado daquele modelo. Clicar em um modelo nunca descarta nada.
-- Se o secundário faltar ou não puder ser lido, o principal continua completo. Perdem-se as alternativas, que o app gera de novo sob demanda.
+- Se o secundário faltar ou não puder ser lido, o principal continua completo e legível, mas o controle de modelos mostra erro ao trocar de modelo e não gera outro resumo: sem a transcrição com rótulos originais o app não refaz o arquivo. Reconstruir o secundário a partir do principal não está implementado.
 
 **Nome e chave da reunião.**
 - A chave é o início da gravação, `inicio` em ISO 8601 com segundos e fuso, gravado no principal e dentro do secundário. O nome do arquivo é conveniência: o app casa os dois pelo `inicio`, mesmo que o prefixo seja renomeado no Finder.
@@ -64,12 +64,11 @@ Brainstorm e resolução de problemas formam um modelo só: a frequência de bra
 - Editar o título na janela de leitura regrava o frontmatter e renomeia só o principal. Isso traz para o MVP a renomeação do título, que o ADR 0015 deixava para depois.
 
 **Interface (janela de leitura).**
-- Os cinco modelos formam um controle "Resumo no modelo". O modelo escolhido fica marcado. Os que já têm resumo guardado trocam na hora, e os demais geram ao clicar.
-- O modelo sugerido pela classificação traz a marca "Sugerido" e a justificativa em uma linha, mesmo depois de gerado.
-- Sem sugestão, nenhum modelo é destacado, uma linha avisa e o usuário escolhe ou usa Geral.
-- Durante a geração, o modelo clicado mostra "Gerando…" e os demais ficam esmaecidos.
-- "Refazer este resumo" fica num menu discreto ao lado do controle.
-- Não há aviso de substituição, porque trocar de modelo não descarta nada.
+- Os cinco modelos formam um controle de segmentos "Resumo no modelo". O modelo escolhido fica marcado. Um ponto ao lado do nome indica que o modelo já tem resumo guardado. Esses modelos trocam na hora, e os demais geram ao clicar.
+- Uma linha abaixo do controle mostra "Sugerido: modelo" e a justificativa da classificação, mesmo depois de gerado. Sem sugestão, a linha avisa e o usuário escolhe ou usa Geral.
+- Durante a geração, o controle fica desabilitado, com um indicador de progresso e a linha "Gerando o resumo no modelo X…".
+- Um menu "…" ao lado do controle tem "Renomear reunião…" e "Refazer este resumo". Refazer não pede confirmação: é uma ação nomeada, e o resumo gerado de novo substitui só o daquele modelo.
+- Não há aviso de substituição ao trocar de modelo, porque nada se descarta.
 
 **Lista de atas.** Mostra o modelo escolhido numa etiqueta. Ignora os `.resumos.json`. Apagar uma ata move os dois arquivos para a Lixeira.
 
@@ -84,11 +83,9 @@ Brainstorm e resolução de problemas formam um modelo só: a frequência de bra
 - Falha na classificação não bloqueia: a reunião fica sem título e sem sugestão, e o usuário escolhe um modelo. Falha na geração mantém a transcrição e permite clicar de novo.
 - Cada modelo precisa de uma reunião sintética do seu tipo, com resultado esperado, e o classificador precisa acertar o tipo e produzir um título aceitável nessas reuniões. A acurácia do classificador é critério de adoção. Provedor novo continua passando pela reunião sintética.
 - Os testes automatizados do montador, do gerador de Markdown, da biblioteca de atas e do conversor para leitura mudam.
-- Pontos a definir na implementação:
-  - Formato exato da marca de seção gerada e do JSON secundário.
-  - Onde guardar o resultado da classificação enquanto o resumo é gerado (estado do job).
-  - Se "Refazer este resumo" pede confirmação.
-  - Texto do aviso quando o secundário está ilegível.
+- A reunião entra no `.md` e no secundário ao fim da classificação, antes do resumo. O job pendente é apagado nesse ponto. A geração do resumo sugerido corre sobre o arquivo, e falha nela não perde a transcrição: o usuário clica no modelo para tentar de novo. A janela de atas mostra "Gerando resumo…" na linha da reunião enquanto isso.
+- O modo `--process` da linha de comando classifica, grava os dois arquivos e gera o resumo sugerido (Geral sem sugestão); `--model <modelo>|all` escolhe outro.
+- A marca de "seção gerada" do texto original não foi implementada: o frontmatter (`modelo`) já distingue o arquivo, e um comentário no corpo apareceria como texto na janela de leitura.
 
 ## Fora desta decisão
 

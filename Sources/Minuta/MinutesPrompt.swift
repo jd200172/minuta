@@ -1,49 +1,17 @@
 import Foundation
 
-struct MinutesData: Codable {
-    struct Participant: Codable {
-        var label: String
-        var name: String
-        var sources: [String]
-    }
-    struct Decision: Codable {
-        var text: String
-        var sources: [String]
-    }
-    struct Action: Codable {
-        var text: String
-        var owner: String
-        var deadline: String
-        var sources: [String]
-    }
-    struct Topic: Codable {
-        var title: String
-        var text: String
-        var sources: [String]
-    }
-    var title: String
-    var summary: String
-    var participants: [Participant]
-    var decisions: [Decision]
-    var actions: [Action]
-    var openPoints: [Decision]
-    var topics: [Topic]
-}
-
-/// Provider-neutral instructions, JSON schema and decoding for the minutes. Every `Minuter` reuses
-/// them; whatever the model returns is still checked by `MinutesRenderer` (ADR 0012).
+/// Provider-neutral instructions, JSON schemas and decoding for the summaries and the classifier. Every
+/// `Minuter` reuses them; whatever the model returns is still checked by `MinutesRenderer` (ADR 0012).
+/// A summary prompt is the common rules plus the block of the chosen model (ADR 0017).
 enum MinutesPrompt {
-    static let system = """
-        Você gera atas de reuniões em português do Brasil a partir de uma transcrição segmentada. \
+    static let common = """
+        Você resume reuniões em português do Brasil a partir de uma transcrição segmentada. \
         Cada linha da transcrição tem o formato "[ID] Falante: texto". O ID identifica o segmento.
 
         Regras:
         - Use somente o que está na transcrição. Não invente fatos, nomes, responsáveis nem prazos.
-        - Cada decisão, ação, ponto em aberto e tema cita em "sources" os IDs dos segmentos que o sustentam: \
+        - Cada item e cada tema cita em "sources" os IDs dos segmentos que o sustentam: \
         no máximo 3, os mais diretos, em ordem cronológica. Não cite todos os segmentos do assunto.
-        - Decisão é o que o grupo concordou em fazer daqui para frente. Proposta descartada, alternativa \
-        rejeitada e discussão sem conclusão não entram em "decisions"; registre a proposta descartada \
-        apenas no resumo por tema, dizendo que foi descartada e por quê.
         - Ação exige uma tarefa concreta. Em "owner", use o rótulo exato do falante, como aparece na \
         transcrição. Se não houver responsável claro, escreva "não definido".
         - Em "deadline", converta prazos relativos em data (DD/MM/AAAA) usando a data da reunião informada. \
@@ -55,12 +23,33 @@ enum MinutesPrompt {
         identifica a própria pessoa (apresentação, saudação ou vocativo) e cite em "sources" o segmento \
         da evidência. Quem é apenas mencionado na conversa e não fala nela não é participante. \
         Sem evidência, deixe "name" vazio.
+        - Quando a mensagem trouxer nomes informados pelo usuário, eles identificam o falante com certeza. \
+        Em "label" e "owner" continue usando o rótulo original. No texto corrido, use o nome.
         - Escreva em tom objetivo, sem adjetivos de avaliação.
         """
 
-    static func stringArray() -> [String: Any] {
-        ["type": "array", "items": ["type": "string"]]
+    static func system(for model: SummaryModel) -> String {
+        common + "\n\n" + model.focus + "\n\nSeções desta reunião:\n"
+            + model.sections.map { "- \"\($0.key)\" (\($0.title)): \($0.hint)" }.joined(separator: "\n")
     }
+
+    static let classifierSystem = """
+        Você classifica reuniões para escolher o modelo de resumo mais adequado e dar um título. \
+        Cada linha da transcrição tem o formato "[ID] Falante: texto".
+
+        Modelos:
+        \(SummaryModel.allCases.map { "- \($0.rawValue) (\($0.title)): \($0.blurb)" }.joined(separator: "\n"))
+
+        Regras:
+        - Escolha o modelo pela função da reunião, não pelo assunto.
+        - "confidence" é "alta" quando a função da reunião está clara e "baixa" quando a conversa mistura \
+        funções, tem pouco conteúdo ou o assunto não é identificável.
+        - "reason" é uma frase curta, objetiva, que cita o que na reunião levou à escolha.
+        - "title" tem no máximo 8 palavras, descreve o assunto, sem nomes de pessoas e sem datas. Se o \
+        assunto não é identificável, escreva um título genérico que não invente assunto.
+        """
+
+    // MARK: Schemas
 
     static func object(_ properties: [String: Any]) -> [String: Any] {
         [
@@ -69,42 +58,88 @@ enum MinutesPrompt {
         ]
     }
 
-    static var schema: [String: Any] {
-        let string: [String: Any] = ["type": "string"]
-        func list(_ item: [String: Any]) -> [String: Any] { ["type": "array", "items": item] }
+    private static let string: [String: Any] = ["type": "string"]
+
+    private static func list(_ item: [String: Any]) -> [String: Any] { ["type": "array", "items": item] }
+
+    static func stringArray() -> [String: Any] { list(string) }
+
+    private static func entry(topic: Bool) -> [String: Any] {
+        topic
+            ? object(["title": string, "text": string, "sources": stringArray()])
+            : object(["text": string, "sources": stringArray()])
+    }
+
+    static func schema(for model: SummaryModel) -> [String: Any] {
+        var sections: [String: Any] = [:]
+        for spec in model.sections { sections[spec.key] = list(entry(topic: spec.topics)) }
         return object([
-            "title": string,
             "summary": string,
             "participants": list(object(["label": string, "name": string, "sources": stringArray()])),
-            "decisions": list(object(["text": string, "sources": stringArray()])),
+            "sections": object(sections),
             "actions": list(
-                object([
-                    "text": string, "owner": string, "deadline": string,
-                    "sources": stringArray(),
-                ])),
-            "open_points": list(object(["text": string, "sources": stringArray()])),
-            "topics": list(object(["title": string, "text": string, "sources": stringArray()])),
+                object(["text": string, "owner": string, "deadline": string, "sources": stringArray()])),
+            "open_points": list(entry(topic: false)),
         ])
     }
 
-    static func user(transcript: Transcript, job: Job) -> String {
-        let lines = transcript.segments.map { "[\($0.id)] \($0.speaker): \($0.text)" }.joined(separator: "\n")
-        return """
-            Data da reunião: \(Fmt.meetingDate(job.startedAt)).
-            Rótulo de quem gravou: \(Config.userName).
-
-            Transcrição:
-            \(lines)
-            """
+    static var classifierSchema: [String: Any] {
+        object([
+            "model": ["type": "string", "enum": SummaryModel.allCases.map(\.rawValue)],
+            "confidence": ["type": "string", "enum": ["alta", "baixa"]],
+            "reason": string,
+            "title": string,
+        ])
     }
 
-    static func decode(_ text: String) throws -> MinutesData {
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
+    // MARK: Messages
+
+    private static func lines(_ transcript: Transcript) -> String {
+        transcript.segments.map { "[\($0.id)] \($0.speaker): \($0.text)" }.joined(separator: "\n")
+    }
+
+    /// `names` maps an original label to the name the user gave.
+    static func user(transcript: Transcript, start: Date, names: [String: String]) -> String {
+        var text = "Data da reunião: \(Fmt.meetingDate(start)).\nRótulo de quem gravou: \(Config.userName).\n"
+        if !names.isEmpty {
+            let list = names.sorted { $0.key < $1.key }.map { "\($0.key) = \($0.value)" }.joined(separator: "; ")
+            text += "Nomes informados pelo usuário: \(list).\n"
+        }
+        return text + "\nTranscrição:\n" + lines(transcript)
+    }
+
+    static func classifierUser(transcript: Transcript) -> String {
+        "Transcrição:\n" + lines(transcript)
+    }
+
+    // MARK: Decoding
+
+    static func decodeSummary(_ text: String, model: SummaryModel) throws -> SummaryData {
         do {
-            return try decoder.decode(MinutesData.self, from: Data(text.utf8))
+            var data = try JSONDecoder().decode(SummaryData.self, from: Data(text.utf8))
+            // Only the sections of this model exist.
+            data.sections = data.sections.filter { key, _ in model.sections.contains { $0.key == key } }
+            return data
         } catch {
-            throw AppError("A ata veio fora do formato esperado. Tente de novo.")
+            throw AppError("O resumo veio fora do formato esperado. Tente de novo.")
+        }
+    }
+
+    static func decodeClassification(_ text: String) throws -> Classification {
+        struct Raw: Decodable {
+            var model: SummaryModel
+            var confidence: String
+            var reason: String
+            var title: String
+        }
+        do {
+            let raw = try JSONDecoder().decode(Raw.self, from: Data(text.utf8))
+            return Classification(
+                model: raw.model, confident: raw.confidence == "alta",
+                reason: raw.reason.trimmingCharacters(in: .whitespacesAndNewlines),
+                title: raw.title.trimmingCharacters(in: .whitespacesAndNewlines))
+        } catch {
+            throw AppError("A classificação veio fora do formato esperado.")
         }
     }
 }

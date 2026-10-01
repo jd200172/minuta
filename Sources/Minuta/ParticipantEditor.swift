@@ -59,6 +59,11 @@ enum ParticipantEditor {
         return result
     }
 
+    /// The names the user gave, by original label (front matter `participantes`).
+    static func names(in text: String) -> [String: String] {
+        parseMapping(split(text).0)
+    }
+
     /// Why a name cannot be used, or nil. An empty name is valid: it clears the name.
     static func nameProblem(_ name: String) -> String? {
         let trimmed = name.trimmingCharacters(in: .whitespaces)

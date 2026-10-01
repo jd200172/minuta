@@ -25,6 +25,10 @@ struct Ata: Identifiable, Equatable {
     let start: Date
     let title: String
     let duration: TimeInterval?
+    /// The summary model shown in the file (ADR 0017). Files from before it have none.
+    var model: SummaryModel? = nil
+    /// The file was written without a summary yet.
+    var noSummary = false
     var problem: AtaProblem?
     var id: URL { url }
 }
@@ -67,6 +71,8 @@ struct AtaHead {
     var start: Date?
     var duration: TimeInterval?
     var title: String?
+    var model: SummaryModel?
+    var noSummary = false
 
     static func parse(_ text: String) -> AtaHead {
         var head = AtaHead()
@@ -78,10 +84,13 @@ struct AtaHead {
                 let value = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
                 if key == "inicio" { head.start = ISO8601DateFormatter().date(from: value) }
                 if key == "duracao_segundos" { head.duration = Double(value) }
+                if key == "titulo", !value.isEmpty { head.title = value }
+                if key == "modelo" { head.model = SummaryModel(rawValue: value) }
+                if key == "resumo" { head.noSummary = value == "nenhum" }
             }
             lines = Array(lines[(end + 1)...])
         }
-        if let line = lines.first(where: { $0.hasPrefix("# ") }) {
+        if head.title == nil, let line = lines.first(where: { $0.hasPrefix("# ") }) {
             head.title = String(line.dropFirst(2)).trimmingCharacters(in: .whitespaces)
         }
         return head
@@ -122,7 +131,7 @@ final class AtaLibrary: ObservableObject {
     }
 
     func trash(_ ata: Ata) throws {
-        try FileManager.default.trashItem(at: ata.url, resultingItemURL: nil)
+        try AtaStore.trash(ata.url)
         atas.removeAll { $0.url == ata.url }
         refresh()
     }
@@ -161,7 +170,7 @@ final class AtaLibrary: ObservableObject {
             return Ata(
                 url: url, start: named?.start ?? head.start ?? modified ?? Date(),
                 title: problem == nil ? (head.title ?? named?.title ?? "Sem título") : stem,
-                duration: head.duration, problem: problem)
+                duration: head.duration, model: head.model, noSummary: head.noSummary, problem: problem)
         }
         let sorted = found.sorted {
             $0.start != $1.start

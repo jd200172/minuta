@@ -3,9 +3,7 @@ import XCTest
 @testable import Minuta
 
 final class MinutesTests: XCTestCase {
-    private let job = Job(
-        id: "20260930-140200", startedAt: Date(timeIntervalSince1970: 1_790_000_000),
-        durationSeconds: 253, stage: .minuting, micOffset: 0, systemOffset: 0, lastError: nil)
+    private let meta = MeetingMeta(start: Date(timeIntervalSince1970: 1_790_000_000), duration: 253)
 
     private func words(_ items: [(String, String?, Double, Double)]) -> [Word] {
         items.map { Word(text: $0.0, speaker: $0.1, start: $0.2, end: $0.3) }
@@ -41,23 +39,26 @@ final class MinutesTests: XCTestCase {
             Segment(id: "t-000020", speaker: "Juliano", start: 20, text: "Vamos adiar para o dia quinze."),
             Segment(id: "t-000030", speaker: "Participante 2", start: 30, text: "Bom dia."),
         ])
-        let data = MinutesData(
-            title: "Teste", summary: "Resumo.",
+        let data = SummaryData(
+            summary: "Resumo.",
             participants: [
                 .init(label: "Participante 1", name: "Marina", sources: ["t-000010"]),
                 .init(label: "Participante 2", name: "Roberto", sources: ["t-999999"]),
             ],
-            decisions: [
-                .init(text: "Adiar o lançamento", sources: ["t-000020"]),
-                .init(text: "Decisão inventada", sources: ["t-999999"]),
+            sections: [
+                "decisions": [
+                    .init(title: nil, text: "Adiar o lançamento", sources: ["t-000020"]),
+                    .init(title: nil, text: "Decisão inventada", sources: ["t-999999"]),
+                ]
             ],
             actions: [
                 .init(
                     text: "Enviar | texto", owner: "Participante 1", deadline: "não definido",
                     sources: ["t-000010"])
             ],
-            openPoints: [], topics: [])
-        let md = MinutesRenderer.render(data, transcript: transcript, job: job)
+            openPoints: [])
+        let md = MinutesRenderer.render(
+            meta: meta, title: "Teste", model: .decisao, data: data, transcript: transcript)
 
         XCTAssertTrue(md.contains("- Marina (Participante 1, nome inferido em [00:00:10](#t-000010))"))
         XCTAssertTrue(

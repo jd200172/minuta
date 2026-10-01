@@ -5,26 +5,25 @@ import XCTest
 final class ParticipantEditorTests: XCTestCase {
     private func sample(inferred: Bool = true) -> String {
         UserDefaults.standard.set("Juliano", forKey: Config.userNameKey)
-        let job = Job(
-            id: "x", startedAt: Date(timeIntervalSince1970: 1_790_000_000), durationSeconds: 60, stage: .minuting,
-            micOffset: 0, systemOffset: 0, lastError: nil)
+        let meta = MeetingMeta(start: Date(timeIntervalSince1970: 1_790_000_000), duration: 60)
         let transcript = Transcript(segments: [
             Segment(id: "t-000002", speaker: "Juliano", start: 2, text: "Vamos adiar o lançamento."),
             Segment(id: "t-000010", speaker: "Participante 1", start: 10, text: "Aqui é o Roberto."),
             Segment(id: "t-000020", speaker: "Participante 2", start: 20, text: "Eu envio o relatório."),
             Segment(id: "t-000030", speaker: "Participante 10", start: 30, text: "Concordo."),
         ])
-        let data = MinutesData(
-            title: "T",
+        let data = SummaryData(
             summary: "Participante 2 enviará o relatório. O Participante 10 concordou.",
             participants: inferred ? [.init(label: "Participante 1", name: "Roberto", sources: ["t-000010"])] : [],
-            decisions: [.init(text: "Adiar. Participante 2 concordou.", sources: ["t-000002"])],
+            sections: [
+                "decisions": [.init(title: nil, text: "Adiar. Participante 2 concordou.", sources: ["t-000002"])]
+            ],
             actions: [
                 .init(
                     text: "Enviar relatório", owner: "Participante 2", deadline: "não definido", sources: ["t-000020"])
             ],
-            openPoints: [], topics: [])
-        return MinutesRenderer.render(data, transcript: transcript, job: job)
+            openPoints: [])
+        return MinutesRenderer.render(meta: meta, title: "T", model: .decisao, data: data, transcript: transcript)
     }
 
     func testSpeakersAreClassified() {

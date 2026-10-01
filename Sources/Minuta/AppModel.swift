@@ -143,7 +143,7 @@ final class AppModel: ObservableObject {
         if elapsed(now) >= Config.maxRecordingSeconds {
             Notifier.post(
                 "Gravação encerrada",
-                "O limite de \(Int(Config.maxRecordingSeconds / 60)) minutos foi atingido. Gerando a ata.")
+                "O limite de \(Int(Config.maxRecordingSeconds / 60)) minutos foi atingido. Processando a gravação.")
             endRecording()
         } else if let pausedAt, now.timeIntervalSince(pausedAt) >= nextReminder {
             nextReminder += Config.pauseReminderSeconds
@@ -182,16 +182,21 @@ final class AppModel: ObservableObject {
                 AtaLibrary.shared.refresh()
             }
             let transcript = try store.loadTranscript(job: job)
-            let file = try await Pipeline.minutes(job: job, transcript: transcript)
+            // A failed classification does not block: the meeting is saved without title or suggestion.
+            let classification = try? await Providers.minuter().classify(transcript: transcript)
+            let url = try AtaStore.create(
+                meta: MeetingMeta(start: job.startedAt, duration: job.durationSeconds), transcript: transcript,
+                classification: classification, in: Config.outputDir)
             store.delete(job.id)
-            Notifier.post("Ata salva", file.lastPathComponent)
+            AtaLibrary.shared.refresh()
+            summarizeSuggested(url, classification: classification)
             return nil
         } catch is NoSpeechError {
             store.delete(job.id)
             Alerts.show(
                 title: "Sem fala suficiente",
                 message:
-                    "A gravação de \(Fmt.listDate(job.startedAt)) não tinha fala suficiente para gerar uma ata. Ela foi descartada.",
+                    "A gravação de \(Fmt.listDate(job.startedAt)) não tinha fala suficiente para virar uma ata. Ela foi descartada.",
                 buttons: ["OK"])
             return nil
         } catch {
@@ -202,12 +207,30 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Generates the summary in the suggested model right away (ADR 0017); without a suggestion, only says
+    /// the transcript is saved.
+    private func summarizeSuggested(_ url: URL, classification: Classification?) {
+        let name = url.deletingPathExtension().lastPathComponent
+        guard let model = classification?.suggestion else {
+            Notifier.post("Transcrição salva", "Abra a reunião e escolha um modelo de resumo.")
+            return
+        }
+        Task {
+            do {
+                try await SummaryService.shared.show(model, for: url)
+                Notifier.post("Resumo salvo", name)
+            } catch {
+                Notifier.post("Não foi possível gerar o resumo", AppError.from(error).message)
+            }
+        }
+    }
+
     private func askWhatToDo(with job: Job, after error: AppError) {
         let kept = job.stage == .transcribing ? "O áudio ficou guardado." : "A transcrição ficou guardada."
         let title =
             job.stage == .transcribing
             ? "Não foi possível transcrever a gravação"
-            : "Não foi possível gerar a ata"
+            : "Não foi possível salvar a reunião"
         let choice = Alerts.show(
             title: title, message: "\(error.message)\n\n\(kept)",
             buttons: ["Tentar de novo", "Depois", "Descartar"], destructive: 2, escape: 1)
@@ -267,11 +290,6 @@ enum Pipeline {
         return transcript
     }
 
-    static func minutes(job: Job, transcript: Transcript) async throws -> URL {
-        let data = try await Providers.minuter().minutes(transcript: transcript, job: job)
-        let markdown = MinutesRenderer.render(data, transcript: transcript, job: job)
-        return try MinutesRenderer.write(markdown, job: job, title: data.title)
-    }
 }
 
 /// The recording has too little speech to be worth minutes.

@@ -1,8 +1,22 @@
 import Foundation
 
-/// Builds the Markdown file. Every cited segment ID is checked against the transcript.
+/// When the meeting started and how long it lasted.
+struct MeetingMeta: Equatable {
+    var start: Date
+    var duration: Double
+}
+
+/// Builds the Markdown file of a meeting (ADR 0017): front matter, title, summary (when there is one),
+/// participants, the sections of the model, actions, open points and the transcript. Every cited segment
+/// ID is checked against the transcript. Participants are written with their original labels; a name the
+/// user gave is applied afterwards by `ParticipantEditor`.
 enum MinutesRenderer {
-    static func render(_ data: MinutesData, transcript: Transcript, job: Job) -> String {
+    static let noSummaryText = "Resumo ainda não gerado. Escolha um modelo na janela de leitura."
+    static let untitled = "Sem título"
+
+    static func render(
+        meta: MeetingMeta, title: String?, model: SummaryModel?, data: SummaryData?, transcript: Transcript
+    ) -> String {
         let byID = Dictionary(uniqueKeysWithValues: transcript.segments.map { ($0.id, $0) })
         let userName = Config.userName
 
@@ -15,7 +29,7 @@ enum MinutesRenderer {
         // label -> display name, only with valid evidence
         var names: [String: String] = [:]
         var evidence: [String: String] = [:]
-        for p in data.participants {
+        for p in data?.participants ?? [] {
             let name = p.name.trimmingCharacters(in: .whitespaces)
             let valid = p.sources.compactMap { byID[$0] }
             if !name.isEmpty, !valid.isEmpty, p.label != userName {
@@ -36,8 +50,12 @@ enum MinutesRenderer {
             return a < b
         }
 
-        var out = "---\ninicio: \(Fmt.iso(job.startedAt))\nduracao_segundos: \(Int(job.durationSeconds))\n---\n\n"
-        out += "# \(data.title)\n\n## Resumo\n\(data.summary)\n\n## Participantes\n"
+        let cleanTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        var out = "---\ninicio: \(Fmt.iso(meta.start))\nduracao_segundos: \(Int(meta.duration))\n"
+        if !cleanTitle.isEmpty { out += "titulo: \(cleanTitle.replacingOccurrences(of: "\n", with: " "))\n" }
+        out += model.map { "modelo: \($0.rawValue)\n" } ?? "resumo: nenhum\n"
+        out += "---\n\n# \(cleanTitle.isEmpty ? untitled : cleanTitle)\n\n"
+        out += "## Resumo\n\(data?.summary ?? noSummaryText)\n\n## Participantes\n"
         for label in labels {
             if label == userName {
                 out += "- \(label)\n"
@@ -48,32 +66,38 @@ enum MinutesRenderer {
             }
         }
 
-        out += "\n## Decisões\n"
-        out +=
-            data.decisions.isEmpty
-            ? "Nenhuma decisão registrada.\n"
-            : data.decisions.map { "- \($0.text) \(links($0.sources))\n" }.joined()
-
-        out += "\n## Itens de ação\n"
-        if data.actions.isEmpty {
-            out += "Nenhuma ação registrada.\n"
-        } else {
-            out += "| Ação | Responsável | Prazo | Origem |\n|---|---|---|---|\n"
-            for a in data.actions {
-                out += "| \(cell(a.text)) | \(cell(display(a.owner))) | \(cell(a.deadline)) | \(links(a.sources)) |\n"
+        if let model, let data {
+            for spec in model.sections {
+                out += "\n## \(spec.title)\n"
+                let entries = data.sections[spec.key] ?? []
+                if entries.isEmpty {
+                    out += "\(spec.empty)\n"
+                } else if spec.topics {
+                    for e in entries { out += "### \(e.title ?? "")\n\(e.text) \(links(e.sources))\n\n" }
+                } else {
+                    out += entries.map { "- \($0.text) \(links($0.sources))\n" }.joined()
+                }
             }
+
+            out += "\n## Itens de ação\n"
+            if data.actions.isEmpty {
+                out += "Nenhuma ação registrada.\n"
+            } else {
+                out += "| Ação | Responsável | Prazo | Origem |\n|---|---|---|---|\n"
+                for a in data.actions {
+                    out +=
+                        "| \(cell(a.text)) | \(cell(display(a.owner))) | \(cell(a.deadline)) | \(links(a.sources)) |\n"
+                }
+            }
+
+            out += "\n## Pontos em aberto\n"
+            out +=
+                data.openPoints.isEmpty
+                ? "Nenhum ponto em aberto.\n"
+                : data.openPoints.map { "- \($0.text) \(links($0.sources))\n" }.joined()
         }
 
-        out += "\n## Pontos em aberto\n"
-        out +=
-            data.openPoints.isEmpty
-            ? "Nenhum ponto em aberto.\n"
-            : data.openPoints.map { "- \($0.text) \(links($0.sources))\n" }.joined()
-
-        out += "\n## Resumo por tema\n"
-        for t in data.topics { out += "### \(t.title)\n\(t.text) \(links(t.sources))\n\n" }
-
-        out += "## Transcrição\n"
+        out += "\n## Transcrição\n"
         for s in transcript.segments {
             out += "<a id=\"\(s.id)\"></a>**[\(Fmt.clock(s.start))] \(display(s.speaker)):** \(s.text)\n\n"
         }
@@ -82,20 +106,5 @@ enum MinutesRenderer {
 
     private static func cell(_ text: String) -> String {
         text.replacingOccurrences(of: "|", with: "\\|").replacingOccurrences(of: "\n", with: " ")
-    }
-
-    /// Writes "yyyy-MM-dd HHmm Título.md"; a repeated name gets " (2)", " (3)"…
-    static func write(_ markdown: String, job: Job, title: String) throws -> URL {
-        let dir = Config.outputDir
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let stem = AtaName.stem(start: job.startedAt, title: title)
-        var url = dir.appendingPathComponent("\(stem).md")
-        var n = 2
-        while FileManager.default.fileExists(atPath: url.path) {
-            url = dir.appendingPathComponent("\(stem) (\(n)).md")
-            n += 1
-        }
-        try markdown.write(to: url, atomically: true, encoding: .utf8)
-        return url
     }
 }

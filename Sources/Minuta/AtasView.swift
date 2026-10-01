@@ -103,6 +103,7 @@ private struct FolderBanner: View {
 
 private struct AtaRow: View {
     let ata: Ata
+    @ObservedObject private var summaries = SummaryService.shared
 
     var body: some View {
         HStack(spacing: 10) {
@@ -117,6 +118,7 @@ private struct AtaRow: View {
             if let problem = ata.problem {
                 Text(problem.label).font(.caption).foregroundStyle(.red)
             } else {
+                status
                 Text(ata.duration.map(Fmt.shortDuration) ?? "").foregroundStyle(.secondary)
                     .frame(width: 56, alignment: .trailing)
             }
@@ -136,6 +138,23 @@ private struct AtaRow: View {
             .accessibilityLabel("Apagar ata")
         }
         .padding(.vertical, 3)
+    }
+
+    @ViewBuilder private var status: some View {
+        if summaries.running[ata.url] != nil {
+            HStack(spacing: 5) {
+                ProgressView().controlSize(.small)
+                Text("Gerando resumo…").font(.caption).foregroundStyle(.secondary)
+            }
+        } else if let model = ata.model {
+            Text(model.title).font(.caption).padding(.horizontal, 7).padding(.vertical, 2)
+                .background(model.tint.opacity(0.15), in: Capsule())
+                .foregroundStyle(model.tint)
+        } else if ata.noSummary {
+            Text("Sem resumo").font(.caption).padding(.horizontal, 7).padding(.vertical, 2)
+                .background(Color.orange.opacity(0.15), in: Capsule())
+                .foregroundStyle(Color.orange)
+        }
     }
 
     private func trash() {
@@ -177,7 +196,7 @@ private struct PendingRow: View {
         if running {
             HStack(spacing: 6) {
                 ProgressView().controlSize(.small)
-                Text(job.stage == .minuting ? "Gerando a ata…" : "Transcrevendo…").foregroundStyle(.secondary)
+                Text(job.stage == .minuting ? "Classificando a reunião…" : "Transcrevendo…").foregroundStyle(.secondary)
             }
         } else if let error = job.lastError {
             Text("Falhou: \(error)").foregroundStyle(.red).lineLimit(1).truncationMode(.tail).help(error)
@@ -192,5 +211,17 @@ private struct PendingRow: View {
             message: "A gravação de \(Fmt.listDate(job.startedAt)) será apagada e não poderá ser recuperada.",
             buttons: ["Cancelar", "Descartar"], destructive: 1)
         if choice == 1 { AtaLibrary.shared.discard(job) }
+    }
+}
+
+extension SummaryModel {
+    /// The color of the model's tag in the list. The tag always carries the name too.
+    var tint: Color {
+        switch self {
+        case .decisao: .blue
+        case .acompanhamento: .green
+        case .problemas: .purple
+        case .informativa, .geral: .gray
+        }
     }
 }

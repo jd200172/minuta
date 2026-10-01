@@ -9,8 +9,13 @@ protocol Transcriber: Sendable {
 }
 
 protocol Minuter: Sendable {
-    /// Minutes as JSON following `MinutesPrompt.schema`, citing segment IDs from the transcript.
-    func minutes(transcript: Transcript, job: Job) async throws -> MinutesData
+    /// Picks the summary model for the meeting and gives it a title (ADR 0017).
+    func classify(transcript: Transcript) async throws -> Classification
+    /// A summary as JSON following `MinutesPrompt.schema(for:)`, citing segment IDs from the transcript.
+    /// `names` maps an original label to a name the user gave.
+    func summarize(
+        model: SummaryModel, transcript: Transcript, start: Date, names: [String: String]
+    ) async throws -> SummaryData
 }
 
 enum Providers {

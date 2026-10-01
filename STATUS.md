@@ -3,7 +3,7 @@
 Atualizado em: 2026-10-01
 
 ## Em andamento
-- Nada em execução. ADRs 0001 a 0017 em `docs/decisions/` (o 0017, resumo sob demanda com cinco modelos, está decidido e não implementado; mockups aprovados na conversa); o 0010 (limite de 30 minutos) é proposta e aguarda confirmação. 31 testes passam. O app está instalado em `/Applications/Minuta.app`.
+- Nada em execução. ADRs 0001 a 0017 em `docs/decisions/` (o 0017, resumos por tipo de reunião, está implementado); o 0010 (limite de 30 minutos) é proposta e aguarda confirmação. 48 testes passam. O app está instalado em `/Applications/Minuta.app`.
 
 Estado atual do app:
 - Barra de menus com `NSStatusItem`: ícone de microfone fixo e estado pelo fundo do botão (verde gravando, vermelho pausado, amarelo processando) (ADRs 0011 e 0014).
@@ -23,12 +23,13 @@ Ainda sem teste manual:
 - Configurações: Permitir, Testar captura, Escolher… e Abrir ao iniciar o Mac.
 - Barra de menus clara, outros papéis de parede e VoiceOver.
 
-## Decisão pendente de implementação (ADR 0017)
-- Classificação ao fim da transcrição devolve modelo sugerido, justificativa e título; o sugerido é gerado automaticamente. Cinco modelos: Decisão, Acompanhamento, Problemas e ideias, Informativa, Geral.
-- Dois arquivos: principal `AAAA-MM-DD HHmm Título.md` (frontmatter, cópia do resumo escolhido, transcrição) e secundário `AAAA-MM-DD HHmm.resumos.json` (todos os resumos). Chave: `inicio`. Trocar de modelo reaproveita ou gera; nada é descartado; "Refazer este resumo" substitui o do modelo.
-- A implementação muda `MinutesPrompt`, `Minutes`, `AppModel`, `Job`, `AtaLibrary`, `AtaViewer`, `MarkdownHTML` e os testes. O título editável entra no MVP.
-- Em aberto: formato do JSON e da marca de seção gerada, onde guardar a classificação durante a geração, confirmação ao refazer, aviso de secundário ilegível.
-- Fora: envio por e-mail e consultas por conectores (ADR próprio depois).
+## ADR 0017 implementado (2026-10-01)
+- Classificação ao fim da transcrição (modelo, confiança, justificativa, título), gravação do `.md` e do `.resumos.json` e geração automática do modelo sugerido. Controle de cinco modelos na janela de leitura, com ponto nos já gerados; menu "…" com "Renomear reunião…" e "Refazer este resumo". Lista de atas com etiqueta do modelo, "Sem resumo" e "Gerando resumo…".
+- Código novo: `SummaryModels`, `AtaStore`, `SummaryService`; mudaram `MinutesPrompt`, `Minutes`, `Claude`, `Providers`, `AppModel`, `AtaLibrary`, `AtaViewer`, `AtasView`, `CLI`. 48 testes passam.
+- Verificado com chaves reais nos oito cenários sintéticos (`tools/synthetic-meeting/scenarios/`): a classificação acertou o modelo esperado nos sete rodados com o `--process` (02 a 08: Acompanhamento, Problemas e ideias, Informativa, Geral, Decisão, sem sugestão no vago, Decisão no 08). O cenário 1 não foi rodado de novo. No app instalado: abrir ata, trocar para modelo guardado (instantâneo), gerar modelo novo (Informativa numa ata com só um resumo) e a linha "Sugerido".
+- Sem teste manual: "Renomear reunião…", "Refazer este resumo", falha de rede na geração automática, secundário apagado ou ilegível, ata anterior ao ADR 0017 na janela nova, VoiceOver no controle de modelos (os segmentos não expõem nome pelo AppleScript; não verificado com VoiceOver).
+- Limites conhecidos: o secundário ilegível ou ausente impede trocar de modelo (reconstruir a partir do principal não foi feito); o `--process` grava `duracao_segundos: 0` porque não conhece a duração; nome do usuário com espaço no fim ("JULIANO ") aparece com espaço na lista de participantes.
+- Em aberto: o ADR 0017 deixa fora o envio por e-mail e a consulta por conectores.
 
 ## Descobertas
 <!-- fato aprendido durante o trabalho que muda o próximo passo -->
@@ -66,7 +67,8 @@ Ainda sem teste manual:
 - Anotações "(canal do microfone)" e "nome informado por você" na lista de participantes: redundantes (ADR 0016).
 
 ## Próximos
-- Implementar o ADR 0017 e criar cinco reuniões sintéticas (uma por modelo) com resultado esperado, para testar os modelos e a acurácia do classificador.
+- Conferir os `expected.md` dos oito cenários contra os resumos gerados e ajustar prompts de modelo onde faltar (acerto de responsáveis, prazos e armadilhas).
+- Testar manualmente "Renomear reunião…", "Refazer este resumo" e as falhas de geração.
 - Conferir nas fontes primárias as citações de Tropman, Romano e Nunamaker e Monge usadas no ADR 0017.
 - Confirmar o limite de 30 minutos (ADR 0010).
 - Gravar uma reunião real com voz (3 ou mais participantes) e conferir transcrição, diarização e ata (teste 6).
