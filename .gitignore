@@ -1,0 +1,22 @@
+# Segredos
+.env
+.env.*
+
+# Diretórios locais de ferramentas
+.claude/worktrees/
+.claude/settings.local.json
+
+# Áudio temporário de gravação
+*.m4a
+*.ogg
+*.wav
+
+# Python
+__pycache__/
+.venv/
+*.pyc
+
+# Swift
+.build/
+build/
+tools/synthetic-meeting/out/

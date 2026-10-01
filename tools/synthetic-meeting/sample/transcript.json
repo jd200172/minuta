@@ -1,0 +1,244 @@
+{
+  "segments" : [
+    {
+      "id" : "t-000000",
+      "speaker" : "Juliano",
+      "start" : 0.7,
+      "text" : "Bom dia, pessoal. Vamos começar. A pauta de hoje é o lançamento da versão 2 do aplicativo e orçamento do trimestre."
+    },
+    {
+      "id" : "t-000010",
+      "speaker" : "Participante 1",
+      "start" : 10.3,
+      "text" : "Bom dia. Aqui é a Marina. Eu consegui o retorno do time de comunicação ontem à noite."
+    },
+    {
+      "id" : "t-000017",
+      "speaker" : "Participante 2",
+      "start" : 17.2,
+      "text" : "Bom dia a todos. Carlos por aqui."
+    },
+    {
+      "id" : "t-000020",
+      "speaker" : "Participante 3",
+      "start" : 20.6,
+      "text" : "Bom dia."
+    },
+    {
+      "id" : "t-000022",
+      "speaker" : "Juliano",
+      "start" : 22.3,
+      "text" : "Marina, pode começar pelo cronograma."
+    },
+    {
+      "id" : "t-000026",
+      "speaker" : "Participante 1",
+      "start" : 26,
+      "text" : "Claro. Hoje o lançamento está marcado para o dia 10 de outubro. O problema é que o time de dados ainda não fechou o esquema das tabelas."
+    },
+    {
+      "id" : "t-000036",
+      "speaker" : "Juliano",
+      "start" : 36.7,
+      "text" : "Carlos, você está com esse esquema, certo? Qual é a situação?"
+    },
+    {
+      "id" : "t-000042",
+      "speaker" : "Participante 2",
+      "start" : 42.4,
+      "text" : "Estou sim. Faltam dois ajustes nas tabelas de eventos e eu preciso validar a migração em um ambiente de teste. Não consigo terminar antes da próxima quarta-feira."
+    },
+    {
+      "id" : "t-000055",
+      "speaker" : "Participante 1",
+      "start" : 55,
+      "text" : "Então o dia 10 fica inviável. A comunicação com os clientes precisa sair pelo menos três dias antes do lançamento."
+    },
+    {
+      "id" : "t-000064",
+      "speaker" : "Participante 2",
+      "start" : 64.1,
+      "text" : "Eu poderia tentar antecipar para o dia cinco, mas aí a gente arriscaria lançar sem a migração testada."
+    },
+    {
+      "id" : "t-000071",
+      "speaker" : "Participante 3",
+      "start" : 71.9,
+      "text" : "Antecipar está fora de questão. O risco de perder dados é grande demais."
+    },
+    {
+      "id" : "t-000077",
+      "speaker" : "Juliano",
+      "start" : 77.8,
+      "text" : "Concordo. Antecipar está descartado. Então proponho adiar o lançamento para o dia 15 de outubro. Alguém tem objeção?"
+    },
+    {
+      "id" : "t-000088",
+      "speaker" : "Participante 1",
+      "start" : 88,
+      "text" : "Por mim tudo bem. Dá tempo de preparar a comunicação."
+    },
+    {
+      "id" : "t-000092",
+      "speaker" : "Participante 2",
+      "start" : 92.4,
+      "text" : "15 funciona. Com esse prazo eu consigo entregar o esquema até a próxima quarta e ainda sobra uma semana para testar."
+    },
+    {
+      "id" : "t-000099",
+      "speaker" : "Participante 3",
+      "start" : 99.5,
+      "text" : "Sem objeção."
+    },
+    {
+      "id" : "t-000101",
+      "speaker" : "Juliano",
+      "start" : 101.4,
+      "text" : "Então está decidido. O lançamento passa para o dia 15 de outubro. Carlos, fica registrado que você entrega o esquema de dados até a próxima quarta-feira."
+    },
+    {
+      "id" : "t-000114",
+      "speaker" : "Participante 2",
+      "start" : 114.1,
+      "text" : "Fechado. Entrego até quarta."
+    },
+    {
+      "id" : "t-000117",
+      "speaker" : "Juliano",
+      "start" : 117.5,
+      "text" : "Marina, e a comunicação aos clientes?"
+    },
+    {
+      "id" : "t-000121",
+      "speaker" : "Participante 1",
+      "start" : 121.1,
+      "text" : "Eu preparo o texto, mas só envio depois que o Carlos confirmar que a migração foi validada. Ainda não sei quando isso vai acontecer."
+    },
+    {
+      "id" : "t-000130",
+      "speaker" : "Juliano",
+      "start" : 130.9,
+      "text" : "OK. Fica como ação sua, sem data por enquanto. Agora vamos ao orçamento. Quem está com os números?"
+    },
+    {
+      "id" : "t-000140",
+      "speaker" : "Participante 3",
+      "start" : 140.4,
+      "text" : "Sou eu. O orçamento do trimestre estourou em 12% por causa do custo de infraestrutura dos testes."
+    },
+    {
+      "id" : "t-000148",
+      "speaker" : "Participante 1",
+      "start" : 148.3,
+      "text" : "12% é bastante. O Roberto do financeiro já viu isso?"
+    },
+    {
+      "id" : "t-000154",
+      "speaker" : "Participante 3",
+      "start" : 154.1,
+      "text" : "Ainda não. O Roberto só recebe a planilha depois que eu revisar os números."
+    },
+    {
+      "id" : "t-000160",
+      "speaker" : "Juliano",
+      "start" : 160,
+      "text" : "Então a revisão é prioridade. Você consegue revisar o orçamento e mandar para o Roberto até sexta-feira?"
+    },
+    {
+      "id" : "t-000168",
+      "speaker" : "Participante 3",
+      "start" : 168,
+      "text" : "Consigo revisar e enviar até sexta."
+    },
+    {
+      "id" : "t-000172",
+      "speaker" : "Participante 2",
+      "start" : 172,
+      "text" : "Uma dúvida. O teste beta vai ter 50 ou 100 usuários? Isso muda o custo de infraestrutura."
+    },
+    {
+      "id" : "t-000179",
+      "speaker" : "Juliano",
+      "start" : 179.7,
+      "text" : "Boa pergunta. Precisamos definir isso, mas hoje não temos dados suficientes."
+    },
+    {
+      "id" : "t-000186",
+      "speaker" : "Participante 1",
+      "start" : 186.2,
+      "text" : "Acho que 100 é melhor para a comunicação, mas não o tenho como garantir o orçamento."
+    },
+    {
+      "id" : "t-000192",
+      "speaker" : "Participante 3",
+      "start" : 192.5,
+      "text" : "Com 100 usuários o custo sobe bastante. Eu precisaria refazer a conta."
+    },
+    {
+      "id" : "t-000198",
+      "speaker" : "Juliano",
+      "start" : 198.5,
+      "text" : "Vamos deixar esse ponto em aberto e voltar a ele na próxima reunião. Falando em próxima reunião, que tal uma reunião de acompanhamento na quinta-feira, dia 8 de outubro?"
+    },
+    {
+      "id" : "t-000201",
+      "speaker" : "Participante 1",
+      "start" : 201.7,
+      "text" : "Concordo."
+    },
+    {
+      "id" : "t-000211",
+      "speaker" : "Participante 2",
+      "start" : 211,
+      "text" : "Quinta dia oito está bom para mim."
+    },
+    {
+      "id" : "t-000214",
+      "speaker" : "Participante 1",
+      "start" : 214.8,
+      "text" : "Para mim também."
+    },
+    {
+      "id" : "t-000216",
+      "speaker" : "Participante 3",
+      "start" : 216.7,
+      "text" : "Pode ser."
+    },
+    {
+      "id" : "t-000218",
+      "speaker" : "Juliano",
+      "start" : 218.4,
+      "text" : "Combinado. Reunião de acompanhamento no dia 8 de outubro. Resumindo, o lançamento foi adiado para o dia 15 de outubro. O Carlos entrega o esquema até quarta. A Ana revisa o orçamento até sexta. A Marina prepara a comunicação sem data. E o tamanho do beta segue aberto."
+    },
+    {
+      "id" : "t-000240",
+      "speaker" : "Participante 1",
+      "start" : 240.7,
+      "text" : "Perfeito. É isso."
+    },
+    {
+      "id" : "t-000243",
+      "speaker" : "Participante 2",
+      "start" : 243,
+      "text" : "Só confirmando. O esquema é até quarta-feira da semana que vem."
+    },
+    {
+      "id" : "t-000248",
+      "speaker" : "Juliano",
+      "start" : 248.1,
+      "text" : "Isso mesmo. Obrigado a todos."
+    },
+    {
+      "id" : "t-000251",
+      "speaker" : "Participante 2",
+      "start" : 251.4,
+      "text" : "Até mais."
+    },
+    {
+      "id" : "t-000252",
+      "speaker" : "Participante 3",
+      "start" : 252.2,
+      "text" : "Até mais."
+    }
+  ]
+}
