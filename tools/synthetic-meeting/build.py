@@ -1,18 +1,22 @@
-"""Builds a synthetic two-channel meeting from script.json using macOS `say`.
+"""Builds synthetic two-channel meetings from scenarios/<name>/script.json using macOS `say`.
 
-Outputs in ./out: mic.wav, system.wav, stereo.wav (L=mic, R=system),
+Usage: build.py <scenario> [<scenario> ...] | --all | --list
+A scenario is a folder name under scenarios/ (or a path to one).
+
+Outputs in <scenario>/out: mic.wav, system.wav, stereo.wav (L=mic, R=system),
 the same three as .ogg (Opus), and ground-truth.json with per-turn timing.
 Requires macOS (`say`, `afconvert`) and ffmpeg with libopus.
 """
 import array
 import json
+import sys
 import subprocess
 import tempfile
 import wave
 from pathlib import Path
 
 HERE = Path(__file__).parent
-OUT = HERE / "out"
+SCENARIOS = HERE / "scenarios"
 RATE = 16000
 DEFAULT_GAP = 0.6
 
@@ -65,9 +69,10 @@ def to_opus(wav_path: Path) -> None:
     )
 
 
-def main() -> None:
-    script = json.loads((HERE / "script.json").read_text(encoding="utf-8"))
+def build(folder: Path) -> None:
+    script = json.loads((folder / "script.json").read_text(encoding="utf-8"))
     speakers = script["speakers"]
+    OUT = folder / "out"
     OUT.mkdir(exist_ok=True)
     tracks = {"mic": array.array("h"), "system": array.array("h")}
     truth = []
@@ -99,7 +104,27 @@ def main() -> None:
                    ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    print(f"turns: {len(truth)}  duration: {cursor:.1f}s")
+    print(f"{folder.name}: turns {len(truth)}  duration {cursor:.1f}s")
+
+
+def resolve(name: str) -> Path:
+    path = Path(name)
+    if (path / "script.json").exists():
+        return path
+    if (SCENARIOS / name / "script.json").exists():
+        return SCENARIOS / name
+    sys.exit(f"scenario not found: {name}")
+
+
+def main() -> None:
+    args = sys.argv[1:]
+    available = sorted(p.parent for p in SCENARIOS.glob("*/script.json"))
+    if not args or args == ["--list"]:
+        print("\n".join(p.name for p in available))
+        return
+    folders = available if args == ["--all"] else [resolve(a) for a in args]
+    for folder in folders:
+        build(folder)
 
 
 if __name__ == "__main__":

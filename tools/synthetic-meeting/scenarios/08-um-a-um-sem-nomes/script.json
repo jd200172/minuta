@@ -1,0 +1,131 @@
+{
+  "meeting_date": "2026-09-22",
+  "speakers": {
+    "Juliano": {
+      "channel": "mic",
+      "voice": "Reed (Portuguese (Brazil))"
+    },
+    "Interlocutora": {
+      "channel": "system",
+      "voice": "Grandma (Portuguese (Brazil))"
+    }
+  },
+  "turns": [
+    {
+      "speaker": "Interlocutora",
+      "text": "Bom dia. Obrigada por reservar esse tempo. Eu queria conversar sobre como está a minha carga de trabalho nesta semana."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Bom dia. Claro. Pode falar, como está?"
+    },
+    {
+      "speaker": "Interlocutora",
+      "text": "Está pesada. Eu tenho a migração dos dados, o relatório mensal e a revisão da apresentação do cliente. Não vai dar para entregar as três coisas."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Entendi. Qual delas tem prazo mais apertado?"
+    },
+    {
+      "speaker": "Interlocutora",
+      "text": "A apresentação do cliente é na sexta. A migração dos dados é para o fim do mês. O relatório mensal é na semana que vem."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "E qual delas, se atrasar, causa mais problema?"
+    },
+    {
+      "speaker": "Interlocutora",
+      "text": "A migração. O time de dados depende dela para começar o trabalho deles. Se atrasar, atrasa todo mundo."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Então a migração é prioridade. Faz sentido adiar o relatório mensal?"
+    },
+    {
+      "speaker": "Interlocutora",
+      "text": "Faz. Eu só precisaria que você avisasse o pessoal que recebe o relatório."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Eu aviso. Posso falar com eles hoje mesmo. E a apresentação do cliente, você consegue fazer ainda assim?"
+    },
+    {
+      "speaker": "Interlocutora",
+      "text": "Consigo, se eu fizer uma versão mais enxuta. Tenho um rascunho quase pronto."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Ótimo. Me manda o rascunho até quinta para eu dar uma olhada antes de sexta."
+    },
+    {
+      "speaker": "Interlocutora",
+      "text": "Mando até quinta, sim."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Então ficamos assim: você foca na migração, o relatório mensal fica para a semana seguinte, e o rascunho da apresentação chega até quinta."
+    },
+    {
+      "speaker": "Interlocutora",
+      "text": "Isso. Obrigada pela ajuda, estava preocupada."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Mais um ponto antes de mudar de assunto: o cliente pediu alguma alteração nova na apresentação?"
+    },
+    {
+      "speaker": "Interlocutora",
+      "text": "Pediu. Querem um slide a mais com o comparativo dos últimos três meses. Eu já tenho os números, só preciso montar o gráfico."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Esse slide cabe na versão enxuta?"
+    },
+    {
+      "speaker": "Interlocutora",
+      "text": "Cabe, se eu tirar a parte do histórico. Ninguém lê o histórico, de qualquer jeito."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Pode tirar. Eu prefiro uma apresentação curta e clara do que uma longa."
+    },
+    {
+      "speaker": "Interlocutora",
+      "text": "Combinado. Então tiro o histórico e coloco o comparativo."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Outra coisa: a migração tem algum risco que eu deva saber?"
+    },
+    {
+      "speaker": "Interlocutora",
+      "text": "Tem um. Parte dos dados antigos está em um formato diferente, e eu ainda não sei quanto tempo leva para converter. Se for muito, eu aviso você na quarta."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Pode avisar assim que souber. Se precisar de mais gente, a gente resolve."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "E como você está de modo geral? Está dando conta?"
+    },
+    {
+      "speaker": "Interlocutora",
+      "text": "No geral, sim. Mas o próximo mês vai ser parecido, e eu queria pensar em como dividir melhor o trabalho."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Vamos conversar sobre isso na semana que vem, com mais calma."
+    },
+    {
+      "speaker": "Interlocutora",
+      "text": "Pode ser. Obrigada de novo."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Por nada. Boa semana."
+    }
+  ]
+}

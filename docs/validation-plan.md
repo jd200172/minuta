@@ -21,8 +21,8 @@ Os testes 1 e 7 podem começar agora.
 
 ## Material de teste
 
-- Áudio sintético de 253 s, em `tools/synthetic-meeting/out/` (gerado por `python3 tools/synthetic-meeting/build.py`): `mic.ogg` e `system.ogg`, um arquivo mono por canal.
-- Gabarito: `tools/synthetic-meeting/out/ground-truth.json` (quem fala e quando) e `tools/synthetic-meeting/expected.md` (decisões, ações, armadilhas).
+- Áudio sintético de 253 s, em `tools/synthetic-meeting/scenarios/01-lancamento/out/` (gerado por `python3 tools/synthetic-meeting/build.py 01-lancamento`): `mic.ogg` e `system.ogg`, um arquivo mono por canal.
+- Gabarito: `tools/synthetic-meeting/scenarios/01-lancamento/out/ground-truth.json` (quem fala e quando) e `tools/synthetic-meeting/scenarios/01-lancamento/expected.md` (decisões, ações, armadilhas).
 - O áudio sintético tem 44 falas: 16 no microfone (Juliano) e 28 no sistema (Marina 10, Carlos 9, Ana 9), com 3 trechos de sobreposição.
 
 ---
@@ -148,7 +148,7 @@ Os testes 1 e 7 podem começar agora.
 2. Enviar a transcrição segmentada, com IDs, do teste 2.
 3. Exigir saída estruturada em JSON (decisões, ações, pontos em aberto, participantes, IDs de origem).
 4. Rodar em esforço `medium` e em `high`. Registrar tokens e custo por ata.
-5. Conferir o resultado contra `expected.md`.
+5. Conferir o resultado contra o `expected.md` do cenário.
 
 **Aprovação.**
 - 2 decisões (lançamento em 15/10 e acompanhamento em 08/10). A antecipação para 05/10 não aparece como decisão.

@@ -1,0 +1,40 @@
+{
+  "meeting_date": "2026-09-29",
+  "speakers": {
+    "Juliano": {"channel": "mic", "voice": "Reed (Portuguese (Brazil))"},
+    "Patrícia": {"channel": "system", "voice": "Sandy (Portuguese (Brazil))"},
+    "Rafael": {"channel": "system", "voice": "Eddy (Portuguese (Brazil))"},
+    "Beatriz": {"channel": "system", "voice": "Flo (Portuguese (Brazil))"}
+  },
+  "turns": [
+    {"speaker": "Juliano", "text": "Bom dia, pessoal. É a semanal do projeto do portal do cliente. Cada um conta o que avançou, o que está travado e o que vem a seguir. Patrícia, começa você?"},
+    {"speaker": "Patrícia", "text": "Bom dia. Aqui é a Patrícia. Na semana passada terminei a tela de login e a recuperação de senha. Os testes automáticos dessas telas passaram, e a cobertura está em setenta e cinco por cento."},
+    {"speaker": "Juliano", "text": "Ótimo. Algo travado do seu lado?"},
+    {"speaker": "Patrícia", "text": "Nada travado por enquanto. Esta semana começo a tela de faturas. Preciso só do layout final, que vem da Beatriz."},
+    {"speaker": "Beatriz", "text": "Bom dia, Beatriz aqui. O layout das faturas está quase pronto. Falta só a versão para celular. Eu entrego amanhã."},
+    {"speaker": "Juliano", "text": "Beatriz, e a pesquisa com os usuários?"},
+    {"speaker": "Beatriz", "text": "Fiz cinco entrevistas das oito previstas. As três que faltam estão marcadas para quinta e sexta. Até agora o ponto mais citado é a dificuldade de achar a segunda via do boleto."},
+    {"speaker": "Rafael", "text": "Rafael por aqui. Do lado do servidor, a integração com o sistema de cobrança está funcionando no ambiente de teste. O problema é que o ambiente de produção ainda não liberou o acesso. Pedi duas vezes ao pessoal de infraestrutura e ninguém respondeu."},
+    {"speaker": "Juliano", "text": "E isso trava o quê, exatamente?"},
+    {"speaker": "Rafael", "text": "Trava o teste com dados reais. Sem isso eu não consigo garantir que as faturas aparecem certas. Hoje é o maior risco do projeto."},
+    {"speaker": "Patrícia", "text": "Se atrasar muito, a tela de faturas fica pronta e sem como validar."},
+    {"speaker": "Juliano", "text": "Quem é o contato da infraestrutura?"},
+    {"speaker": "Rafael", "text": "É o Wellington. Ele não está nesta reunião. Mandei mensagem para ele ontem e ainda não tive resposta."},
+    {"speaker": "Juliano", "text": "Certo. Eu escalo isso com o gerente dele ainda hoje. Esse ponto fica comigo."},
+    {"speaker": "Rafael", "text": "Combinado. Outra coisa: o tempo de resposta da listagem de faturas está em dois segundos. A meta era menos de um segundo."},
+    {"speaker": "Juliano", "text": "Você sabe o que causa?"},
+    {"speaker": "Rafael", "text": "Acho que é uma consulta sem índice, mas ainda não confirmei. Vou investigar e te falo até quinta."},
+    {"speaker": "Juliano", "text": "Beleza. Patrícia, qual é a previsão para a tela de faturas?"},
+    {"speaker": "Patrícia", "text": "Se o layout chegar amanhã, consigo terminar na próxima terça."},
+    {"speaker": "Juliano", "text": "Então a próxima terça é a nossa meta para a tela de faturas. Beatriz, dá para fechar as entrevistas e trazer o resumo na semanal que vem?"},
+    {"speaker": "Beatriz", "text": "Dá sim. Na semanal que vem eu trago o resumo das oito entrevistas."},
+    {"speaker": "Rafael", "text": "Só um aviso: na semana que vem eu estou de folga na quarta e na quinta."},
+    {"speaker": "Juliano", "text": "Anotado. Então o que depende de você no servidor precisa sair até terça."},
+    {"speaker": "Rafael", "text": "Sim, até terça eu consigo."},
+    {"speaker": "Juliano", "text": "Mais alguma coisa? Algum bloqueio novo?"},
+    {"speaker": "Patrícia", "text": "Só uma dúvida. Alguém sabe se a Fernanda, do jurídico, já revisou o texto dos termos de uso?"},
+    {"speaker": "Juliano", "text": "Não sei. Eu pergunto a ela e aviso vocês."},
+    {"speaker": "Patrícia", "text": "Obrigada."},
+    {"speaker": "Juliano", "text": "Resumindo: login pronto, faturas em andamento, entrevistas na reta final, e o acesso de produção é o risco principal. Eu fico com o acesso e com os termos de uso. Boa semana, pessoal."}
+  ]
+}

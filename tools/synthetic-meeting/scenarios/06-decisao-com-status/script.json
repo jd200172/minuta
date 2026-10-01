@@ -1,0 +1,34 @@
+{
+  "meeting_date": "2026-10-01",
+  "speakers": {
+    "Juliano": {"channel": "mic", "voice": "Reed (Portuguese (Brazil))"},
+    "Roberta": {"channel": "system", "voice": "Shelley (Portuguese (Brazil))"},
+    "Eduardo": {"channel": "system", "voice": "Rocko (Portuguese (Brazil))"},
+    "Gabriela": {"channel": "system", "voice": "Flo (Portuguese (Brazil))"}
+  },
+  "turns": [
+    {"speaker": "Juliano", "text": "Bom dia. Reunião rápida sobre a versão três. Primeiro um panorama de cada área, depois a gente resolve o que fazer com o prazo, que é o ponto crítico."},
+    {"speaker": "Roberta", "text": "Roberta aqui. Do lado de produto, o novo fluxo de cadastro está pronto e aprovado. Os clientes beta já pediram mais duas melhorias pequenas, que cabem."},
+    {"speaker": "Eduardo", "text": "Eduardo. No desenvolvimento, oitenta por cento do escopo está feito. Ficaram de fora o painel de relatórios e a exportação em PDF. A exportação em PDF está só no começo."},
+    {"speaker": "Gabriela", "text": "Gabriela, do teste. Fechei duzentos e quarenta casos de teste, e cento e oitenta passaram. Os que falharam são quase todos do painel de relatórios."},
+    {"speaker": "Juliano", "text": "Então o quadro é: cadastro ok, painel de relatórios com problemas, exportação em PDF atrasada. O lançamento está marcado para o dia quinze de outubro. Isso é possível?"},
+    {"speaker": "Eduardo", "text": "Com tudo, não. Falta mais ou menos uma semana de trabalho na exportação em PDF e duas no painel. Eu não fecho tudo até o dia quinze."},
+    {"speaker": "Juliano", "text": "Então temos que escolher. Opção um: cortar a exportação em PDF desta versão e manter o dia quinze. Opção dois: adiar o lançamento para o dia vinte e nove. Opção três: contratar um freelancer para acelerar. Qual é a opinião de vocês?"},
+    {"speaker": "Roberta", "text": "Adiar para o dia vinte e nove incomoda os clientes beta, que esperam o dia quinze. Eu prefiro manter a data."},
+    {"speaker": "Gabriela", "text": "Eu também. Mas o painel de relatórios precisa ficar estável. A exportação eu sacrificaria."},
+    {"speaker": "Eduardo", "text": "Sobre o freelancer: ele levaria uma semana só para entender o código. Não resolve a tempo, e custa caro."},
+    {"speaker": "Juliano", "text": "Então a opção três está fora. Alguém é contra cortar a exportação em PDF?"},
+    {"speaker": "Roberta", "text": "Só preciso avisar os clientes beta. Alguns usavam o PDF.", "gap": 0.1},
+    {"speaker": "Eduardo", "text": "Sem objeção da minha parte.", "gap": -0.7},
+    {"speaker": "Gabriela", "text": "Também concordo."},
+    {"speaker": "Juliano", "text": "Fechado, então. Decisão: a exportação em PDF sai da versão três, o lançamento continua no dia quinze de outubro, e a exportação vai para uma versão três ponto um."},
+    {"speaker": "Eduardo", "text": "Eu atualizo o escopo no quadro do projeto até amanhã."},
+    {"speaker": "Roberta", "text": "E eu aviso os clientes beta sobre o PDF na próxima segunda."},
+    {"speaker": "Gabriela", "text": "Eu vou ver com o time quando dá para a três ponto um. Ainda não sei dizer quando."},
+    {"speaker": "Juliano", "text": "Tudo bem, a data da três ponto um fica em aberto por enquanto. Vamos marcar uma reunião de acompanhamento no dia nove, uma sexta-feira, para ver o painel de relatórios."},
+    {"speaker": "Eduardo", "text": "Dia nove é sexta, certo. Combinado."},
+    {"speaker": "Roberta", "text": "Combinado."},
+    {"speaker": "Gabriela", "text": "Anotado."},
+    {"speaker": "Juliano", "text": "Obrigado a todos. Até o dia nove."}
+  ]
+}

@@ -63,7 +63,7 @@ O áudio das reuniões é enviado ao Google, e o texto, à Anthropic. O app não
 ```bash
 swift test                                   # testes (transcrição, Markdown, .env, erros, atas, participantes)
 ./scripts/build-app.sh                       # compila e monta build/Minuta.app
-python3 tools/synthetic-meeting/build.py     # gera o áudio sintético de teste
+python3 tools/synthetic-meeting/build.py --all  # gera o áudio sintético de teste (oito cenários)
 build/Minuta.app/Contents/MacOS/Minuta --process <pasta> --out <pasta>
 ```
 

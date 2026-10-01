@@ -1,0 +1,41 @@
+{
+  "meeting_date": "2026-09-28",
+  "speakers": {
+    "Juliano": {"channel": "mic", "voice": "Reed (Portuguese (Brazil))"},
+    "Camila": {"channel": "system", "voice": "Shelley (Portuguese (Brazil))"},
+    "Thiago": {"channel": "system", "voice": "Grandpa (Portuguese (Brazil))"},
+    "Lúcia": {"channel": "system", "voice": "Luciana"}
+  },
+  "turns": [
+    {"speaker": "Juliano", "text": "Pessoal, o objetivo de hoje é levantar ideias. Não é para decidir nada. O problema: dezoito por cento dos assinantes cancelam nos primeiros sessenta dias. Como reduzimos isso? Vale tudo, sem criticar por enquanto."},
+    {"speaker": "Camila", "text": "Aqui é a Camila. Primeira ideia: um onboarding guiado. Quando a pessoa entra, o app mostra três passos para ela chegar no primeiro resultado rápido."},
+    {"speaker": "Thiago", "text": "Thiago. Eu penso em um e-mail de boas-vindas com um vídeo curto de dois minutos mostrando o melhor uso do produto."},
+    {"speaker": "Lúcia", "text": "Lúcia aqui. Eu acrescentaria um checklist de primeiros passos dentro do app, com uma barrinha de progresso. As pessoas gostam de completar."},
+    {"speaker": "Juliano", "text": "Boas. Mais, mais. Pensem no momento do cancelamento também."},
+    {"speaker": "Thiago", "text": "Na hora de cancelar, oferecer um desconto de trinta por cento nos próximos três meses."},
+    {"speaker": "Camila", "text": "Ou perguntar o motivo e oferecer uma coisa diferente para cada motivo. Quem acha caro ganha desconto, quem não usa ganha uma pausa na assinatura.", "gap": 0.2},
+    {"speaker": "Lúcia", "text": "Pausa de assinatura é boa. Em vez de cancelar, a pessoa congela por trinta dias.", "gap": -0.8},
+    {"speaker": "Juliano", "text": "Anotei: desconto, oferta por motivo e pausa da assinatura. Mais alguma?"},
+    {"speaker": "Thiago", "text": "E se a gente ligasse para o cliente por volta do décimo quinto dia? Um contato humano do time de sucesso do cliente."},
+    {"speaker": "Camila", "text": "Ligar para todo mundo não escala. Mas dá para ligar só para quem não usou o produto na primeira semana."},
+    {"speaker": "Lúcia", "text": "Posso puxar quantos clientes ficam nessa situação. Seria um número interessante para saber."},
+    {"speaker": "Juliano", "text": "Boa, anota isso como ponto a verificar. Mais ideias."},
+    {"speaker": "Camila", "text": "Notificações semanais de uso. Um resumo do tipo: esta semana você economizou duas horas."},
+    {"speaker": "Thiago", "text": "Um programa de indicação. Quem indica um amigo ganha um mês grátis. Quem tem amigo no produto tende a ficar."},
+    {"speaker": "Lúcia", "text": "Um grupo de comunidade. Um espaço onde os clientes novos conversam com os antigos."},
+    {"speaker": "Thiago", "text": "Falando em comunidade, a gente podia também vender o produto para prefeituras. Tem muito dinheiro ali."},
+    {"speaker": "Juliano", "text": "Isso é outro assunto, Thiago. Vamos guardar para outra conversa. Voltando ao cancelamento."},
+    {"speaker": "Thiago", "text": "Verdade, desculpa. Então, uma pesquisa de um minuto no dia trinta, perguntando o que está faltando."},
+    {"speaker": "Camila", "text": "Pesquisa no dia trinta combina com o contato humano do décimo quinto dia. São duas formas de saber o que está errado."},
+    {"speaker": "Juliano", "text": "Vamos agrupar. Um grupo é o onboarding: guia de três passos, vídeo, checklist. Outro é a retenção na saída: desconto, oferta por motivo, pausa. Outro é o contato com o cliente: ligação, pesquisa, comunidade. E sobraram as notificações semanais e a indicação."},
+    {"speaker": "Lúcia", "text": "Faltou um grupo para notificações e indicação. Podia chamar de engajamento."},
+    {"speaker": "Camila", "text": "Concordo, engajamento."},
+    {"speaker": "Juliano", "text": "Qual desses grupos vocês acham que vale aprofundar primeiro?"},
+    {"speaker": "Camila", "text": "O onboarding, porque ataca a causa. Mas eu ainda não sei qual é o custo de fazer o guia dentro do app."},
+    {"speaker": "Thiago", "text": "Eu iria na retenção na saída, é mais barato de testar."},
+    {"speaker": "Lúcia", "text": "Antes de escolher, eu quero ver os dados de cancelamento por motivo. Eu levanto isso até sexta."},
+    {"speaker": "Juliano", "text": "Fechado. A Lúcia traz os dados até sexta. Ninguém decide nada hoje: na próxima conversa a gente escolhe o grupo com base nos dados."},
+    {"speaker": "Camila", "text": "Pode ser. Eu estimo o custo do onboarding até lá, se você quiser."},
+    {"speaker": "Juliano", "text": "Quero sim. Obrigado a todos."}
+  ]
+}

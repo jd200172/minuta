@@ -1,0 +1,39 @@
+{
+  "meeting_date": "2026-09-24",
+  "speakers": {
+    "Juliano": {"channel": "mic", "voice": "Reed (Portuguese (Brazil))"},
+    "Almeida": {"channel": "system", "voice": "Grandpa (Portuguese (Brazil))"},
+    "Daniela": {"channel": "system", "voice": "Sandy (Portuguese (Brazil))"}
+  },
+  "turns": [
+    {"speaker": "Almeida", "text": "Juliano, bom dia. Tudo bem? Aqui é o Almeida, e a Daniela está comigo na chamada."},
+    {"speaker": "Juliano", "text": "Bom dia, Almeida. Bom dia, Daniela. Tudo bem por aqui. E o clima aí, ainda chovendo?"},
+    {"speaker": "Almeida", "text": "Chovendo sem parar há uma semana. Mas vamos ao que interessa. Primeiro eu queria te apresentar a nossa nova linha de embalagens reutilizáveis."},
+    {"speaker": "Daniela", "text": "Daniela aqui. A linha nova tem três tamanhos e é feita de plástico reciclado. Ela suporta até cinquenta usos antes de trocar."},
+    {"speaker": "Juliano", "text": "Interessante. Só que antes de falar disso eu preciso tocar em um ponto: a última entrega chegou com três dias de atraso e isso nos causou problema com o cliente final."},
+    {"speaker": "Almeida", "text": "Eu sei, e peço desculpas. Foi um problema de transporte, a transportadora trocou a rota sem avisar."},
+    {"speaker": "Juliano", "text": "Entendi. Mas se acontecer de novo, a gente tem multa contratual para atraso?"},
+    {"speaker": "Almeida", "text": "Tem, mas eu preferiria não chegar a esse ponto. Vamos conversar sobre uma garantia melhor para você."},
+    {"speaker": "Daniela", "text": "Posso entrar nesse assunto? Hoje o prazo é de cinco dias úteis. Podemos oferecer retirada em dois dias úteis para pedidos urgentes, com um custo adicional."},
+    {"speaker": "Juliano", "text": "Qual seria esse custo adicional?"},
+    {"speaker": "Daniela", "text": "Ainda estou calculando, mas deve ficar entre cinco e oito por cento do pedido."},
+    {"speaker": "Almeida", "text": "E já que estamos falando de preço, eu preciso avisar que a tabela vai ter um reajuste em janeiro. Estamos discutindo um valor em torno de seis por cento, mas ainda não está fechado."},
+    {"speaker": "Juliano", "text": "Seis por cento é bastante. Do nosso lado, o orçamento do próximo ano ainda está sendo montado e eu não sei se aguenta."},
+    {"speaker": "Almeida", "text": "Eu entendo. Por isso quero te passar a tabela nova antes, para você ver o impacto."},
+    {"speaker": "Daniela", "text": "Eu mando a tabela com as duas opções, com e sem reajuste, ainda hoje."},
+    {"speaker": "Juliano", "text": "Pode mandar, Daniela. Com a tabela eu consigo conversar internamente."},
+    {"speaker": "Almeida", "text": "Voltando à linha de embalagens, vocês ainda usam a caixa de papelão atual?"},
+    {"speaker": "Juliano", "text": "Usamos. A gente tem interesse em olhar a embalagem reutilizável, mas não sei como fica a logística de devolução."},
+    {"speaker": "Daniela", "text": "Isso é o ponto principal. Para clientes na mesma cidade, a devolução é feita junto com a próxima entrega. Para outras cidades, ainda estamos desenhando."},
+    {"speaker": "Juliano", "text": "Então por enquanto é só uma ideia, não é algo que a gente vá usar já."},
+    {"speaker": "Almeida", "text": "Exato. Só queria que você soubesse que existe. Quando estiver mais pronto, eu te procuro."},
+    {"speaker": "Juliano", "text": "Ótimo. Mais uma coisa, Almeida: vocês vão participar da feira do setor em novembro?"},
+    {"speaker": "Almeida", "text": "Provavelmente sim, estamos vendo o estande. Se você for, passa lá para tomar um café."},
+    {"speaker": "Juliano", "text": "Se eu for, passo. Ainda não sei se vou."},
+    {"speaker": "Almeida", "text": "Então a gente se fala na terça, depois que você olhar a tabela?"},
+    {"speaker": "Juliano", "text": "Pode ser. Na terça eu retorno com o que descobrir por aqui."},
+    {"speaker": "Almeida", "text": "Perfeito. Um abraço, Juliano."},
+    {"speaker": "Daniela", "text": "Um abraço. Mando a tabela ainda hoje."},
+    {"speaker": "Juliano", "text": "Obrigado a vocês. Até terça."}
+  ]
+}

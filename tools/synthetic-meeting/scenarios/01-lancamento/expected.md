@@ -2,6 +2,13 @@
 
 Referência para conferir a transcrição e a ata. Os tempos por fala estão em `out/ground-truth.json`, gerado por `build.py`. Data da reunião: 30/09/2026 (quarta-feira).
 
+## Classificação
+
+- Modelo esperado: Decisão. Aceitável: Acompanhamento, com justificativa coerente.
+- Não aceitável: Informativa e Problemas e ideias.
+- "Seu nome": Juliano.
+- Título plausível: algo como "Adiamento do lançamento da versão 2". Sem nome de pessoa.
+
 ## Canais e vozes
 
 | Canal | Falante | Voz |

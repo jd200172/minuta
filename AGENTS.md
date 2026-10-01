@@ -55,7 +55,7 @@ Fora do MVP:
 - `build/Minuta.app/Contents/MacOS/Minuta --process <pasta com mic.m4a e system.m4a> --out <pasta> [--date ISO8601]` roda transcrição e ata sobre áudios existentes, com as chaves do `.env`, e grava `transcript.json` e a ata em `--out`. Não altera a pasta configurada no app. Serve para os testes 2 a 5 do plano de validação.
 - `swift format --in-place --recursive Sources Tests` formata o código (ver Convenções).
 - `swift test` roda os testes do montador de transcrição, do gerador de Markdown, do `.env`, das mensagens de erro, dos nomes de arquivo e da leitura da pasta de atas, do conversor de Markdown para a página de leitura e do editor de participantes. Não há teste automatizado de captura, de interface nem das chamadas de rede.
-- `python3 tools/synthetic-meeting/build.py` gera em `tools/synthetic-meeting/out/` o áudio sintético da reunião e o `ground-truth.json`. Requer macOS (`say`, `afconvert`) e ffmpeg com libopus. Resultado esperado em `tools/synthetic-meeting/expected.md`.
+- `python3 tools/synthetic-meeting/build.py --all` (ou `<cenário>`, ou `--list`) gera em `tools/synthetic-meeting/scenarios/<cenário>/out/` o áudio sintético e o `ground-truth.json` de oito reuniões, uma por cenário. Requer macOS (`say`, `afconvert`) e ffmpeg com libopus. Resultado esperado em `scenarios/<cenário>/expected.md`; índice em `scenarios/README.md`.
 
 ## Convenções de código
 

@@ -1,0 +1,163 @@
+{
+  "meeting_date": "2026-09-23",
+  "speakers": {
+    "Juliano": {
+      "channel": "mic",
+      "voice": "Reed (Portuguese (Brazil))"
+    },
+    "Paulo": {
+      "channel": "system",
+      "voice": "Eddy (Portuguese (Brazil))"
+    },
+    "Letícia": {
+      "channel": "system",
+      "voice": "Flo (Portuguese (Brazil))"
+    }
+  },
+  "turns": [
+    {
+      "speaker": "Juliano",
+      "text": "Oi, gente. Então, a gente marcou isso aqui para alinhar aquele assunto, né?"
+    },
+    {
+      "speaker": "Paulo",
+      "text": "É, aquele assunto. Eu estava pensando nisso ontem, mas não cheguei a nenhuma conclusão."
+    },
+    {
+      "speaker": "Letícia",
+      "text": "Oi. Eu também não. Acho que o ideal seria a gente conversar com o pessoal antes."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Com o pessoal de lá, ou o pessoal daqui?"
+    },
+    {
+      "speaker": "Letícia",
+      "text": "Sei lá. Talvez os dois. Depende do que vier."
+    },
+    {
+      "speaker": "Paulo",
+      "text": "Tem aquela coisa do cliente também, que ficou meio pendente."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Verdade, a coisa do cliente. Eu acho que isso é com você, Paulo. Ou comigo. Não lembro."
+    },
+    {
+      "speaker": "Paulo",
+      "text": "Também não lembro. Acho que a gente definiu alguma coisa na outra reunião, mas não sei o quê."
+    },
+    {
+      "speaker": "Letícia",
+      "text": "Eu não estava na outra reunião."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Ah, é. Então, deixa eu ver. A gente pode ver isso depois."
+    },
+    {
+      "speaker": "Paulo",
+      "text": "Pode ser. Talvez semana que vem. Ou depois do feriado."
+    },
+    {
+      "speaker": "Letícia",
+      "text": "Depende de como a semana for. Eu estou com muita coisa."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Todo mundo está. Mas é bom a gente não deixar isso parado."
+    },
+    {
+      "speaker": "Paulo",
+      "text": "Concordo. É só que eu não sei por onde começar."
+    },
+    {
+      "speaker": "Letícia",
+      "text": "Talvez começar pelo mais simples. Se bem que eu não sei qual é o mais simples."
+    },
+    {
+      "speaker": "Paulo",
+      "text": "Tem também o documento que alguém ficou de mandar. Eu acho que não chegou."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Qual documento? Aquele da outra vez?"
+    },
+    {
+      "speaker": "Paulo",
+      "text": "Esse mesmo. Ou outro parecido. Eu confundo."
+    },
+    {
+      "speaker": "Letícia",
+      "text": "Se for aquele que eu estou pensando, o pessoal do financeiro ficou de ver. Mas faz tempo."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Faz tempo mesmo. A gente podia cobrar, né? Em algum momento."
+    },
+    {
+      "speaker": "Paulo",
+      "text": "Em algum momento. Só que eu não queria parecer chato."
+    },
+    {
+      "speaker": "Letícia",
+      "text": "Ninguém vai achar chato. Mas também não é urgente, eu acho."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Não sei se não é urgente. Depende do cliente. Se o cliente apertar, vira urgente."
+    },
+    {
+      "speaker": "Paulo",
+      "text": "Pode ser. Mas por enquanto o cliente não apertou."
+    },
+    {
+      "speaker": "Letícia",
+      "text": "Então vamos esperar um pouco. Se apertar, a gente age."
+    },
+    {
+      "speaker": "Paulo",
+      "text": "E aquela reunião com o pessoal que a gente ia marcar? Ficou para quando?"
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Acho que ficou para quando todo mundo tiver agenda. Ou seja, nunca."
+    },
+    {
+      "speaker": "Letícia",
+      "text": "Vai ver a gente nem precisa dela. Depende do que sair do documento, se é que sai."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Hum. Verdade. Então, o que a gente faz?"
+    },
+    {
+      "speaker": "Paulo",
+      "text": "Sei lá. Eu posso dar uma olhada em alguma coisa, se for o caso."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Se for o caso, então olha. Eu também dou uma olhada."
+    },
+    {
+      "speaker": "Letícia",
+      "text": "Ok. Qualquer coisa a gente se fala."
+    },
+    {
+      "speaker": "Paulo",
+      "text": "Combinado. Qualquer coisa a gente se fala."
+    },
+    {
+      "speaker": "Juliano",
+      "text": "Beleza, então. Valeu, gente."
+    },
+    {
+      "speaker": "Letícia",
+      "text": "Valeu. Tchau."
+    },
+    {
+      "speaker": "Paulo",
+      "text": "Tchau."
+    }
+  ]
+}

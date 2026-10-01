@@ -19,4 +19,4 @@ __pycache__/
 # Swift
 .build/
 build/
-tools/synthetic-meeting/out/
+tools/synthetic-meeting/scenarios/*/out/

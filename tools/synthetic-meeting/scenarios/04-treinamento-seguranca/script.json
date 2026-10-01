@@ -1,0 +1,29 @@
+{
+  "meeting_date": "2026-09-25",
+  "speakers": {
+    "Juliano": {"channel": "mic", "voice": "Reed (Portuguese (Brazil))"},
+    "Helena": {"channel": "system", "voice": "Luciana"},
+    "Marcos": {"channel": "system", "voice": "Rocko (Portuguese (Brazil))"}
+  },
+  "turns": [
+    {"speaker": "Helena", "text": "Bom dia a todos. Eu sou a Helena, da área de segurança da informação. Hoje vou falar por quarenta minutos sobre três assuntos: e-mails falsos, senhas e o que fazer quando algo dá errado. Podem interromper com perguntas."},
+    {"speaker": "Helena", "text": "Primeiro, e-mails falsos. O relatório interno do ano passado mostra que sessenta e dois por cento dos incidentes começaram com um e-mail falso, o chamado phishing. Em média, um e-mail desse leva dezoito minutos para ser aberto depois de chegar. Ou seja, o tempo para reagir é curto."},
+    {"speaker": "Helena", "text": "Os sinais mais comuns são três. Urgência exagerada, como conta bloqueada em uma hora. Um remetente com o endereço parecido com o verdadeiro, mas com uma letra trocada. E um link que, quando você passa o mouse por cima, aponta para outro endereço. Se aparecer qualquer um dos três, não clique."},
+    {"speaker": "Marcos", "text": "Helena, uma dúvida. E se o e-mail parecer vir de um colega que eu conheço?"},
+    {"speaker": "Helena", "text": "Boa pergunta, Marcos. Colegas também têm a conta invadida. Se o pedido for fora do normal, como transferir dinheiro ou mandar uma senha, confirme por outro canal, por exemplo uma ligação ou o chat da empresa."},
+    {"speaker": "Helena", "text": "Segundo assunto, senhas. A recomendação da empresa é usar o gerenciador de senhas oficial. Ele gera uma senha diferente para cada serviço, com pelo menos dezesseis caracteres. E a autenticação em duas etapas fica ligada em todas as contas corporativas."},
+    {"speaker": "Marcos", "text": "Posso instalar o gerenciador no meu celular pessoal?"},
+    {"speaker": "Helena", "text": "Pode, desde que o celular tenha bloqueio de tela e a autenticação em duas etapas esteja ativa no próprio gerenciador. O que não pode é guardar a senha mestra anotada em algum lugar."},
+    {"speaker": "Juliano", "text": "Helena, e se eu usar a mesma senha em dois serviços de trabalho? É tão ruim assim?"},
+    {"speaker": "Helena", "text": "É sim, Juliano. Se um serviço vaza, o atacante testa a mesma senha nos outros. Em vinte e três por cento dos casos analisados no ano passado, uma senha repetida foi o caminho da invasão."},
+    {"speaker": "Helena", "text": "Terceiro assunto, o que fazer quando algo dá errado. Se você clicou em um link suspeito ou digitou a senha em uma página estranha, avise a segurança imediatamente pelo canal de incidentes no chat. Não espere ter certeza. Avisar rápido reduz o estrago, e ninguém é punido por avisar."},
+    {"speaker": "Marcos", "text": "E se eu perceber só no dia seguinte?"},
+    {"speaker": "Helena", "text": "Avise do mesmo jeito, mas diga a hora aproximada em que aconteceu. A diferença é que a equipe vai precisar de mais tempo para conter."},
+    {"speaker": "Juliano", "text": "Existe um prazo para todo mundo fazer o curso on-line sobre isso?"},
+    {"speaker": "Helena", "text": "Existe. O curso é obrigatório para todos os colaboradores e precisa estar concluído até o fim de outubro. Leva cerca de vinte minutos."},
+    {"speaker": "Helena", "text": "Para fechar, os pontos principais: desconfie de urgência, confirme pedidos estranhos por outro canal, use o gerenciador de senhas com autenticação em duas etapas e avise cedo quando errar."},
+    {"speaker": "Helena", "text": "Eu vou mandar o material desta apresentação e o link do curso por e-mail na segunda-feira."},
+    {"speaker": "Marcos", "text": "Ótimo, obrigado, Helena."},
+    {"speaker": "Juliano", "text": "Obrigado, Helena. Muito claro."}
+  ]
+}
