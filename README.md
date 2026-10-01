@@ -61,7 +61,7 @@ O áudio das reuniões é enviado ao Google, e o texto, à Anthropic. O app não
 ## Desenvolvimento
 
 ```bash
-swift test                                   # testes (montador de transcrição, Markdown, .env, erros)
+swift test                                   # testes (transcrição, Markdown, .env, erros, atas, participantes)
 ./scripts/build-app.sh                       # compila e monta build/Minuta.app
 python3 tools/synthetic-meeting/build.py     # gera o áudio sintético de teste
 build/Minuta.app/Contents/MacOS/Minuta --process <pasta> --out <pasta>
@@ -70,7 +70,7 @@ build/Minuta.app/Contents/MacOS/Minuta --process <pasta> --out <pasta>
 O último comando roda transcrição e ata sobre `mic.m4a` e `system.m4a` de uma pasta, usando as chaves do `.env`, sem alterar a pasta configurada no app.
 
 Estrutura:
-- `Sources/Minuta/`: o app. `Recorder` (captura), `Providers` (escolha pelo `.env`), `Gemini` (transcrição), `Claude` e `MinutesPrompt` (ata), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (fluxo), `SettingsView` e `MenuContent` (interface).
+- `Sources/Minuta/`: o app. `Recorder` (captura), `Providers` (escolha pelo `.env`), `Gemini` (transcrição), `Claude` e `MinutesPrompt` (ata), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (fluxo). Interface: `StatusItemController` (botão e menu da barra), `AtasView` e `AtaLibrary` (janela de atas), `AtaViewer`, `MarkdownHTML`, `ParticipantEditor` e `ParticipantRename` (leitura da ata e nomes dos participantes) e `SettingsView` (configurações).
 - `Tests/MinutaTests/`: testes.
 - `scripts/`: instalação, assinatura local e ícone.
 - `tools/synthetic-meeting/`: gerador de áudio de teste, gabarito e amostras.
@@ -79,7 +79,7 @@ Estrutura:
 ## Estado
 
 - **Validado com áudio sintético** (4 vozes, 253 s): transcrição com cerca de 1% de diferença, 28 de 28 falas do sistema com o falante certo, e ata com decisões, ações e prazos corretos. Detalhes em [`docs/validation-plan.md`](docs/validation-plan.md).
-- **Validado pelo usuário:** captura do áudio do sistema pelo app, gravação com microfone, pausa e continuação, e gravação de teste de fone sem participante falso.
+- **Validado pelo usuário:** captura do áudio do sistema pelo app, gravação com microfone, pausa e continuação, gravação de teste de fone sem participante falso e Apagar uma ata pela janela de atas.
 - **Pendente:** voz real com 3 ou mais participantes, gravação longa (consumo e estabilidade) e termos de dados dos provedores.
 
 O histórico do trabalho e os próximos passos estão em [`STATUS.md`](STATUS.md).

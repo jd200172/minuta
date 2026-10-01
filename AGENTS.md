@@ -26,7 +26,7 @@ Fora do MVP:
 
 - Consumo baixo de CPU, memória e disco.
 - Gravação limitada a 60 minutos de tempo gravado (pausas não contam). No teto, encerra a captura e dispara o processamento. O código usa 30 minutos, porque o Gemini 3.5 Transcribe limita a 30 minutos por pedido com diarização (ADR 0010, proposta aguardando confirmação). A regra de 60 minutos vale até a confirmação.
-- A transcrição é o artefato que importa. O áudio é descartável: fica em disco até a transcrição ser gravada. Em falha de rede, o áudio fica em disco e o menu oferece "Tentar novamente". Em perda de stream (hardware desconectado), fecha o arquivo com cabeçalho válido e encerra a gravação.
+- A transcrição é o artefato que importa. O áudio é descartável: fica em disco até a transcrição ser gravada. Em falha de rede, o áudio fica em disco, e o aviso de falha e a seção "Em andamento" da janela de atas oferecem "Tentar de novo". Em perda de stream (hardware desconectado), fecha o arquivo com cabeçalho válido e encerra a gravação.
 - Áudio sai da máquina só para o STT; texto sai só para o LLM. Nada é armazenado na nuvem pelo app.
 - Credenciais (chaves do STT e do LLM) e a escolha de provedor e modelo ficam em `~/Library/Application Support/Minuta/.env`, permissão `600`, lido a cada uso (ADR 0012). Nunca versionar nem copiar para o repositório. `OUTPUT_DIR` é configuração, não segredo.
 - Provedores atrás dos protocolos `Transcriber` e `Minuter`. As regras da ata (prompt, schema) são neutras e ficam em `MinutesPrompt`; a validação de IDs fica no app, nunca no modelo. Provedor novo passa pela reunião sintética antes do uso.
@@ -54,7 +54,7 @@ Fora do MVP:
 - `swift scripts/make-icon.swift` regenera `Resources/AppIcon.icns`.
 - `build/Minuta.app/Contents/MacOS/Minuta --process <pasta com mic.m4a e system.m4a> --out <pasta> [--date ISO8601]` roda transcrição e ata sobre áudios existentes, com as chaves do `.env`, e grava `transcript.json` e a ata em `--out`. Não altera a pasta configurada no app. Serve para os testes 2 a 5 do plano de validação.
 - `swift format --in-place --recursive Sources Tests` formata o código (ver Convenções).
-- `swift test` roda os testes do montador de transcrição e do gerador de Markdown. Não há teste automatizado de captura nem das chamadas de rede.
+- `swift test` roda os testes do montador de transcrição, do gerador de Markdown, do `.env`, das mensagens de erro, dos nomes de arquivo e da leitura da pasta de atas, do conversor de Markdown para a página de leitura e do editor de participantes. Não há teste automatizado de captura, de interface nem das chamadas de rede.
 - `python3 tools/synthetic-meeting/build.py` gera em `tools/synthetic-meeting/out/` o áudio sintético da reunião e o `ground-truth.json`. Requer macOS (`say`, `afconvert`) e ffmpeg com libopus. Resultado esperado em `tools/synthetic-meeting/expected.md`.
 
 ## Convenções de código
@@ -68,11 +68,11 @@ Fora do MVP:
 Gravação (uma por vez) separada da fila de jobs (vários). Estados:
 1. Ocioso: ícone de microfone. Menu: Iniciar gravação, Atas recentes (5), Atas…, Configurações…, Sair (ADRs 0011 e 0015). Sair durante a gravação pede confirmação.
 2. Gravando ou pausada (ADR 0013): menu Pausar/Continuar gravação e Encerrar gravação; contador de tempo gravado ao lado do ícone; dois arquivos mono em streaming para a pasta do job em Application Support.
-3. Job: transcrevendo, gerando ata, concluído. O estado fica só no ícone. Após a transcrição segmentada gravada, o áudio é apagado; a ata é o passo seguinte sobre o texto. Falha: aviso do macOS com a causa e as opções Tentar de novo, Depois e Descartar; o áudio ou a transcrição ficam guardados.
+3. Job: transcrevendo, gerando ata, concluído. O estado fica só no ícone. Após a transcrição segmentada gravada, o áudio é apagado; a ata é o passo seguinte sobre o texto. Falha: aviso do macOS com a causa e as opções Tentar de novo, Depois e Descartar; o áudio ou a transcrição ficam guardados, e a gravação aparece na seção "Em andamento" da janela de atas.
 
 Atas (ADR 0015): arquivos `AAAA-MM-DD HHmm Título.md` são a fonte da verdade; a lista é refeita lendo a pasta. Apagar move para a Lixeira. Transcrição com menos de 10 palavras não gera ata. Ao ler a pasta, o app avisa pasta ausente ou ilegível e marca arquivos de ata vazios, ilegíveis ou sem cabeçalho; não detecta ata apagada.
 
-Estrutura da ata (ADR 0005): Resumo, Participantes, Decisões, Itens de ação, Pontos em aberto, Resumo por tema, Transcrição com âncoras `t-<segundos>`. Frontmatter: `TODO` definir campos.
+Estrutura da ata (ADR 0005): Resumo, Participantes, Decisões, Itens de ação, Pontos em aberto, Resumo por tema, Transcrição com âncoras `t-<segundos>`. Frontmatter: `inicio` (ISO 8601), `duracao_segundos` e, quando o usuário nomeou participantes, `participantes` (JSON de rótulo para nome, ADR 0016).
 
 Na inicialização, descarta gravações cortadas no meio (arquivo ilegível) e mostra um aviso por gravação pendente, com Processar, Depois e Descartar. Sinalização de estado (ADR 0014): ícone de microfone fixo; fundo verde ao gravar (relógio correndo), vermelho em pausa (relógio parado e símbolo de pausa), amarelo ao processar (spinner); gravação e processamento juntos mostram a cor da gravação com o spinner. O estado nunca depende só da cor.
 
@@ -117,6 +117,8 @@ Instrução do usuário no chat > `AGENTS.md` > `.agents/STYLE.md` > skill. Em s
 - 2026-10-01: ADR 0014. Estado do app pela cor de fundo do botão na barra de menus, com ícone fixo; desvio das HIG aceito. Pedido e confirmação do usuário.
 - 2026-10-01: ADR 0015. Janela de atas com lista, leitura e Lixeira; nome do arquivo com título; sem ata para transcrição sem fala. Escopo de interface ampliado a pedido do usuário.
 - 2026-10-01: ADR 0016. Nomes de participantes informados pelo usuário, só na própria ata. Regra de Participantes ampliada a pedido do usuário.
+- 2026-10-01: ADR 0016 ajustado. A lista de participantes não leva mais "(canal do microfone)" nem "nome informado por você"; "(sem nome identificado)" e a marca de nome inferido continuam. Pedido do usuário.
+- 2026-10-01: ADR 0015 ampliado com a verificação da pasta de atas (pasta ausente ou ilegível, arquivos de ata com problema). Pedido do usuário.
 
 ## Sincronização
 

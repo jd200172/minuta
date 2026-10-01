@@ -3,20 +3,25 @@
 Atualizado em: 2026-10-01
 
 ## Em andamento
-- Primeira versão do app em Swift (ADR 0009): compila, abre na barra de menus e tem 3 testes passando. O pipeline de transcrição e ata foi exercitado de ponta a ponta com o áudio sintético e as chaves reais (modo `--process`). A captura do áudio do sistema pelo app foi testada pelo usuário e funcionou (teste de 5 s). Falta uma gravação completa pelo menu, até a ata.
-- Decisões em `docs/decisions/` (ADRs 0001 a 0013). O ADR 0010 (limite de 30 minutos) é proposta e aguarda confirmação.
-- Áudio sintético de teste em `tools/synthetic-meeting/out/` (253 s, 4 vozes: 1 no microfone, 3 no sistema, 3 sobreposições). Gabarito em `tools/synthetic-meeting/expected.md`.
-- Mockups das telas no chat. Não implementados: tela de primeiro uso, teste de captura, "Abrir transcrição" na falha da ata.
+- Nada em execução. ADRs 0001 a 0016 em `docs/decisions/`; o 0010 (limite de 30 minutos) é proposta e aguarda confirmação. 31 testes passam. O app está instalado em `/Applications/Minuta.app`.
 
-- ADR 0012 implementado: chaves e provedores no `.env` (`~/Library/Application Support/Minuta/.env`), `Transcriber` e `Minuter` como protocolos, aba de chaves removida, migração do Keychain na primeira abertura. Compila e os 9 testes passam. Não executado: o app não foi instalado nem aberto depois da mudança (o usuário removeu `/Applications/Minuta.app`), então a migração, o botão que abre o arquivo e o aviso de chave ausente estão sem teste manual.
-- ADR 0013 implementado: pausar, continuar e encerrar a gravação, contador na barra de menus, confirmação ao sair gravando e lembrete de pausa a cada 10 min. Compila e os testes passam. Sem teste manual: o menu nos três estados, a pausa no áudio gravado, o contador e o aviso de saída.
-- Janela de configurações em página única implementada (mockup B atualizado), instalada e verificada por captura de tela. Não verificado por clique: botões Permitir, Testar captura, Escolher…, o interruptor Abrir ao iniciar o Mac e a linha Reabrir o minuta.
-- Revisão contra as HIG (regra no `AGENTS.md`): corrigidos o pedido de permissão de notificação (agora só na primeira notificação), o Esc nos avisos (botão seguro de cada aviso) e ⌘W e Esc na janela de configurações. Verificado: ⌘W e Esc fecham a janela no app instalado; o Esc dos avisos foi testado num script à parte, não no app. Pendentes da revisão: rótulo de acessibilidade do ícone da barra de menus, reticências em "Abrir arquivo…" e "Gravando 5 s…", um só botão de destaque em Permissões, botão "Escolher" no painel de pasta, "Configurações" vs "Ajustes" (a confirmar) e grafia do nome do app.
-- ADR 0014 implementado com `NSStatusItem`: ícone de microfone fixo, fundo verde (gravando), vermelho com símbolo de pausa (pausado) e amarelo com spinner (processando); gravação e processamento juntos mostram a cor da gravação com o spinner. Verificado no app instalado por capturas da barra de menus em todos os estados, inclusive iniciar uma gravação durante o processamento. Não verificado: barra de menus clara, outros papéis de parede, VoiceOver e o aviso de sair gravando com o novo menu.
-- ADR 0015 implementado: janela Atas (lista por data e título, Abrir, Apagar com Lixeira, seção Em andamento com Tentar de novo e Descartar), 5 atas recentes no menu, leitura em página com links para a transcrição, nome do arquivo com título e sem ata para transcrição com menos de 10 palavras. Verificado no app instalado: menu, lista, janela de leitura, clique nos horários (leva ao trecho e o destaca), linha de falha e aviso de gravação sem fala. Um erro encontrado no teste e corrigido: o link de âncora era bloqueado pela política de navegação. Não verificado por clique: Apagar e Descartar (confirmações e Lixeira), Tentar de novo e o botão Mostrar no Finder. 18 testes passam.
-- Verificação da pasta de atas (nível A do ADR 0015) implementada: faixa para pasta ausente ou ilegível, arquivos de ata vazios, ilegíveis ou sem cabeçalho marcados na lista. Verificado no app instalado com uma pasta temporária: arquivos marcados, faixa de pasta ausente e ausência de aviso para pasta nunca criada; a pasta de atas original foi restaurada. Não verificado: os botões da faixa. 21 testes passam. Cópia interna das atas (nível C) fica para depois se o risco de perda crescer.
-- ADR 0016 implementado: lápis ao lado de cada participante na janela de leitura, que renomeia a voz no próprio lugar (campo nativo sobre o nome, Return salva, Esc cancela, clicar fora salva se válido), nome substitui o rótulo em todo o texto da ata, mapeamento no cabeçalho, apagar o nome volta ao rótulo, nomes repetidos recusados. A primeira versão, com uma folha única, foi descartada. Verificado no app instalado numa cópia de uma ata: lápis, campo no lugar, salvar, erro de nome repetido, Esc e apagar o nome (arquivo idêntico ao original). 30 testes passam. Não verificado: nomes inferidos pelo modelo no app, rolar ou redimensionar com o campo aberto, tema claro e atas muito longas.
-- Anotações retiradas da lista de participantes (pedido do usuário): "(canal do microfone)" e "nome informado por você". A linha de quem tem nome é só o nome; "(sem nome identificado)" e a marca de nome inferido continuam. Atas antigas mantêm o texto até a linha ser editada. Verificado no app com uma cópia de ata no formato antigo (renomear as duas vozes deixou "- Ju" e "- Roberto"). O usuário confirmou que o Apagar da janela de atas funciona. 31 testes passam.
+Estado atual do app:
+- Barra de menus com `NSStatusItem`: ícone de microfone fixo e estado pelo fundo do botão (verde gravando, vermelho pausado, amarelo processando) (ADRs 0011 e 0014).
+- Gravação com pausar, continuar e encerrar, contador, lembrete de pausa, confirmação ao sair gravando e limite de 30 minutos de tempo gravado (ADRs 0010 e 0013).
+- Transcrição pelo Gemini 3.5 Transcribe e ata pelo Claude Sonnet 5.5, com provedores e chaves no `.env` (ADRs 0002, 0008 e 0012).
+- Janela "Atas…" (lista por data e título, Abrir, Apagar com Lixeira, gravações em andamento com Tentar de novo e Descartar), 5 atas recentes no menu, leitura em página com links para a transcrição, verificação da pasta de atas e nome de arquivo com título (ADR 0015).
+- Nomes de participantes pelo lápis da janela de leitura, valendo só na própria ata (ADR 0016).
+- Configurações em página única, com a versão no rodapé; regra de seguir as HIG da Apple.
+
+Verificado pelo usuário: captura do áudio do sistema, gravação com microfone, pausa e continuação, gravação de teste de fone e Apagar uma ata.
+
+Verificado por mim no app instalado (capturas de tela e scripts): todos os estados do botão, a janela de atas, a leitura com os links, a faixa de pasta ausente, o campo de renomear e o desfazer.
+
+Ainda sem teste manual:
+- Janela de atas: Descartar, Tentar de novo e Mostrar no Finder; botões da faixa de pasta ausente.
+- Renomear: rolar ou redimensionar com o campo aberto; nomes inferidos pelo modelo no app; atas muito longas.
+- Configurações: Permitir, Testar captura, Escolher… e Abrir ao iniciar o Mac.
+- Barra de menus clara, outros papéis de parede e VoiceOver.
 
 ## Descobertas
 <!-- fato aprendido durante o trabalho que muda o próximo passo -->
@@ -29,9 +34,12 @@ Atualizado em: 2026-10-01
 - A ata do Sonnet 5.5 estava citando 4 a 7 trechos por item, listando a antecipação descartada como decisão e gerando pontos em aberto extras. Após o ajuste do prompt (no máximo 3 trechos, proposta descartada fora de decisões), passou nos 5 critérios em 2 execuções.
 - A camada gratuita do Google limita o `gemini-3.5-transcribe` a 3 pedidos por minuto (cada reunião usa 2). A chave atual está na camada gratuita, na qual o Google usa o conteúdo para melhorar produtos e revisores humanos podem lê-lo. Reuniões reais exigem a camada paga.
 - A assinatura ad hoc muda a identidade do binário a cada build e o macOS pedia as permissões de novo. Resolvido com a identidade local "Minuta Dev" (`scripts/setup-signing.sh`): o requisito designado é o mesmo depois de recompilar.
-- O app só aparece na lista de Gravação de Tela depois de pedir acesso. A tela de configurações anterior abria os Ajustes sem pedir, e o botão Salvar não dava retorno nem tratava erro do Keychain. Corrigido; as chaves passam a usar o serviço `app.minuta.Minuta.keys` e precisam ser digitadas de novo uma vez.
+- O app só aparece na lista de Gravação de Tela depois de pedir acesso. A tela de configurações anterior abria os Ajustes sem pedir, e o botão Salvar não dava retorno nem tratava erro do Keychain. Corrigido; as chaves hoje ficam no `.env` (ADR 0012).
 - Este Mac é um Mac mini sem microfone embutido e sem entrada de áudio conectada. O app travava ao iniciar a gravação (`installTap` sem dispositivo de entrada). Agora grava só o áudio do sistema e avisa quando não há microfone. Para gravar a própria voz, conecte um microfone (fone, webcam ou USB).
 - Um app Swift em repouso usa cerca de 79 MB de RSS e 0% de CPU.
+- Um campo de texto nativo sobre uma `WKWebView` fica transparente: é preciso uma `NSView` opaca por baixo. A `WKWebView` com JavaScript da página desligado ainda responde a `evaluateJavaScript` chamado pelo app, o que permite medir a posição de um elemento sem executar nada da página.
+- Com a base `about:blank`, o `URL` do Foundation não extrai o fragmento (`about:blank#id`); a navegação para âncoras precisa comparar a string.
+- Gravações de silêncio geravam atas com títulos como "sem conteúdo identificável"; hoje transcrições com menos de 10 palavras não geram ata (ADR 0015).
 
 ## Descartado
 <!-- hipótese ou abordagem descartada e o motivo -->
@@ -46,15 +54,19 @@ Atualizado em: 2026-10-01
 - Gravação de 27 s com microfone conectado: a ata mostrou um "Participante 1" que só disse "É". Uma segunda gravação de 30 s, de fone e com o Mac sem tocar nada, não gerou participante falso. O mais provável é eco (a voz do usuário voltando pelo alto-falante para o canal do sistema); a hipótese de o transcritor inventar fala num canal em silêncio perdeu força. Sem fone, o eco é esperado; cancelamento de eco (processamento de voz do `AVAudioEngine`) não foi adotado.
 - O campo "Seu nome" estava salvo como `.... ` e apareceu como rótulo do usuário na ata. É valor digitado, não falha do app.
 - O Gemini trocou palavras em português numa fala do microfone ("participante 1" virou "participantium"). Registrar como dado do teste 6 (voz real).
+- Banco de dados ou pasta interna do app para as atas, e um submenu por ata no menu: ver ADR 0015.
+- Folha única com todos os participantes aberta por um botão da barra de título (ADR 0016): invasiva; trocada pelo lápis individual.
+- Anotações "(canal do microfone)" e "nome informado por você" na lista de participantes: redundantes (ADR 0016).
 
 ## Próximos
-- Interface revisada e instalada em `/Applications` (ADR 0011): menu mínimo, erros por aviso, configurações em abas. Verificado por captura de tela das três abas. Não verificado: cliques nos botões, avisos de erro, opção Abrir ao iniciar o Mac.
 - Confirmar o limite de 30 minutos (ADR 0010).
-- Gravar 30 a 60 segundos de um vídeo com fala pelo menu do app e conferir a ata em `~/Documents/Atas`.
+- Gravar uma reunião real com voz (3 ou mais participantes) e conferir transcrição, diarização e ata (teste 6).
 - Teste de eco sem fone (alto-falante e microfone abertos), para medir o quanto o eco vaza para a ata e decidir se vale o cancelamento de eco.
 - Medir o custo em tokens e o tempo por ata, e comparar o esforço `medium` com `high`.
 - Migrar a chave do Google para a camada paga antes de gravar reuniões reais.
 - Ler os termos de dados do Google e da Anthropic (teste 7).
+- Pendências da revisão de HIG: reticências em "Abrir arquivo…" e "Gravando 5 s…", um só botão de destaque em Permissões, "Configurações" ou "Ajustes" (a confirmar) e a grafia do nome do app.
+- Opcionais, se o risco ou o uso pedirem: cópia interna das atas com restauração (detecta ata apagada), regenerar o resumo com os nomes dos participantes (corrige artigos), cancelamento de eco.
 - Confirmar o público do projeto (hoje registrado como uso próprio).
 
 ## Bloqueado
