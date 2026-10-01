@@ -12,7 +12,7 @@ Uso próprio. Estado atual: MVP validado com áudio sintético; falta validar co
 
 O resultado é um arquivo por reunião na pasta escolhida, com a transcrição ao final. O nome é `AAAA-MM-DD HHmm Título.md`. O menu mostra as 5 últimas atas, e **Atas…** abre a lista completa, com leitura em página, Lixeira e as gravações ainda em andamento. Se a pasta sumir ou algum arquivo estiver vazio ou ilegível, a janela avisa; ela não sabe de uma ata que foi apagada, então mantenha a pasta com backup (por exemplo, no OneDrive). Um exemplo, gerado com o áudio sintético de teste, está em [`tools/synthetic-meeting/sample/ata.md`](tools/synthetic-meeting/sample/ata.md).
 
-Os nomes dos participantes só substituem o rótulo quando a transcrição os identifica (apresentação, saudação ou vocativo), e a ata marca o nome como inferido.
+Os nomes dos participantes só substituem o rótulo quando a transcrição os identifica (apresentação, saudação ou vocativo), e a ata marca o nome como inferido. Quando o app não identifica alguém, o lápis ao lado de cada participante, na janela de leitura, renomeia aquela voz no próprio lugar; o nome vale só para aquela ata e substitui o rótulo em todo o texto.
 
 ## Requisitos
 

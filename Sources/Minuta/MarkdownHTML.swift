@@ -9,7 +9,11 @@ enum MarkdownHTML {
         var html: String
     }
 
-    static func convert(_ markdown: String) -> Document {
+    /// With `renamable`, each participant in the "Participantes" list gets an id on its text (`sp-N`, for the
+    /// viewer to measure) and a pencil link (`minuta://rename/N`) that the viewer turns into an in-place rename.
+    static func convert(_ markdown: String, renamable: Bool = false) -> Document {
+        let speakers = renamable ? ParticipantEditor.speakers(in: markdown) : []
+        var section = ""
         var lines = markdown.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
         var meta: [String: String] = [:]
         if lines.first == "---", let end = lines.dropFirst().firstIndex(of: "---") {
@@ -27,6 +31,14 @@ enum MarkdownHTML {
         var list: [String] = []
         var table: [String] = []
 
+        func listItem(_ item: String) -> String {
+            guard section == "Participantes", let head = ParticipantEditor.listHead("- " + item),
+                let index = speakers.firstIndex(where: { head == ($0.kind == .unnamed ? $0.label : $0.name) })
+            else { return "<li>\(inline(item))</li>\n" }
+            return
+                "<li><span id=\"sp-\(index)\">\(inline(item))</span><a class=\"pen\" href=\"minuta://rename/\(index)\" title=\"Renomear\" aria-label=\"Renomear participante\">\(pencil)</a></li>\n"
+        }
+
         func flush() {
             if !paragraph.isEmpty {
                 body +=
@@ -35,7 +47,7 @@ enum MarkdownHTML {
                 paragraph = []
             }
             if !list.isEmpty {
-                body += "<ul>\n" + list.map { "<li>\(inline($0))</li>\n" }.joined() + "</ul>\n"
+                body += "<ul>\n" + list.map { listItem($0) }.joined() + "</ul>\n"
                 list = []
             }
             if !table.isEmpty {
@@ -53,7 +65,8 @@ enum MarkdownHTML {
                 body += "<h1>\(escape(title))</h1>\n\(subtitle(meta))"
             } else if line.hasPrefix("## ") {
                 flush()
-                body += "<h2>\(escape(String(line.dropFirst(3))))</h2>\n"
+                section = String(line.dropFirst(3))
+                body += "<h2>\(escape(section))</h2>\n"
             } else if line.hasPrefix("### ") {
                 flush()
                 body += "<h3>\(escape(String(line.dropFirst(4))))</h3>\n"
@@ -73,6 +86,9 @@ enum MarkdownHTML {
     }
 
     // MARK: Pieces
+
+    private static let pencil =
+        #"<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2.828 2.828 0 0 0-4-4L4 16v4"/><path d="M13.5 6.5l4 4"/></svg>"#
 
     static func escape(_ text: String) -> String {
         text.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
@@ -173,6 +189,8 @@ enum MarkdownHTML {
         th { text-align: left; color: GrayText; font-weight: 500; }
         th, td { padding: 6px 10px 6px 0; vertical-align: top; border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
         a { color: LinkText; text-decoration: none; }
+        a.pen { display: inline-block; margin-left: 6px; color: GrayText; vertical-align: -2px; opacity: 0.7; }
+        a.pen:hover { color: LinkText; opacity: 1; }
         a.chip { font-size: 11px; padding: 0 6px; border-radius: 5px; background: color-mix(in srgb, LinkText 14%, transparent); margin-left: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
         p.tl { display: grid; grid-template-columns: 64px 1fr; gap: 8px; padding: 3px 8px; margin: 0 -8px; border-radius: 6px; }
         p.tl:target { background: color-mix(in srgb, LinkText 16%, transparent); }

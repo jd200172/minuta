@@ -4,6 +4,8 @@ Status: aceita
 Data: 2026-09-30
 Complementa: `docs/decisions/0004-two-channel-capture.md`.
 
+Nota (2026-10-01): o usuário pode informar nomes à mão, só na própria ata (ADR 0016).
+
 ## Contexto
 
 O app atende reuniões virtuais. Nelas, o canal do microfone contém só o usuário, e os demais participantes chegam pelo áudio do sistema. Tratar todos os demais como um bloco único mistura falantes e impede atribuir decisões e responsáveis.

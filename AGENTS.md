@@ -33,12 +33,12 @@ Fora do MVP:
 - Interface (Human Interface Guidelines da Apple para macOS): componentes nativos (SwiftUI e AppKit), SF Symbols, cores e tipografia do sistema, modo escuro e acessibilidade sem trabalho extra, menus, janelas e avisos no padrão do macOS. Antes de criar ou alterar uma tela, conferir a diretriz correspondente. Desvio só com justificativa registrada em ADR (desvio vigente: fundo colorido do botão da barra de menus, ADR 0014).
 - Idiomas: código (identificadores e comentários) em inglês; interface do app e ata em pt-BR.
 - Rastreabilidade (ADR 0005): decisões, ações e pontos em aberto citam IDs de segmento da transcrição. O LLM devolve JSON com os IDs; o app monta o Markdown e valida que todo ID existe. Campo sem evidência vira "não definido". Prazo relativo só vira data com a data da reunião no prompt.
-- Participantes (ADR 0006): o canal do microfone usa o nome do campo "Seu nome" (vazio: "Eu"); os demais vêm da diarização do canal do sistema como "Participante N". Nunca agrupar participantes num rótulo coletivo ("Outros" etc.). Nome só substitui o rótulo com evidência citada na transcrição, e a ata marca o nome como inferido.
+- Participantes (ADR 0006): o canal do microfone usa o nome do campo "Seu nome" (vazio: "Eu"); os demais vêm da diarização do canal do sistema como "Participante N". Nunca agrupar participantes num rótulo coletivo ("Outros" etc.). Nome só substitui o rótulo com evidência citada na transcrição, e a ata marca o nome como inferido. Nome informado pelo usuário no lápis de cada participante da janela de leitura (ADR 0016) vale como evidência só naquela ata, substitui o rótulo em todo o texto, é marcado "nome informado por você" e não pode repetir o de outra voz da mesma ata.
 - Estado do job (início, duração, status) é gravado em disco ao lado do áudio.
 
 ## Stack
 
-(fontes: ADRs 0001 a 0015 e `Package.swift`)
+(fontes: ADRs 0001 a 0016 e `Package.swift`)
 - App nativo em Swift 6.4, SwiftPM, sem dependências de terceiros, macOS 13+ (ADR 0009). `NSStatusItem` com `NSMenu` para a bandeja (ADR 0014) e uma janela AppKit com conteúdo SwiftUI para as configurações.
 - Captura: ScreenCaptureKit (áudio do sistema) e `AVAudioEngine` (microfone), cada canal em um arquivo mono AAC `.m4a` de 16 kHz (ADRs 0004 e 0009).
 - STT: Gemini 3.5 Transcribe, Files API e Interactions API por `URLSession`, diarização só no canal do sistema (ADR 0008; verificações pendentes: pt-BR, 3 ou mais falantes, termos de dados).
@@ -59,7 +59,7 @@ Fora do MVP:
 
 ## Convenções de código
 
-- Um arquivo por responsabilidade em `Sources/Minuta/`: `Recorder` (captura), `Providers` (protocolos `Transcriber` e `Minuter` e escolha pelo `.env`), `Env` (leitura do `.env`), `Gemini` (STT e montagem da transcrição), `Claude` (transporte da ata), `MinutesPrompt` (prompt, schema e decodificação neutros), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (estados e fluxo), `Alerts` (avisos), `CaptureTest` (teste de captura), `CLI` (modo `--process`), `StatusItemController` (botão e menu da bandeja), `AppDelegate` e `main.swift` (entrada), `AtaLibrary` (lista de atas e nomes de arquivo), `AtasView` (janela de atas), `AtaViewer` e `MarkdownHTML` (leitura da ata), `ClosableWindow` (⌘W e Esc) e `SettingsView` (janela de configurações em página única: chaves, permissões e preferências).
+- Um arquivo por responsabilidade em `Sources/Minuta/`: `Recorder` (captura), `Providers` (protocolos `Transcriber` e `Minuter` e escolha pelo `.env`), `Env` (leitura do `.env`), `Gemini` (STT e montagem da transcrição), `Claude` (transporte da ata), `MinutesPrompt` (prompt, schema e decodificação neutros), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (estados e fluxo), `Alerts` (avisos), `CaptureTest` (teste de captura), `CLI` (modo `--process`), `StatusItemController` (botão e menu da bandeja), `AppDelegate` e `main.swift` (entrada), `AtaLibrary` (lista de atas e nomes de arquivo), `AtasView` (janela de atas), `AtaViewer` e `MarkdownHTML` (leitura da ata), `ParticipantEditor` e `ParticipantRename` (nomes dos participantes, renomeados no lugar pelo lápis da lista), `ClosableWindow` (⌘W e Esc) e `SettingsView` (janela de configurações em página única: chaves, permissões e preferências).
 - Sem dependências de terceiros. Mudança de modo de linguagem Swift ou nova dependência exige ADR.
 - Formatador: `swift format` (do toolchain), configurado em `.swift-format` (4 espaços, 120 colunas). Rodar `swift format --in-place --recursive Sources Tests` antes de commitar; `swift format lint --recursive Sources Tests` só confere. Linter: nenhum por ora.
 
@@ -116,6 +116,7 @@ Instrução do usuário no chat > `AGENTS.md` > `.agents/STYLE.md` > skill. Em s
 - 2026-10-01: regra de interface: seguir as Human Interface Guidelines da Apple. Pedido do usuário.
 - 2026-10-01: ADR 0014. Estado do app pela cor de fundo do botão na barra de menus, com ícone fixo; desvio das HIG aceito. Pedido e confirmação do usuário.
 - 2026-10-01: ADR 0015. Janela de atas com lista, leitura e Lixeira; nome do arquivo com título; sem ata para transcrição sem fala. Escopo de interface ampliado a pedido do usuário.
+- 2026-10-01: ADR 0016. Nomes de participantes informados pelo usuário, só na própria ata. Regra de Participantes ampliada a pedido do usuário.
 
 ## Sincronização
 

@@ -129,4 +129,26 @@ final class MarkdownHTMLTests: XCTestCase {
         XCTAssertEqual(doc.title, "Teste")
         XCTAssertTrue(doc.html.contains("13 s"))
     }
+
+    func testParticipantsGetPencilsOnlyWhenRenamable() {
+        let md = """
+            # T
+
+            ## Participantes
+            - Juliano (canal do microfone)
+            - Participante 1 (sem nome identificado)
+            - Marina (nome informado por você)
+
+            ## Transcrição
+            <a id="t-000002"></a>**[00:00:02] Juliano:** Oi
+            <a id="t-000010"></a>**[00:00:10] Participante 1:** Olá
+            <a id="t-000020"></a>**[00:00:20] Marina:** Bom dia
+            """
+        XCTAssertFalse(MarkdownHTML.convert(md).html.contains("minuta://rename"))
+        let html = MarkdownHTML.convert(md, renamable: true).html
+        XCTAssertTrue(html.contains("<span id=\"sp-0\">Juliano (canal do microfone)</span>"))
+        XCTAssertTrue(html.contains("href=\"minuta://rename/1\""))
+        XCTAssertTrue(html.contains("<span id=\"sp-2\">Marina (nome informado por você)</span>"))
+        XCTAssertEqual(html.components(separatedBy: "minuta://rename/").count - 1, 3)
+    }
 }
