@@ -39,7 +39,7 @@ Ainda sem teste manual:
 - Tabela sem coluna de ações, com as gravações em andamento como linhas, ponto colorido na coluna Resumo, datas relativas, menu de contexto com o submenu Resumo, Return renomeia, duplo clique e ⌘O abrem, ⌘⌫ move para a Lixeira sem pergunta. Detalhes no ADR 0015. 57 testes passam.
 - Verificado no app instalado, com teclas enviadas direto ao processo do Minuta: ordenação por clique no cabeçalho, menu de contexto e submenu Resumo (visto e "(sugerido)"), Return abrindo o campo de renomear, Esc cancelando, ⌘O abrindo, ⌘W fechando, duplo clique abrindo e ⌘⌫ movendo os dois arquivos para a Lixeira.
 - Sem verificar: linhas de gravação em andamento (só teste unitário), "Tentar de novo" e "Descartar…", gerar um modelo novo pelo submenu, a janela de leitura acompanhando um renomear feito na lista e o menu de uma ata com problema.
-- Limite conhecido: o cabeçalho da `Table` é o do sistema e pode não ser idêntico ao do Finder. Se incomodar, a alternativa é uma `NSTableView` do AppKit.
+- Cabeçalho: o da `Table` é o do sistema. Tentei ajustar fonte e cor pelo AppKit (trocando a célula de cabeçalho de cada coluna) e não teve efeito, porque o SwiftUI desenha o cabeçalho por conta própria; o código foi removido. Mudar o estilo exige uma `NSTableView` do AppKit (reescrita da janela). Ícone do título removido a pedido do usuário.
 
 ## Descobertas
 <!-- fato aprendido durante o trabalho que muda o próximo passo -->

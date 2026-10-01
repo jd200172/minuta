@@ -162,8 +162,7 @@ struct AtasView: View {
     }
 
     @ViewBuilder private func titleCell(_ row: ListRow) -> some View {
-        HStack(spacing: 7) {
-            icon(row)
+        HStack(spacing: 0) {
             if renamingID == row.id {
                 TextField("Título da reunião", text: $draft)
                     .textFieldStyle(.roundedBorder)
@@ -177,14 +176,6 @@ struct AtasView: View {
                 Text(row.title).lineLimit(1).truncationMode(.tail)
                     .foregroundStyle(isJob(row) || row.title == MinutesRenderer.untitled ? .secondary : .primary)
             }
-        }
-    }
-
-    @ViewBuilder private func icon(_ row: ListRow) -> some View {
-        if case .ata(let ata) = row.kind, ata.problem != nil {
-            Image(systemName: "exclamationmark.triangle").foregroundStyle(.red)
-        } else {
-            Image(systemName: "doc.text").foregroundStyle(.secondary)
         }
     }
 
