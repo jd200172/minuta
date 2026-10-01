@@ -91,20 +91,19 @@ struct AtasView: View {
             TableColumn("Data", value: \.start) { ata in
                 Text(Fmt.listDate(ata.start)).foregroundStyle(.secondary)
             }
-            .width(min: 110, ideal: 124, max: 150)
+            .width(124)
             TableColumn("Título", value: \.title) { ata in
                 titleCell(ata)
             }
-            .width(min: 160, ideal: 280)
+            .width(min: 140)
             TableColumn("Resumo", value: \.summaryLabel) { ata in
                 SummaryCell(ata: ata, generating: summaries.running[ata.url])
             }
-            .width(min: 110, ideal: 140, max: 190)
+            .width(min: 100, ideal: 130, max: 170)
             TableColumn("Duração", value: \.durationSeconds) { ata in
                 Text(ata.duration.map(Fmt.shortDuration) ?? "—").foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .width(min: 56, ideal: 64, max: 80)
+            .width(64)
             TableColumn("") { ata in
                 actions(ata)
             }

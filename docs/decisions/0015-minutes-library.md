@@ -14,6 +14,12 @@ As atas ficavam numa pasta aberta pelo Finder. O menu tinha "Abrir pasta de atas
 
 **Janela "Atas…".** Substitui "Abrir pasta de atas". Lista ordenada pela data da reunião, da mais recente para a mais antiga, e depois pelo título. Cada ata tem a data, o título, a duração e os botões Abrir e Apagar. No topo, a seção "Em andamento" mostra as gravações pendentes: em processamento (spinner e etapa), com falha (causa e botões Tentar de novo e Descartar) ou interrompidas. Sem atas e sem pendentes, um texto convida a gravar.
 
+**Tabela de atas (atualização de 2026-10-01).** A lista virou uma `Table` do SwiftUI, com cabeçalhos e ordenação por clique: Data (padrão: mais recente primeiro), Título, Resumo (modelo, "Sem resumo", "Gerando resumo…" ou o problema do arquivo) e Duração, mais uma coluna sem título com os ícones. A ordem escolhida vale só durante a execução do app. As gravações em andamento ficam num bloco acima da tabela, sem cabeçalhos de coluna, porque a `Table` do macOS 13 não tem seções.
+- Abrir: duplo clique ou Return na linha selecionada, ou "Abrir" no menu de contexto. O botão "Abrir" saiu.
+- Ícones, com dica e rótulo de acessibilidade: lápis (renomear), lixeira (Mover para a Lixeira) e, em arquivo que não abre, pasta (Mostrar no Finder). Nas gravações em andamento, `arrow.clockwise` (Tentar de novo) e lixeira (Descartar).
+- Renomear no lugar: o lápis troca o título da linha por um campo de texto. Return ou clicar fora salva, Esc cancela, até 120 caracteres, título vazio volta ao nome só com o horário. Vale também para as atas anteriores ao ADR 0017, onde só a linha `# Título` e o nome do arquivo mudam. O lápis fica desabilitado enquanto o resumo da ata é gerado, e não aparece em arquivo com problema. Uma janela de leitura aberta acompanha o novo nome.
+- Menu de contexto: Abrir, Renomear, Mostrar no Finder e Mover para a Lixeira.
+
 **Menu da barra.** Entre os comandos de gravação e Configurações: "Atas recentes" com as 5 últimas (título e data; clicar abre a ata) e "Atas…".
 
 **Leitura.** "Abrir" mostra a ata numa janela própria, como página: título, data e duração, seções, tabela de ações, horários como links para o trecho da transcrição (o trecho fica destacado) e botão "Mostrar no Finder". O Markdown é convertido em HTML por um conversor mínimo, que só entende o formato que o `MinutesRenderer` escreve. Todo texto é escapado, e a `WKWebView` roda sem JavaScript, com política de conteúdo restrita e sem navegação além dos âncoras do próprio documento.
