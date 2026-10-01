@@ -24,8 +24,9 @@ enum CLI {
         let outURL = URL(fileURLWithPath: out)
         Config.outputOverride = outURL
         let date = value(after: "--date").flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
-        let job = Job(id: Fmt.jobID(date), startedAt: date, durationSeconds: 0, stage: .transcribing,
-                      micOffset: 0, systemOffset: 0, lastError: nil)
+        let job = Job(
+            id: Fmt.jobID(date), startedAt: date, durationSeconds: 0, stage: .transcribing,
+            micOffset: 0, systemOffset: 0, lastError: nil)
         do {
             try FileManager.default.createDirectory(at: outURL, withIntermediateDirectories: true)
             print("Transcrevendo...")

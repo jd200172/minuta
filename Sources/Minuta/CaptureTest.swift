@@ -29,7 +29,8 @@ enum CaptureTest {
 
     private static func peak(of url: URL) -> Float {
         guard let file = try? AVAudioFile(forReading: url),
-              let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: 16384) else { return 0 }
+            let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: 16384)
+        else { return 0 }
         var peak: Float = 0
         while file.framePosition < file.length {
             do { try file.read(into: buffer) } catch { break }

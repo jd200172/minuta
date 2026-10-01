@@ -31,7 +31,7 @@ struct GeminiTranscriber: Transcriber {
             "model": model,
             "input": [["type": "audio", "uri": uploaded.uri, "mime_type": "audio/m4a"]],
             "generation_config": [
-                "transcription_config": ["language_codes": ["pt-BR"], "mode": mode],
+                "transcription_config": ["language_codes": ["pt-BR"], "mode": mode]
             ],
         ]
         var request = URLRequest(url: URL(string: "\(base)/v1beta/interactions")!)
@@ -58,8 +58,9 @@ struct GeminiTranscriber: Transcriber {
         let (startData, startResponse) = try await session.data(for: start)
         try httpCheck(startResponse, startData, provider: .google)
         guard let http = startResponse as? HTTPURLResponse,
-              let location = http.value(forHTTPHeaderField: "X-Goog-Upload-URL"),
-              let uploadURL = URL(string: location) else {
+            let location = http.value(forHTTPHeaderField: "X-Goog-Upload-URL"),
+            let uploadURL = URL(string: location)
+        else {
             throw AppError("Google (envio do áudio): URL de upload ausente.")
         }
 
@@ -71,8 +72,9 @@ struct GeminiTranscriber: Transcriber {
         let (data, response) = try await session.upload(for: send, from: payload)
         try httpCheck(response, data, provider: .google)
         guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let info = root["file"] as? [String: Any],
-              let uri = info["uri"] as? String, let name = info["name"] as? String else {
+            let info = root["file"] as? [String: Any],
+            let uri = info["uri"] as? String, let name = info["name"] as? String
+        else {
             throw AppError("Google (envio do áudio): resposta sem URI do arquivo.")
         }
         return (uri, name)
@@ -100,11 +102,12 @@ struct GeminiTranscriber: Transcriber {
                 text += (content["text"] as? String) ?? ""
                 for note in (content["annotations"] as? [[String: Any]]) ?? []
                 where (note["type"] as? String) == "word_info" {
-                    words.append(Word(
-                        text: (note["text"] as? String) ?? "",
-                        speaker: note["speaker"] as? String,
-                        start: seconds(note["start_offset"]),
-                        end: seconds(note["end_offset"])))
+                    words.append(
+                        Word(
+                            text: (note["text"] as? String) ?? "",
+                            speaker: note["speaker"] as? String,
+                            start: seconds(note["start_offset"]),
+                            end: seconds(note["end_offset"])))
                 }
             }
         }
@@ -121,8 +124,10 @@ struct GeminiTranscriber: Transcriber {
 enum TranscriptBuilder {
     /// Groups words into utterances and labels the speakers.
     /// The microphone channel carries the user; the system channel is labelled "Participante N".
-    static func build(mic: (text: String, words: [Word]), system: (text: String, words: [Word]),
-                      micOffset: Double, systemOffset: Double) -> Transcript {
+    static func build(
+        mic: (text: String, words: [Word]), system: (text: String, words: [Word]),
+        micOffset: Double, systemOffset: Double
+    ) -> Transcript {
         var raw: [(start: Double, speaker: String, text: String)] = []
         for u in utterances(mic, offset: micOffset) { raw.append((u.start, Config.userName, u.text)) }
 
@@ -139,14 +144,16 @@ enum TranscriptBuilder {
             var second = Int(item.start)
             while used.contains(second) { second += 1 }
             used.insert(second)
-            return Segment(id: String(format: "t-%06d", second), speaker: item.speaker,
-                           start: item.start, text: item.text)
+            return Segment(
+                id: String(format: "t-%06d", second), speaker: item.speaker,
+                start: item.start, text: item.text)
         }
         return Transcript(segments: segments)
     }
 
     private static func utterances(_ result: (text: String, words: [Word]), offset: Double)
-        -> [(start: Double, speaker: String?, text: String)] {
+        -> [(start: Double, speaker: String?, text: String)]
+    {
         if result.words.isEmpty {
             let text = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
             return text.isEmpty ? [] : [(offset, nil, text)]

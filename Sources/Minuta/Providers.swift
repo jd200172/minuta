@@ -18,8 +18,9 @@ enum Providers {
         let name = Env.value("TRANSCRIBER") ?? Config.defaultTranscriber
         switch name {
         case "gemini":
-            return GeminiTranscriber(apiKey: try Env.key(.google),
-                                     model: Env.value("TRANSCRIBER_MODEL") ?? Config.defaultTranscriberModel)
+            return GeminiTranscriber(
+                apiKey: try Env.key(.google),
+                model: Env.value("TRANSCRIBER_MODEL") ?? Config.defaultTranscriberModel)
         default:
             throw AppError("TRANSCRIBER=\(name) não é um provedor conhecido. Use: gemini.", fix: .keys)
         }
@@ -29,8 +30,9 @@ enum Providers {
         let name = Env.value("MINUTER") ?? Config.defaultMinuter
         switch name {
         case "claude":
-            return ClaudeMinuter(apiKey: try Env.key(.anthropic),
-                                 model: Env.value("MINUTER_MODEL") ?? Config.defaultMinuterModel)
+            return ClaudeMinuter(
+                apiKey: try Env.key(.anthropic),
+                model: Env.value("MINUTER_MODEL") ?? Config.defaultMinuterModel)
         default:
             throw AppError("MINUTER=\(name) não é um provedor conhecido. Use: claude.", fix: .keys)
         }

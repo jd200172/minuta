@@ -116,7 +116,8 @@ struct GeneralPane: View {
 
     private func refreshLogin() {
         launchAtLogin = SMAppService.mainApp.status == .enabled
-        loginMessage = SMAppService.mainApp.status == .requiresApproval
+        loginMessage =
+            SMAppService.mainApp.status == .requiresApproval
             ? "Aprove o minuta em Ajustes do Sistema > Geral > Itens de Início." : nil
     }
 
@@ -157,8 +158,9 @@ struct PermissionsPane: View {
                         if !hasMic {
                             Label("Nenhum microfone conectado", systemImage: "mic.slash").foregroundStyle(.secondary)
                         } else {
-                            statusLabel(micStatus == .authorized ? "Permitido" : "Não permitido",
-                                        ok: micStatus == .authorized)
+                            statusLabel(
+                                micStatus == .authorized ? "Permitido" : "Não permitido",
+                                ok: micStatus == .authorized)
                             if micStatus != .authorized { Button("Permitir") { requestMic() } }
                         }
                     }
@@ -246,7 +248,9 @@ struct PermissionsPane: View {
         Task {
             do {
                 let result = try await CaptureTest.run()
-                let mic = !result.hasMicrophone ? "microfone: nenhum encontrado"
+                let mic =
+                    !result.hasMicrophone
+                    ? "microfone: nenhum encontrado"
                     : (result.micHasSignal ? "microfone: som detectado" : "microfone: silêncio")
                 let system = result.systemHasSignal ? "áudio do sistema: som detectado" : "áudio do sistema: silêncio"
                 testMessage = "\(mic); \(system)"

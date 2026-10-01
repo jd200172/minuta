@@ -46,12 +46,13 @@ Fora do MVP:
 
 ## Comandos
 
-(fontes: `Package.swift`, `scripts/build-app.sh`, `tools/synthetic-meeting/build.py`)
+(fontes: `Package.swift`, `.swift-format`, `scripts/build-app.sh`, `tools/synthetic-meeting/build.py`)
 - `./scripts/setup-signing.sh` (uma vez) cria a identidade de assinatura local "Minuta Dev" num chaveiro separado. Mantém as permissões do macOS entre builds.
 - `./scripts/build-app.sh` compila em release e monta `build/Minuta.app`, assinado com essa identidade.
 - `./scripts/install.sh` compila, instala em `/Applications/Minuta.app` e abre. É o caminho normal de uso.
 - `swift scripts/make-icon.swift` regenera `Resources/AppIcon.icns`.
 - `build/Minuta.app/Contents/MacOS/Minuta --process <pasta com mic.m4a e system.m4a> --out <pasta> [--date ISO8601]` roda transcrição e ata sobre áudios existentes, com as chaves do `.env`, e grava `transcript.json` e a ata em `--out`. Não altera a pasta configurada no app. Serve para os testes 2 a 5 do plano de validação.
+- `swift format --in-place --recursive Sources Tests` formata o código (ver Convenções).
 - `swift test` roda os testes do montador de transcrição e do gerador de Markdown. Não há teste automatizado de captura nem das chamadas de rede.
 - `python3 tools/synthetic-meeting/build.py` gera em `tools/synthetic-meeting/out/` o áudio sintético da reunião e o `ground-truth.json`. Requer macOS (`say`, `afconvert`) e ffmpeg com libopus. Resultado esperado em `tools/synthetic-meeting/expected.md`.
 
@@ -59,7 +60,7 @@ Fora do MVP:
 
 - Um arquivo por responsabilidade em `Sources/Minuta/`: `Recorder` (captura), `Providers` (protocolos `Transcriber` e `Minuter` e escolha pelo `.env`), `Env` (leitura do `.env`), `Gemini` (STT e montagem da transcrição), `Claude` (transporte da ata), `MinutesPrompt` (prompt, schema e decodificação neutros), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (estados e fluxo), `Alerts` (avisos), `CaptureTest` (teste de captura), `CLI` (modo `--process`), `MenuContent` e `SettingsView` (janela de configurações em abas Geral e Permissões).
 - Sem dependências de terceiros. Mudança de modo de linguagem Swift ou nova dependência exige ADR.
-- Formatador e linter: `TODO`.
+- Formatador: `swift format` (do toolchain), configurado em `.swift-format` (4 espaços, 120 colunas). Rodar `swift format --in-place --recursive Sources Tests` antes de commitar; `swift format lint --recursive Sources Tests` só confere. Linter: nenhum por ora.
 
 ## Arquitetura
 

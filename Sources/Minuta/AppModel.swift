@@ -50,15 +50,17 @@ final class AppModel: ObservableObject {
         }
         Task {
             let now = Date()
-            let job = Job(id: Fmt.jobID(now), startedAt: now, durationSeconds: 0, stage: .recording,
-                          micOffset: 0, systemOffset: 0, lastError: nil)
+            let job = Job(
+                id: Fmt.jobID(now), startedAt: now, durationSeconds: 0, stage: .recording,
+                micOffset: 0, systemOffset: 0, lastError: nil)
             do {
                 try await recorder.ensurePermissions()
                 try store.makeDir(job.id)
                 store.save(job)
                 let dir = store.dir(job.id)
-                try await recorder.start(micURL: dir.appendingPathComponent("mic.m4a"),
-                                         systemURL: dir.appendingPathComponent("system.m4a"))
+                try await recorder.start(
+                    micURL: dir.appendingPathComponent("mic.m4a"),
+                    systemURL: dir.appendingPathComponent("system.m4a"))
                 currentJob = job
                 recordingStart = now
                 elapsedBefore = 0
@@ -144,7 +146,9 @@ final class AppModel: ObservableObject {
         let now = Date()
         refreshClock(now)
         if elapsed(now) >= Config.maxRecordingSeconds {
-            Notifier.post("Gravação encerrada", "O limite de \(Int(Config.maxRecordingSeconds / 60)) minutos foi atingido. Gerando a ata.")
+            Notifier.post(
+                "Gravação encerrada",
+                "O limite de \(Int(Config.maxRecordingSeconds / 60)) minutos foi atingido. Gerando a ata.")
             endRecording()
         } else if let pausedAt, now.timeIntervalSince(pausedAt) >= nextReminder {
             nextReminder += Config.pauseReminderSeconds
@@ -192,10 +196,13 @@ final class AppModel: ObservableObject {
 
     private func askWhatToDo(with job: Job, after error: AppError) {
         let kept = job.stage == .transcribing ? "O áudio ficou guardado." : "A transcrição ficou guardada."
-        let title = job.stage == .transcribing ? "Não foi possível transcrever a gravação"
-                                               : "Não foi possível gerar a ata"
-        let choice = Alerts.show(title: title, message: "\(error.message)\n\n\(kept)",
-                                 buttons: ["Tentar de novo", "Depois", "Descartar"], destructive: 2)
+        let title =
+            job.stage == .transcribing
+            ? "Não foi possível transcrever a gravação"
+            : "Não foi possível gerar a ata"
+        let choice = Alerts.show(
+            title: title, message: "\(error.message)\n\n\(kept)",
+            buttons: ["Tentar de novo", "Depois", "Descartar"], destructive: 2)
         switch choice {
         case 0: run(job)
         case 2: store.delete(job.id)
@@ -244,7 +251,8 @@ enum Pipeline {
         let stt = try Providers.transcriber()
         let micURL = dir.appendingPathComponent("mic.m4a")
         let noMic: (text: String, words: [Word]) = ("", [])
-        async let mic = FileManager.default.fileExists(atPath: micURL.path)
+        async let mic =
+            FileManager.default.fileExists(atPath: micURL.path)
             ? stt.transcribe(file: micURL, diarize: false) : noMic
         async let system = stt.transcribe(file: dir.appendingPathComponent("system.m4a"), diarize: true)
         let transcript = TranscriptBuilder.build(

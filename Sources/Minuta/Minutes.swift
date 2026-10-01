@@ -49,7 +49,9 @@ enum MinutesRenderer {
         }
 
         out += "\n## Decisões\n"
-        out += data.decisions.isEmpty ? "Nenhuma decisão registrada.\n"
+        out +=
+            data.decisions.isEmpty
+            ? "Nenhuma decisão registrada.\n"
             : data.decisions.map { "- \($0.text) \(links($0.sources))\n" }.joined()
 
         out += "\n## Itens de ação\n"
@@ -63,7 +65,9 @@ enum MinutesRenderer {
         }
 
         out += "\n## Pontos em aberto\n"
-        out += data.openPoints.isEmpty ? "Nenhum ponto em aberto.\n"
+        out +=
+            data.openPoints.isEmpty
+            ? "Nenhum ponto em aberto.\n"
             : data.openPoints.map { "- \($0.text) \(links($0.sources))\n" }.joined()
 
         out += "\n## Resumo por tema\n"

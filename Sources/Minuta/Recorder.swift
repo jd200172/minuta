@@ -21,8 +21,16 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
 
     /// While true, incoming audio is dropped, so both files hold only the recorded time.
     var paused: Bool {
-        get { pauseLock.lock(); defer { pauseLock.unlock() }; return pausedFlag }
-        set { pauseLock.lock(); defer { pauseLock.unlock() }; pausedFlag = newValue }
+        get {
+            pauseLock.lock()
+            defer { pauseLock.unlock() }
+            return pausedFlag
+        }
+        set {
+            pauseLock.lock()
+            defer { pauseLock.unlock() }
+            pausedFlag = newValue
+        }
     }
 
     /// True when this recording has a microphone track. A Mac without an input device records the system audio only.
@@ -40,7 +48,9 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
         }
         if !CGPreflightScreenCaptureAccess() {
             CGRequestScreenCaptureAccess()
-            throw AppError("Permita a Gravação de Tela e Áudio do Sistema em Configurações > Permissões e use Reabrir o minuta.", fix: .settings)
+            throw AppError(
+                "Permita a Gravação de Tela e Áudio do Sistema em Configurações > Permissões e use Reabrir o minuta.",
+                fix: .settings)
         }
     }
 
@@ -132,7 +142,8 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
         guard type == .audio, !paused, sampleBuffer.isValid, let file = systemFile,
-              let buffer = pcmBuffer(from: sampleBuffer) else { return }
+            let buffer = pcmBuffer(from: sampleBuffer)
+        else { return }
         if systemStart == nil {
             systemStart = CMTimeGetSeconds(sampleBuffer.presentationTimeStamp)
         }
@@ -170,7 +181,8 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
 
     private func pcmBuffer(from sampleBuffer: CMSampleBuffer) -> AVAudioPCMBuffer? {
         guard let description = CMSampleBufferGetFormatDescription(sampleBuffer),
-              let asbd = CMAudioFormatDescriptionGetStreamBasicDescription(description) else { return nil }
+            let asbd = CMAudioFormatDescriptionGetStreamBasicDescription(description)
+        else { return nil }
         var streamDescription = asbd.pointee
         guard let format = AVAudioFormat(streamDescription: &streamDescription) else { return nil }
         let frames = AVAudioFrameCount(CMSampleBufferGetNumSamples(sampleBuffer))

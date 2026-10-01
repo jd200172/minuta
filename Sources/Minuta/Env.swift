@@ -73,8 +73,11 @@ enum Env {
         let google = LegacyKeychain.get("google-api-key") ?? ""
         let anthropic = LegacyKeychain.get("anthropic-api-key") ?? ""
         let text = template(google: google, anthropic: anthropic)
-        guard fm.createFile(atPath: file.path, contents: Data(text.utf8),
-                            attributes: [.posixPermissions: 0o600]) else { return }
+        guard
+            fm.createFile(
+                atPath: file.path, contents: Data(text.utf8),
+                attributes: [.posixPermissions: 0o600])
+        else { return }
         // Only remove the Keychain items once the file holds their values.
         if !google.isEmpty { LegacyKeychain.remove("google-api-key") }
         if !anthropic.isEmpty { LegacyKeychain.remove("anthropic-api-key") }
@@ -86,9 +89,11 @@ private enum LegacyKeychain {
     private static let service = "app.minuta.Minuta.keys"
 
     private static func query(_ account: String) -> [String: Any] {
-        [kSecClass as String: kSecClassGenericPassword,
-         kSecAttrService as String: service,
-         kSecAttrAccount as String: account]
+        [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+        ]
     }
 
     static func get(_ account: String) -> String? {
@@ -97,7 +102,8 @@ private enum LegacyKeychain {
         request[kSecMatchLimit as String] = kSecMatchLimitOne
         var item: CFTypeRef?
         guard SecItemCopyMatching(request as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data else { return nil }
+            let data = item as? Data
+        else { return nil }
         return String(data: data, encoding: .utf8)
     }
 

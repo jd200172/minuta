@@ -7,7 +7,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard AppModel.shared.recordingStart != nil else { return .terminateNow }
             let choice = Alerts.show(
                 title: "Sair e perder a gravação?",
-                message: "Há uma gravação em andamento. Ao sair, ela será perdida. Para guardá-la, encerre a gravação pelo menu.",
+                message:
+                    "Há uma gravação em andamento. Ao sair, ela será perdida. Para guardá-la, encerre a gravação pelo menu.",
                 buttons: ["Continuar no minuta", "Sair e perder"], destructive: 1)
             return choice == 1 ? .terminateNow : .terminateCancel
         }

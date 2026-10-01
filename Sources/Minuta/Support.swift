@@ -21,7 +21,7 @@ struct AppError: LocalizedError {
         if let error = error as? URLError {
             switch error.code {
             case .notConnectedToInternet, .networkConnectionLost, .cannotFindHost,
-                 .cannotConnectToHost, .dnsLookupFailed, .internationalRoamingOff:
+                .cannotConnectToHost, .dnsLookupFailed, .internationalRoamingOff:
                 return AppError("Sem conexão com a internet.")
             case .timedOut:
                 return AppError("A conexão demorou demais. Tente de novo.")
@@ -35,7 +35,8 @@ struct AppError: LocalizedError {
         let name = provider.name
         switch status {
         case 401, 403:
-            return AppError("\(name): a chave foi recusada. Confira \(provider.keyName) no arquivo de chaves.", fix: .keys)
+            return AppError(
+                "\(name): a chave foi recusada. Confira \(provider.keyName) no arquivo de chaves.", fix: .keys)
         case 429:
             return AppError("\(name): limite de pedidos atingido. Aguarde um minuto e tente de novo.")
         case 413:
@@ -50,8 +51,9 @@ struct AppError: LocalizedError {
 
     private static func apiMessage(_ data: Data) -> String {
         guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let error = root["error"] as? [String: Any],
-              let message = error["message"] as? String else { return "" }
+            let error = root["error"] as? [String: Any],
+            let message = error["message"] as? String
+        else { return "" }
         return String(message.prefix(160))
     }
 }
