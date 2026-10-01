@@ -92,6 +92,18 @@ enum Config {
     }
 }
 
+enum AppVersion {
+    /// Version, build number (commit count) and commit that `scripts/build-app.sh` stamped into Info.plist.
+    static var text: String {
+        let info = Bundle.main.infoDictionary ?? [:]
+        let version = info["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info["CFBundleVersion"] as? String ?? "?"
+        var text = "Versão \(version) · build \(build)"
+        if let commit = info["MinutaCommit"] as? String { text += " · \(commit)" }
+        return text
+    }
+}
+
 enum Notifier {
     static func requestAuthorization() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert]) { _, _ in }

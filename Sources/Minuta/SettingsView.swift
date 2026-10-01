@@ -55,6 +55,26 @@ private final class PreferencesTabController: NSTabViewController {
 
 private let paneWidth: CGFloat = 640
 
+/// Puts the app version at the bottom of every settings pane, so it is always clear which build is running.
+private struct VersionFooter: ViewModifier {
+    let height: CGFloat
+
+    func body(content: Content) -> some View {
+        VStack(spacing: 0) {
+            content
+            Text(AppVersion.text)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.top, 4)
+                .padding(.bottom, 12)
+        }
+        .frame(width: paneWidth, height: height)
+    }
+}
+
 private func statusLabel(_ text: String, ok: Bool?) -> some View {
     Group {
         switch ok {
@@ -110,7 +130,7 @@ struct GeneralPane: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: paneWidth, height: 340)
+        .modifier(VersionFooter(height: 372))
         .onAppear { refreshLogin() }
     }
 
@@ -195,7 +215,7 @@ struct PermissionsPane: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: paneWidth, height: 360)
+        .modifier(VersionFooter(height: 392))
         .onAppear { refresh() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             refresh()

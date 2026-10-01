@@ -48,7 +48,7 @@ Fora do MVP:
 
 (fontes: `Package.swift`, `.swift-format`, `scripts/build-app.sh`, `tools/synthetic-meeting/build.py`)
 - `./scripts/setup-signing.sh` (uma vez) cria a identidade de assinatura local "Minuta Dev" num chaveiro separado. Mantém as permissões do macOS entre builds.
-- `./scripts/build-app.sh` compila em release e monta `build/Minuta.app`, assinado com essa identidade.
+- `./scripts/build-app.sh` compila em release e monta `build/Minuta.app`, assinado com essa identidade. Grava no Info.plist o número de build (contagem de commits) e o hash do commit, com `-dirty` se houver alterações sem commit; a versão aparece no rodapé das configurações.
 - `./scripts/install.sh` compila, instala em `/Applications/Minuta.app` e abre. É o caminho normal de uso.
 - `swift scripts/make-icon.swift` regenera `Resources/AppIcon.icns`.
 - `build/Minuta.app/Contents/MacOS/Minuta --process <pasta com mic.m4a e system.m4a> --out <pasta> [--date ISO8601]` roda transcrição e ata sobre áudios existentes, com as chaves do `.env`, e grava `transcript.json` e a ata em `--out`. Não altera a pasta configurada no app. Serve para os testes 2 a 5 do plano de validação.

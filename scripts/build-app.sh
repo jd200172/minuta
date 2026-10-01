@@ -7,6 +7,11 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build/release/Minuta "$APP/Contents/MacOS/Minuta"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+# Build number = commit count; MinutaCommit = short hash, with -dirty when there are uncommitted changes.
+/usr/libexec/PlistBuddy \
+  -c "Set :CFBundleVersion $(git rev-list --count HEAD)" \
+  -c "Add :MinutaCommit string $(git describe --always --dirty)" \
+  "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
 KC="$HOME/Library/Keychains/minuta-dev.keychain-db"
