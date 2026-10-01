@@ -152,3 +152,46 @@ final class MarkdownHTMLTests: XCTestCase {
         XCTAssertEqual(html.components(separatedBy: "minuta://rename/").count - 1, 3)
     }
 }
+
+final class ModelChipsTests: XCTestCase {
+    private let page =
+        "---\ninicio: 2026-09-30T14:02:00-03:00\nduracao_segundos: 60\nmodelo: decisao\n---\n\n# Título & <b>\n\n## Resumo\nTexto.\n"
+
+    private func controls(generating: SummaryModel? = nil, redo: Bool = true) -> MarkdownHTML.Controls {
+        MarkdownHTML.Controls(
+            chips: SummaryModel.allCases.map {
+                .init(model: $0, selected: $0 == .decisao, has: $0 == .decisao || $0 == .geral)
+            },
+            generating: generating, hint: "Sugerido: Decisão. <motivo>", canRedo: redo)
+    }
+
+    func testChipsLinkToModelsAndMarkTheOnesWithSummary() {
+        let html = MarkdownHTML.convert(page, controls: controls()).html
+        for model in SummaryModel.allCases { XCTAssertTrue(html.contains("href=\"minuta://model/\(model.rawValue)\"")) }
+        XCTAssertTrue(html.contains("class=\"mc on\" href=\"minuta://model/decisao\" aria-current=\"true\""))
+        XCTAssertEqual(html.components(separatedBy: "class=\"dt\"").count - 1, 2, "um ponto por modelo gerado")
+        XCTAssertTrue(html.contains("href=\"minuta://redo\""))
+        XCTAssertTrue(html.contains("href=\"minuta://title\""))
+        XCTAssertTrue(html.contains("<span id=\"ti\">Título &amp; &lt;b&gt;</span>"))
+        XCTAssertTrue(html.contains("Sugerido: Decisão. &lt;motivo&gt;"), "o texto da linha é escapado")
+        let order = [
+            html.range(of: "<h1>")!.lowerBound, html.range(of: "class=\"models\"")!.lowerBound,
+            html.range(of: "<h2>Resumo</h2>")!.lowerBound,
+        ]
+        XCTAssertEqual(order, order.sorted(), "os chips ficam entre o título e o resumo")
+    }
+
+    func testWhileGeneratingChipsAreNotLinks() {
+        let html = MarkdownHTML.convert(page, controls: controls(generating: .geral, redo: false)).html
+        XCTAssertFalse(html.contains("minuta://model/"))
+        XCTAssertFalse(html.contains("minuta://redo"))
+        XCTAssertTrue(html.contains("class=\"sp\""))
+        XCTAssertTrue(html.contains("mc off"))
+    }
+
+    func testWithoutControlsThereAreNoChipsOrTitlePencil() {
+        let html = MarkdownHTML.convert(page).html
+        XCTAssertFalse(html.contains("class=\"models\""))
+        XCTAssertFalse(html.contains("minuta://title"))
+    }
+}

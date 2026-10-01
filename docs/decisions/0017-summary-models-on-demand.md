@@ -64,10 +64,12 @@ Brainstorm e resolução de problemas formam um modelo só: a frequência de bra
 - Editar o título na janela de leitura regrava o frontmatter e renomeia só o principal. Isso traz para o MVP a renomeação do título, que o ADR 0015 deixava para depois.
 
 **Interface (janela de leitura).**
-- Os cinco modelos formam um controle de segmentos "Resumo no modelo". O modelo escolhido fica marcado. Um ponto ao lado do nome indica que o modelo já tem resumo guardado. Esses modelos trocam na hora, e os demais geram ao clicar.
-- Uma linha abaixo do controle mostra "Sugerido: modelo" e a justificativa da classificação, mesmo depois de gerado. Sem sugestão, a linha avisa e o usuário escolhe ou usa Geral.
-- Durante a geração, o controle fica desabilitado, com um indicador de progresso e a linha "Gerando o resumo no modelo X…".
-- Um menu "…" ao lado do controle tem "Renomear reunião…" e "Refazer este resumo". Refazer não pede confirmação: é uma ação nomeada, e o resumo gerado de novo substitui só o daquele modelo.
+- Os cinco modelos são chips na própria página, logo abaixo do título e da data. O escolhido fica preenchido, e um ponto dentro da chip indica que o modelo já tem resumo guardado. Esses modelos trocam na hora, e os demais geram ao clicar. Chips e ícones são links internos (`minuta://model/<modelo>`, `minuta://redo`, `minuta://title`), tratados pelo app como o lápis dos participantes; a página continua sem JavaScript.
+- Desvio da HIG, a pedido do usuário: chips próprias no lugar de um controle de segmentos nativo, por coerência com os horários clicáveis e os lápis da página. A escolha foi entre três propostas (controle nativo, chips e menu pop-up) e as chips ganharam. Respiro: 14 px de preenchimento horizontal e 8 px vertical por chip, 8 px entre chips, 18 px entre a data e as chips e 30 px entre a linha de sugestão e a primeira seção.
+- Uma linha abaixo das chips mostra "Sugerido: modelo" e a justificativa da classificação, mesmo depois de gerado. Sem sugestão, a linha avisa e o usuário escolhe ou usa Geral.
+- Durante a geração, a chip do modelo mostra um indicador de progresso, as outras ficam esmaecidas e deixam de ser links, e a linha diz "Gerando o resumo no modelo X…".
+- O título tem um lápis ao lado, que renomeia no lugar (`TitleRename`): Return salva, Esc cancela, clicar fora salva. O título vazio volta ao nome só com o horário.
+- Um ícone de atualizar ao fim das chips refaz o resumo do modelo escolhido ("Refazer este resumo"). Não pede confirmação: é uma ação nomeada, e o resumo gerado de novo substitui só o daquele modelo.
 - Não há aviso de substituição ao trocar de modelo, porque nada se descarta.
 
 **Lista de atas.** Mostra o modelo escolhido numa etiqueta. Ignora os `.resumos.json`. Apagar uma ata move os dois arquivos para a Lixeira.

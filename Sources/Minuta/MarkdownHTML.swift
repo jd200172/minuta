@@ -9,9 +9,27 @@ enum MarkdownHTML {
         var html: String
     }
 
+    /// The summary-model chips under the title of a meeting written by the model flow (ADR 0017).
+    struct Controls {
+        struct Chip {
+            var model: SummaryModel
+            var selected: Bool
+            /// The model already has a summary in the sidecar.
+            var has: Bool
+        }
+        var chips: [Chip]
+        /// The model being generated: the chips stop being links and the chip shows a spinner.
+        var generating: SummaryModel?
+        /// One line under the chips: the suggestion, or what is happening.
+        var hint: String
+        var canRedo: Bool
+    }
+
     /// With `renamable`, each participant in the "Participantes" list gets an id on its text (`sp-N`, for the
     /// viewer to measure) and a pencil link (`minuta://rename/N`) that the viewer turns into an in-place rename.
-    static func convert(_ markdown: String, renamable: Bool = false) -> Document {
+    /// With `controls`, the title gets a pencil (`minuta://title`, text in `#ti`) and the model chips follow the
+    /// date line; chips and the redo icon are `minuta://model/<id>` and `minuta://redo` links.
+    static func convert(_ markdown: String, renamable: Bool = false, controls: Controls? = nil) -> Document {
         let speakers = renamable ? ParticipantEditor.speakers(in: markdown) : []
         var section = ""
         var lines = markdown.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
@@ -62,7 +80,11 @@ enum MarkdownHTML {
             } else if line.hasPrefix("# ") {
                 flush()
                 title = String(line.dropFirst(2))
-                body += "<h1>\(escape(title))</h1>\n\(subtitle(meta))"
+                let heading =
+                    controls == nil
+                    ? escape(title)
+                    : "<span id=\"ti\">\(escape(title))</span><a class=\"pen\" href=\"minuta://title\" title=\"Renomear\" aria-label=\"Renomear reunião\">\(pencil)</a>"
+                body += "<h1>\(heading)</h1>\n\(subtitle(meta))\(controls.map(controlsHTML) ?? "")"
             } else if line.hasPrefix("## ") {
                 flush()
                 section = String(line.dropFirst(3))
@@ -89,6 +111,9 @@ enum MarkdownHTML {
 
     private static let pencil =
         #"<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2.828 2.828 0 0 0-4-4L4 16v4"/><path d="M13.5 6.5l4 4"/></svg>"#
+
+    private static let refresh =
+        #"<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.9-3M4 5v4h4"/><path d="M4 13a8 8 0 0 0 14.9 3M20 19v-4h-4"/></svg>"#
 
     static func escape(_ text: String) -> String {
         text.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
@@ -154,6 +179,35 @@ enum MarkdownHTML {
         return html + "</table>\n"
     }
 
+    private static func controlsHTML(_ controls: Controls) -> String {
+        var html = "<div class=\"models\" role=\"group\" aria-label=\"Resumo no modelo\">\n"
+        for chip in controls.chips {
+            let busy = controls.generating == chip.model
+            var css = "mc"
+            if chip.selected || busy { css += " on" }
+            if controls.generating != nil && !busy { css += " off" }
+            var inner = escape(chip.model.title)
+            if busy {
+                inner += "<i class=\"sp\"></i>"
+            } else if chip.has {
+                inner += "<i class=\"dt\" title=\"Resumo gerado\"></i>"
+            }
+            if controls.generating != nil {
+                html += "<span class=\"\(css)\">\(inner)</span>\n"
+            } else {
+                html +=
+                    "<a class=\"\(css)\" href=\"minuta://model/\(chip.model.rawValue)\"\(chip.selected ? " aria-current=\"true\"" : "")>\(inner)</a>\n"
+            }
+        }
+        if controls.canRedo {
+            html +=
+                "<a class=\"pen redo\" href=\"minuta://redo\" title=\"Refazer este resumo\" aria-label=\"Refazer este resumo\">\(refresh)</a>\n"
+        }
+        html += "</div>\n"
+        if !controls.hint.isEmpty { html += "<p class=\"hint\">\(escape(controls.hint))</p>\n" }
+        return html
+    }
+
     private static func subtitle(_ meta: [String: String]) -> String {
         var parts: [String] = []
         if let value = meta["inicio"], let date = ISO8601DateFormatter().date(from: value) {
@@ -179,7 +233,19 @@ enum MarkdownHTML {
         :root { color-scheme: light dark; }
         body { font: 14px/1.55 -apple-system, sans-serif; margin: 0; padding: 24px 28px 48px; max-width: 760px; color: CanvasText; background: Canvas; }
         h1 { font-size: 22px; font-weight: 600; margin: 0 0 2px; }
+        h1 a.pen { margin-left: 10px; vertical-align: 3px; }
         .sub { color: GrayText; font-size: 13px; margin: 0 0 18px; }
+        .models { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 8px; margin: 0; }
+        .mc { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; line-height: 1; padding: 8px 14px; border-radius: 16px; border: 1px solid color-mix(in srgb, CanvasText 20%, transparent); color: CanvasText; background: Canvas; white-space: nowrap; }
+        a.mc:hover { background: color-mix(in srgb, CanvasText 7%, transparent); }
+        .mc.on { background: color-mix(in srgb, LinkText 14%, transparent); border-color: color-mix(in srgb, LinkText 50%, transparent); color: LinkText; font-weight: 600; }
+        .mc.off { opacity: 0.45; }
+        .mc .dt { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.55; }
+        .mc .sp { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid currentColor; border-top-color: transparent; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        a.redo { margin-left: 6px; padding: 6px; }
+        .hint { color: GrayText; font-size: 12px; line-height: 1.5; margin: 14px 0 0; }
+        .hint + h2, .models + h2 { margin-top: 30px; }
         h2 { font-size: 13px; font-weight: 600; color: GrayText; margin: 24px 0 6px; }
         h3 { font-size: 14px; font-weight: 600; margin: 14px 0 2px; }
         p { margin: 6px 0; }
