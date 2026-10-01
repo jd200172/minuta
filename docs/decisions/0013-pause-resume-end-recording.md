@@ -2,7 +2,7 @@
 
 Status: aceita
 Data: 2026-10-01
-Complementa: `docs/decisions/0011-minimal-menu-and-install.md` e `docs/decisions/0010-recording-limit-30-minutes.md`.
+Complementa: `docs/decisions/0011-minimal-menu-and-install.md` e `docs/decisions/0010-recording-limit-30-minutes.md`. Os ícones por estado serão substituídos pelo ADR 0014.
 
 ## Contexto
 

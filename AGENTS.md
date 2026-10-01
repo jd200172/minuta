@@ -30,6 +30,7 @@ Fora do MVP:
 - Áudio sai da máquina só para o STT; texto sai só para o LLM. Nada é armazenado na nuvem pelo app.
 - Credenciais (chaves do STT e do LLM) e a escolha de provedor e modelo ficam em `~/Library/Application Support/Minuta/.env`, permissão `600`, lido a cada uso (ADR 0012). Nunca versionar nem copiar para o repositório. `OUTPUT_DIR` é configuração, não segredo.
 - Provedores atrás dos protocolos `Transcriber` e `Minuter`. As regras da ata (prompt, schema) são neutras e ficam em `MinutesPrompt`; a validação de IDs fica no app, nunca no modelo. Provedor novo passa pela reunião sintética antes do uso.
+- Interface (Human Interface Guidelines da Apple para macOS): componentes nativos (SwiftUI e AppKit), SF Symbols, cores e tipografia do sistema, modo escuro e acessibilidade sem trabalho extra, menus, janelas e avisos no padrão do macOS. Antes de criar ou alterar uma tela, conferir a diretriz correspondente. Desvio só com justificativa registrada em ADR (desvio vigente: fundo colorido do botão da barra de menus, ADR 0014).
 - Idiomas: código (identificadores e comentários) em inglês; interface do app e ata em pt-BR.
 - Rastreabilidade (ADR 0005): decisões, ações e pontos em aberto citam IDs de segmento da transcrição. O LLM devolve JSON com os IDs; o app monta o Markdown e valida que todo ID existe. Campo sem evidência vira "não definido". Prazo relativo só vira data com a data da reunião no prompt.
 - Participantes (ADR 0006): o canal do microfone usa o nome do campo "Seu nome" (vazio: "Eu"); os demais vêm da diarização do canal do sistema como "Participante N". Nunca agrupar participantes num rótulo coletivo ("Outros" etc.). Nome só substitui o rótulo com evidência citada na transcrição, e a ata marca o nome como inferido.
@@ -37,7 +38,7 @@ Fora do MVP:
 
 ## Stack
 
-(fontes: ADRs 0001 a 0013 e `Package.swift`)
+(fontes: ADRs 0001 a 0014 e `Package.swift`)
 - App nativo em Swift 6.4, SwiftPM, sem dependências de terceiros, macOS 13+ (ADR 0009). SwiftUI `MenuBarExtra` para a bandeja e `Window` para as configurações.
 - Captura: ScreenCaptureKit (áudio do sistema) e `AVAudioEngine` (microfone), cada canal em um arquivo mono AAC `.m4a` de 16 kHz (ADRs 0004 e 0009).
 - STT: Gemini 3.5 Transcribe, Files API e Interactions API por `URLSession`, diarização só no canal do sistema (ADR 0008; verificações pendentes: pt-BR, 3 ou mais falantes, termos de dados).
@@ -71,7 +72,7 @@ Gravação (uma por vez) separada da fila de jobs (vários). Estados:
 
 Estrutura da ata (ADR 0005): Resumo, Participantes, Decisões, Itens de ação, Pontos em aberto, Resumo por tema, Transcrição com âncoras `t-<segundos>`. Frontmatter: `TODO` definir campos.
 
-Na inicialização, descarta gravações cortadas no meio (arquivo ilegível) e mostra um aviso por gravação pendente, com Processar, Depois e Descartar. Sinalização de estado por forma de ícone, não só por cor.
+Na inicialização, descarta gravações cortadas no meio (arquivo ilegível) e mostra um aviso por gravação pendente, com Processar, Depois e Descartar. Sinalização de estado (ADR 0014, implementação pendente): ícone de microfone fixo; fundo verde ao gravar (relógio correndo), vermelho em pausa (relógio parado e símbolo de pausa), amarelo ao processar (spinner); gravação e processamento juntos mostram a cor da gravação com o spinner. O estado nunca depende só da cor.
 
 ## Critério de pronto
 
@@ -110,6 +111,8 @@ Instrução do usuário no chat > `AGENTS.md` > `.agents/STYLE.md` > skill. Em s
 - 2026-10-01: ADR 0012. Chaves e escolha de provedor/modelo em `.env` (substitui o Keychain); STT e LLM atrás de protocolos. Regra de credenciais alterada com confirmação do usuário.
 - 2026-10-01: ADR 0013. Pausar, continuar e encerrar gravação; contador na barra de menus; confirmação ao sair gravando; lembrete de pausa.
 - 2026-10-01: janela de configurações redesenhada em página única, sem abas (ADR 0011 parcialmente substituído).
+- 2026-10-01: regra de interface: seguir as Human Interface Guidelines da Apple. Pedido do usuário.
+- 2026-10-01: ADR 0014. Estado do app pela cor de fundo do botão na barra de menus, com ícone fixo; desvio das HIG aceito. Pedido e confirmação do usuário.
 
 ## Sincronização
 

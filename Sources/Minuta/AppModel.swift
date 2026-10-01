@@ -27,7 +27,6 @@ final class AppModel: ObservableObject {
     }
 
     init() {
-        Notifier.requestAuthorization()
         Env.prepare()
         // A recording cut off mid-capture leaves an unreadable .m4a: nothing to recover.
         for job in store.load() where job.stage == .recording { store.delete(job.id) }
@@ -202,7 +201,7 @@ final class AppModel: ObservableObject {
             : "Não foi possível gerar a ata"
         let choice = Alerts.show(
             title: title, message: "\(error.message)\n\n\(kept)",
-            buttons: ["Tentar de novo", "Depois", "Descartar"], destructive: 2)
+            buttons: ["Tentar de novo", "Depois", "Descartar"], destructive: 2, escape: 1)
         switch choice {
         case 0: run(job)
         case 2: store.delete(job.id)
@@ -218,7 +217,7 @@ final class AppModel: ObservableObject {
             let choice = Alerts.show(
                 title: "Há uma gravação sem processar",
                 message: "Gravação de \(when), com \(minutes) min. O processamento não terminou.",
-                buttons: ["Processar", "Depois", "Descartar"], destructive: 2)
+                buttons: ["Processar", "Depois", "Descartar"], destructive: 2, escape: 1)
             switch choice {
             case 0: run(job)
             case 2: store.delete(job.id)
