@@ -143,12 +143,7 @@ enum ParticipantEditor {
             let oldHead = s.kind == .unnamed ? s.label : s.name
             let final = change.new.isEmpty ? s.label : change.new
             for index in section where listHead(lines[index]) == oldHead {
-                if lines[index].contains("(canal do microfone") {
-                    lines[index] = "- \(final) (canal do microfone)"
-                } else {
-                    lines[index] =
-                        "- \(final) (\(change.new.isEmpty ? "sem nome identificado" : "nome informado por você"))"
-                }
+                lines[index] = change.new.isEmpty ? unnamedLine(s.label) : "- \(change.new)"
                 break
             }
         }
@@ -188,6 +183,13 @@ enum ParticipantEditor {
         guard let start = lines.firstIndex(of: "## Participantes") else { return 0..<0 }
         let end = lines[(start + 1)...].firstIndex { $0.hasPrefix("## ") } ?? lines.count
         return (start + 1)..<end
+    }
+
+    /// The list line of a voice without a name: "Participante N" says so; the recorder's own label (the name
+    /// from the settings) needs no note.
+    private static func unnamedLine(_ label: String) -> String {
+        label.range(of: #"^Participante \d+$"#, options: .regularExpression) != nil
+            ? "- \(label) (sem nome identificado)" : "- \(label)"
     }
 
     /// "- Marina (Participante 2, nome inferido…)" -> "Marina".

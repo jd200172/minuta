@@ -14,7 +14,7 @@ A diarização separa as vozes, mas só o texto da conversa dá os nomes, e muit
 
 **A página continua sem JavaScript.** O lápis é um link especial (`minuta://rename/N`) que o app intercepta. O app pergunta à página onde o nome está, com um comando fixo que só leva um número, e põe um campo de texto nativo, sobre um fundo opaco, exatamente em cima do nome. Rolar ou redimensionar a janela com o campo aberto cancela a edição, porque o campo deixaria de acompanhar o texto. Uma primeira versão, com uma folha única para todos os participantes aberta por um botão da barra de título, foi descartada pelo usuário por ser invasiva.
 
-**O nome informado é fato, só naquela ata.** O rótulo é numerado por reunião, então um nome nunca vale para outras atas. Dentro da ata, o nome substitui o rótulo em todo o texto: lista de participantes, resumo, decisões, temas, tabela de ações e transcrição, sem repetir o rótulo entre parênteses. A lista de participantes marca "nome informado por você" (o nome inferido pelo modelo continua marcado "nome inferido"). O canal do microfone mantém "(canal do microfone)".
+**O nome informado é fato, só naquela ata.** O rótulo é numerado por reunião, então um nome nunca vale para outras atas. Dentro da ata, o nome substitui o rótulo em todo o texto: lista de participantes, resumo, decisões, temas, tabela de ações e transcrição, sem repetir o rótulo entre parênteses. Na lista de participantes, a linha fica só com o nome, sem anotação ("- Marina"); o nome inferido pelo modelo continua marcado "nome inferido em [horário]" e "(sem nome identificado)" continua nos participantes sem nome. A linha do canal do microfone também é só o nome (o rótulo é o nome das configurações, então a anotação "(canal do microfone)" que as atas tinham foi retirada, a pedido do usuário). O editor reconhece a voz do microfone por não ser "Participante N": ao apagar o nome, "Participante N" volta com "(sem nome identificado)" e a voz do microfone volta como linha simples.
 
 **Registro e desfazer.** O cabeçalho do arquivo ganha `participantes: {"Participante 2": "Marina"}`. É por ele que o rótulo original fica registrado no cabeçalho e que apagar o nome volta ao rótulo (troca o nome de volta em todo o texto). Voltar a um rótulo remove a entrada. Um nome inferido pelo modelo pode ser corrigido na mesma folha; apagá-lo volta ao rótulo.
 
@@ -28,7 +28,7 @@ A diarização separa as vozes, mas só o texto da conversa dá os nomes, e muit
 
 - Os artigos do texto do modelo não são corrigidos: "O Participante 1 respondeu" vira "O Marina respondeu". Só regenerar o resumo com os nomes resolveria, e isso fica fora desta etapa.
 - Desfazer troca o nome de volta em todo o texto. Se a ata já tinha o mesmo nome escrito por outro motivo, ele também muda; a dica ao lado do campo avisa quando o nome já aparece no texto.
-- O desfazer devolve o texto original, com uma exceção: o espaço duplicado antes de "(canal do microfone)" que atas antigas têm quando o nome configurado terminava em espaço.
+- Atas antigas guardam "(canal do microfone)" na linha do usuário; a anotação some quando essa linha é editada, e as demais linhas ficam como estão.
 - Atas editadas à mão fora do formato do app podem não ser reconhecidas pela folha; nesse caso ela mostra o que conseguir ler.
 - Regra do `AGENTS.md` alterada: o nome informado pelo usuário vale como evidência, só na própria ata.
 

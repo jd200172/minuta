@@ -39,7 +39,7 @@ final class ParticipantEditorTests: XCTestCase {
         let text = try ParticipantEditor.apply(["Participante 2": "Marina"], to: sample())
         let body = text.components(separatedBy: "\n---\n").last ?? ""
         XCTAssertFalse(body.contains("Participante 2"), "o rótulo só fica no cabeçalho, no mapeamento")
-        XCTAssertTrue(text.contains("- Marina (nome informado por você)"))
+        XCTAssertTrue(text.contains("\n- Marina\n"))
         XCTAssertTrue(text.contains("Marina enviará o relatório."))
         XCTAssertTrue(text.contains("| Marina |"))
         XCTAssertTrue(text.contains("**[00:00:20] Marina:**"))
@@ -73,7 +73,7 @@ final class ParticipantEditorTests: XCTestCase {
         let renamed = try ParticipantEditor.apply(["Participante 1": "Beto"], to: original)
         XCTAssertFalse(renamed.contains("Roberto"))
         XCTAssertTrue(renamed.contains("**[00:00:10] Beto:**"))
-        XCTAssertTrue(renamed.contains("- Beto (nome informado por você)"))
+        XCTAssertTrue(renamed.contains("\n- Beto\n"))
         let cleared = try ParticipantEditor.apply(["Participante 1": ""], to: original)
         XCTAssertTrue(cleared.contains("- Participante 1 (sem nome identificado)"))
         XCTAssertTrue(cleared.contains("**[00:00:10] Participante 1:**"))
@@ -84,7 +84,7 @@ final class ParticipantEditorTests: XCTestCase {
         let text = try ParticipantEditor.apply(["Participante 1": "Ana", "Juliano": "Ju"], to: original)
         XCTAssertTrue(text.contains("**[00:00:10] Ana:**"))
         XCTAssertTrue(text.contains("**[00:00:30] Participante 10:**"), "Participante 10 fica como está")
-        XCTAssertTrue(text.contains("- Ju (canal do microfone)"))
+        XCTAssertTrue(text.contains("\n- Ju\n"))
         XCTAssertTrue(text.contains("**[00:00:02] Ju:**"))
     }
 
@@ -100,5 +100,15 @@ final class ParticipantEditorTests: XCTestCase {
         XCTAssertNotNil(ParticipantEditor.nameProblem("**Ana**"))
         XCTAssertNotNil(ParticipantEditor.nameProblem(String(repeating: "a", count: 61)))
         XCTAssertTrue(ParticipantEditor.same("José", "jose"))
+    }
+
+    func testOldMicrophoneLineLosesItsNoteWhenEdited() throws {
+        let old = sample().replacingOccurrences(of: "\n- Juliano\n", with: "\n- Juliano  (canal do microfone)\n")
+        XCTAssertTrue(old.contains("(canal do microfone)"))
+        let renamed = try ParticipantEditor.apply(["Juliano": "Ju"], to: old)
+        XCTAssertTrue(renamed.contains("\n- Ju\n"))
+        XCTAssertFalse(renamed.contains("canal do microfone"))
+        let cleared = try ParticipantEditor.apply(["Juliano": ""], to: renamed)
+        XCTAssertTrue(cleared.contains("\n- Juliano\n"), "a voz do microfone volta sem nota")
     }
 }

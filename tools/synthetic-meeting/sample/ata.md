@@ -9,7 +9,7 @@ duracao_segundos: 0
 O grupo decidiu adiar o lançamento da versão 2 de 10 para 15 de outubro de 2026, após descartar a antecipação por risco de perda de dados. Participante 2 entrega o esquema de dados até a próxima quarta-feira, Participante 3 revisa o orçamento, que estourou em 12%, e envia ao financeiro até sexta-feira, e Participante 1 prepara a comunicação aos clientes sem data definida. O tamanho do teste beta segue em aberto. Foi marcada reunião de acompanhamento para 08/10/2026.
 
 ## Participantes
-- Juliano (canal do microfone)
+- Juliano
 - Marina (Participante 1, nome inferido em [00:00:10](#t-000010) [00:00:22](#t-000022))
 - Carlos (Participante 2, nome inferido em [00:00:17](#t-000017) [00:00:36](#t-000036))
 - Participante 3 (sem nome identificado)

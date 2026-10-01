@@ -40,7 +40,7 @@ enum MinutesRenderer {
         out += "# \(data.title)\n\n## Resumo\n\(data.summary)\n\n## Participantes\n"
         for label in labels {
             if label == userName {
-                out += "- \(label) (canal do microfone)\n"
+                out += "- \(label)\n"
             } else if let name = names[label] {
                 out += "- \(name) (\(label), nome inferido em \(evidence[label] ?? ""))\n"
             } else {

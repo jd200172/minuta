@@ -135,9 +135,9 @@ final class MarkdownHTMLTests: XCTestCase {
             # T
 
             ## Participantes
-            - Juliano (canal do microfone)
+            - Juliano
             - Participante 1 (sem nome identificado)
-            - Marina (nome informado por você)
+            - Marina
 
             ## Transcrição
             <a id="t-000002"></a>**[00:00:02] Juliano:** Oi
@@ -146,9 +146,9 @@ final class MarkdownHTMLTests: XCTestCase {
             """
         XCTAssertFalse(MarkdownHTML.convert(md).html.contains("minuta://rename"))
         let html = MarkdownHTML.convert(md, renamable: true).html
-        XCTAssertTrue(html.contains("<span id=\"sp-0\">Juliano (canal do microfone)</span>"))
+        XCTAssertTrue(html.contains("<span id=\"sp-0\">Juliano</span>"))
         XCTAssertTrue(html.contains("href=\"minuta://rename/1\""))
-        XCTAssertTrue(html.contains("<span id=\"sp-2\">Marina (nome informado por você)</span>"))
+        XCTAssertTrue(html.contains("<span id=\"sp-2\">Marina</span>"))
         XCTAssertEqual(html.components(separatedBy: "minuta://rename/").count - 1, 3)
     }
 }

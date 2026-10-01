@@ -66,7 +66,8 @@ final class MinutesTests: XCTestCase {
         XCTAssertTrue(md.contains("- Decisão inventada sem evidência na transcrição"))
         XCTAssertTrue(md.contains("| Enviar \\| texto | Marina (Participante 1) | não definido |"))
         XCTAssertTrue(md.contains("<a id=\"t-000010\"></a>**[00:00:10] Marina (Participante 1):**"))
-        XCTAssertTrue(md.contains("- Juliano (canal do microfone)"))
+        XCTAssertTrue(md.contains("\n- Juliano\n"))
+        XCTAssertFalse(md.contains("canal do microfone"))
     }
 }
 
