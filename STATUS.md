@@ -36,12 +36,15 @@ Atualizado em: 2026-10-01
 - "Outros" como bloco único (ADR 0006).
 - Tipos de reunião e notas no MVP (ADR 0007).
 - Dois arquivos por reunião, ata e transcrição (ADR 0005).
+- Gravação de 27 s com microfone conectado: a ata mostrou um "Participante 1" que só disse "É". Uma segunda gravação de 30 s, de fone e com o Mac sem tocar nada, não gerou participante falso. O mais provável é eco (a voz do usuário voltando pelo alto-falante para o canal do sistema); a hipótese de o transcritor inventar fala num canal em silêncio perdeu força. Sem fone, o eco é esperado; cancelamento de eco (processamento de voz do `AVAudioEngine`) não foi adotado.
+- O campo "Seu nome" estava salvo como `.... ` e apareceu como rótulo do usuário na ata. É valor digitado, não falha do app.
+- O Gemini trocou palavras em português numa fala do microfone ("participante 1" virou "participantium"). Registrar como dado do teste 6 (voz real).
 
 ## Próximos
 - Interface revisada e instalada em `/Applications` (ADR 0011): menu mínimo, erros por aviso, configurações em abas. Verificado por captura de tela das três abas. Não verificado: cliques nos botões, avisos de erro, opção Abrir ao iniciar o Mac.
 - Confirmar o limite de 30 minutos (ADR 0010).
 - Gravar 30 a 60 segundos de um vídeo com fala pelo menu do app e conferir a ata em `~/Documents/Atas`.
-- Conectar um microfone e repetir o teste de captura, para validar o canal do usuário e o eco.
+- Teste de eco sem fone (alto-falante e microfone abertos), para medir o quanto o eco vaza para a ata e decidir se vale o cancelamento de eco.
 - Medir o custo em tokens e o tempo por ata, e comparar o esforço `medium` com `high`.
 - Migrar a chave do Google para a camada paga antes de gravar reuniões reais.
 - Ler os termos de dados do Google e da Anthropic (teste 7).

@@ -47,6 +47,7 @@ O estado aparece no ícone: microfone (ocioso), ponto de gravação com o tempo 
 - **30 minutos de gravação** (a pausa não conta). O Gemini 3.5 Transcribe limita o áudio a 30 minutos por pedido com diarização. No teto, o app encerra a captura e processa. O limite é uma proposta aguardando confirmação ([ADR 0010](docs/decisions/0010-recording-limit-30-minutes.md)).
 - **Só reuniões virtuais.** Em reunião presencial, o microfone captaria várias vozes sob um único rótulo.
 - **Uma queda do app durante a gravação, ou uma saída forçada, perde aquela gravação** (sair pelo menu pede confirmação), porque o `.m4a` só é legível depois de fechado.
+- **Use fone ao gravar.** Sem fone, o microfone capta a voz dos outros pelo alto-falante e o canal do sistema pode captar a sua. O eco aparece na ata como um "Participante N" que não existe.
 - **Diarização com 3 ou mais vozes é marcada como experimental pelo provedor.** Duas pessoas falando pelo mesmo dispositivo aparecem como uma voz só.
 
 ## Provedores
@@ -78,7 +79,7 @@ Estrutura:
 ## Estado
 
 - **Validado com áudio sintético** (4 vozes, 253 s): transcrição com cerca de 1% de diferença, 28 de 28 falas do sistema com o falante certo, e ata com decisões, ações e prazos corretos. Detalhes em [`docs/validation-plan.md`](docs/validation-plan.md).
-- **Validado pelo usuário:** captura do áudio do sistema pelo app.
+- **Validado pelo usuário:** captura do áudio do sistema pelo app, gravação com microfone, pausa e continuação, e gravação de teste de fone sem participante falso.
 - **Pendente:** voz real com 3 ou mais participantes, gravação longa (consumo e estabilidade), termos de dados dos provedores e a revisão da janela de configurações (mockup aprovado, ainda não implementado).
 
 O histórico do trabalho e os próximos passos estão em [`STATUS.md`](STATUS.md).
