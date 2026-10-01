@@ -124,11 +124,11 @@ struct AtasView: View {
             TableColumn("Data", value: \.start) { row in
                 Text(Fmt.finderDate(row.start)).foregroundStyle(.secondary)
             }
-            .width(min: 150, ideal: 185)
+            .width(min: 150, ideal: 175, max: 190)
             TableColumn("Título", value: \.title) { row in
                 titleCell(row)
             }
-            .width(min: 140)
+            .width(min: 140, ideal: 260)
             TableColumn("Resumo", value: \.summaryLabel) { row in
                 SummaryCell(row: row, generating: ataURL(row).flatMap { summaries.running[$0] })
             }
@@ -146,7 +146,14 @@ struct AtasView: View {
         .contextMenu(forSelectionType: ListRow.ID.self) { ids in
             if let row = rows.first(where: { ids.contains($0.id) }) { menu(for: row) }
         } primaryAction: { ids in
-            if let row = rows.first(where: { ids.contains($0.id) }), case .ata(let ata) = row.kind { open(ata) }
+            // The table calls this for a double click and for Return. A double click opens the ata; Return
+            // renames it, like the Finder.
+            guard let row = rows.first(where: { ids.contains($0.id) }) else { return }
+            if NSApp.currentEvent?.type == .keyDown {
+                beginRename(row)
+            } else if case .ata(let ata) = row.kind {
+                open(ata)
+            }
         }
     }
 
@@ -234,12 +241,9 @@ struct AtasView: View {
 
     // MARK: Keyboard
 
-    /// Finder keys, as hidden buttons: Return renames, ⌘O and ⌘↓ open, ⌘⌫ moves to the Trash.
+    /// Finder keys, as hidden buttons: ⌘O and ⌘↓ open, ⌘⌫ moves to the Trash. Return is the table's primary action.
     private var shortcuts: some View {
         ZStack {
-            Button("Renomear") { if let row = selected { beginRename(row) } }
-                .keyboardShortcut(.return, modifiers: [])
-                .disabled(renamingID != nil || selected == nil)
             Button("Abrir") { if case .ata(let ata)? = selected?.kind { open(ata) } }
                 .keyboardShortcut("o", modifiers: .command)
             Button("Abrir") { if case .ata(let ata)? = selected?.kind { open(ata) } }

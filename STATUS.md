@@ -3,7 +3,7 @@
 Atualizado em: 2026-10-01
 
 ## Em andamento
-- Nada em execução. ADRs 0001 a 0017 em `docs/decisions/` (o 0017, resumos por tipo de reunião, está implementado); o 0010 (limite de 30 minutos) é proposta e aguarda confirmação. 55 testes passam. O app está instalado em `/Applications/Minuta.app`.
+- Nada em execução. ADRs 0001 a 0017 em `docs/decisions/` (o 0017, resumos por tipo de reunião, está implementado); o 0010 (limite de 30 minutos) é proposta e aguarda confirmação. 57 testes passam. O app está instalado em `/Applications/Minuta.app`.
 
 Estado atual do app:
 - Barra de menus com `NSStatusItem`: ícone de microfone fixo e estado pelo fundo do botão (verde gravando, vermelho pausado, amarelo processando) (ADRs 0011 e 0014).
@@ -25,7 +25,7 @@ Ainda sem teste manual:
 
 ## ADR 0017 implementado (2026-10-01)
 - Classificação ao fim da transcrição (modelo, confiança, justificativa, título), gravação do `.md` e do `.resumos.json` e geração automática do modelo sugerido. Cinco chips de modelo na página de leitura, abaixo do título (ponto nos já gerados, linha "Sugerido", indicador ao gerar, ícone de refazer), e lápis no título que renomeia no lugar. Desenho escolhido pelo usuário entre três mockups; desvio da HIG registrado no ADR 0017. Lista de atas com etiqueta do modelo, "Sem resumo" e "Gerando resumo…".
-- Código novo: `SummaryModels`, `AtaStore`, `SummaryService`; mudaram `MinutesPrompt`, `Minutes`, `Claude`, `Providers`, `AppModel`, `AtaLibrary`, `AtaViewer`, `AtasView`, `CLI`. 55 testes passam.
+- Código novo: `SummaryModels`, `AtaStore`, `SummaryService`; mudaram `MinutesPrompt`, `Minutes`, `Claude`, `Providers`, `AppModel`, `AtaLibrary`, `AtaViewer`, `AtasView`, `CLI`. 57 testes passam.
 - Verificado com chaves reais nos oito cenários sintéticos (`tools/synthetic-meeting/scenarios/`): a classificação acertou o modelo esperado nos sete rodados com o `--process` (02 a 08: Acompanhamento, Problemas e ideias, Informativa, Geral, Decisão, sem sugestão no vago, Decisão no 08). O cenário 1 não foi rodado de novo. No app instalado: abrir ata, trocar para modelo guardado (instantâneo), gerar modelo novo (Informativa numa ata com só um resumo) e a linha "Sugerido".
 - Segunda rodada (2026-10-01, versão instalada b1f7660, build 19): os oito cenários passaram pelo `--process` com chaves reais e as atas foram copiadas para a pasta de atas do usuário, com horário 09:01 a 09:08 (`2026-09-30 0901` a `2026-09-22 0908`) e o `.resumos.json` de cada uma. Classificação: 01 Decisão, 02 Acompanhamento, 03 Problemas e ideias, 04 Informativa, 05 Geral, 06 Decisão, 07 sem sugestão (confiança baixa), 08 Acompanhamento. O cenário 8 rodou com "Seu nome" vazio e a lista mostra "Eu". A ata anterior ao ADR 0017 abre na janela nova sem o controle de modelos.
 - No cenário 6, a diarização juntou a fala da Gabriela à da Roberta (Participante 1) em um segmento, e a ação "verificar a versão 3.1" saiu com a Roberta. É limite da transcrição (duas vozes femininas em turnos seguidos), não do resumo.
@@ -35,9 +35,11 @@ Ainda sem teste manual:
 - Limites conhecidos: o secundário ilegível ou ausente impede trocar de modelo (reconstruir a partir do principal não foi feito); o `--process` grava `duracao_segundos: 0` porque não conhece a duração; nome do usuário com espaço no fim ("JULIANO ") aparece com espaço na lista de participantes.
 - Em aberto: o ADR 0017 deixa fora o envio por e-mail e a consulta por conectores.
 
-## Janela de atas em tabela (2026-10-01)
-- Tabela com cabeçalhos e ordenação, duplo clique e Return abrem, ícones de renomear e Lixeira com dica, menu de contexto, renomear no lugar (inclui atas antigas) e bloco "Em andamento" acima. Detalhes no ADR 0015.
-- Verificado no app instalado: colunas e ícones, renomear no lugar (arquivo renomeado, `.resumos.json` intacto) e duplo clique abrindo a leitura. Sem verificar: o menu de contexto, a ordenação por clique no cabeçalho, a janela de leitura acompanhando um renomear feito na lista e as linhas de "Em andamento" com ícones.
+## Janela de atas no estilo do Finder (2026-10-01)
+- Tabela sem coluna de ações, com as gravações em andamento como linhas, ponto colorido na coluna Resumo, datas relativas, menu de contexto com o submenu Resumo, Return renomeia, duplo clique e ⌘O abrem, ⌘⌫ move para a Lixeira sem pergunta. Detalhes no ADR 0015. 57 testes passam.
+- Verificado no app instalado, com teclas enviadas direto ao processo do Minuta: ordenação por clique no cabeçalho, menu de contexto e submenu Resumo (visto e "(sugerido)"), Return abrindo o campo de renomear, Esc cancelando, ⌘O abrindo, ⌘W fechando, duplo clique abrindo e ⌘⌫ movendo os dois arquivos para a Lixeira.
+- Sem verificar: linhas de gravação em andamento (só teste unitário), "Tentar de novo" e "Descartar…", gerar um modelo novo pelo submenu, a janela de leitura acompanhando um renomear feito na lista e o menu de uma ata com problema.
+- Limite conhecido: o cabeçalho da `Table` é o do sistema e pode não ser idêntico ao do Finder. Se incomodar, a alternativa é uma `NSTableView` do AppKit.
 
 ## Descobertas
 <!-- fato aprendido durante o trabalho que muda o próximo passo -->
