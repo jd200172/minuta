@@ -6,7 +6,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // The developer CLI mode runs headless: no status item, no pending-recording prompts.
         guard !CLI.requested() else { return }
-        MainActor.assumeIsolated { statusItem = StatusItemController(model: AppModel.shared) }
+        MainActor.assumeIsolated {
+            statusItem = StatusItemController(model: AppModel.shared)
+            AtaLibrary.shared.refresh()
+        }
     }
 
     /// Quitting during a recording (running or paused) loses it, so ask first.

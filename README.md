@@ -10,7 +10,7 @@ Uso próprio. Estado atual: MVP validado com áudio sintético; falta validar co
 2. **Transcrição.** Cada arquivo vai para o Gemini 3.5 Transcribe. O canal do sistema passa por diarização e vira "Participante 1", "Participante 2" etc.; o do microfone leva o seu nome. O áudio é apagado assim que a transcrição é gravada.
 3. **Ata.** A transcrição segmentada vai para o Claude Sonnet 5.5, que devolve o conteúdo da ata em JSON. O app valida que todo trecho citado existe e monta o arquivo `.md`.
 
-O resultado é um arquivo por reunião na pasta escolhida, com a transcrição ao final. Um exemplo, gerado com o áudio sintético de teste, está em [`tools/synthetic-meeting/sample/ata.md`](tools/synthetic-meeting/sample/ata.md).
+O resultado é um arquivo por reunião na pasta escolhida, com a transcrição ao final. O nome é `AAAA-MM-DD HHmm Título.md`. O menu mostra as 5 últimas atas, e **Atas…** abre a lista completa, com leitura em página, Lixeira e as gravações ainda em andamento. Um exemplo, gerado com o áudio sintético de teste, está em [`tools/synthetic-meeting/sample/ata.md`](tools/synthetic-meeting/sample/ata.md).
 
 Os nomes dos participantes só substituem o rótulo quando a transcrição os identifica (apresentação, saudação ou vocativo), e a ata marca o nome como inferido.
 

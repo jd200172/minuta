@@ -10,6 +10,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var isPaused = false
     @Published private(set) var elapsedText: String?
     @Published private(set) var processing = 0
+    /// IDs of the jobs being transcribed or turned into minutes right now.
+    @Published private(set) var runningJobs: Set<String> = []
 
     private let store = JobStore()
     private let recorder = Recorder()
@@ -154,9 +156,13 @@ final class AppModel: ObservableObject {
 
     func run(_ job: Job) {
         processing += 1
+        runningJobs.insert(job.id)
+        AtaLibrary.shared.refresh()
         Task {
             let failure = await process(job)
             processing -= 1
+            runningJobs.remove(job.id)
+            AtaLibrary.shared.refresh()
             if let (failed, error) = failure { askWhatToDo(with: failed, after: error) }
         }
     }
@@ -173,11 +179,20 @@ final class AppModel: ObservableObject {
                 try? FileManager.default.removeItem(at: dir.appendingPathComponent("system.m4a"))
                 job.stage = .minuting
                 store.save(job)
+                AtaLibrary.shared.refresh()
             }
             let transcript = try store.loadTranscript(job: job)
             let file = try await Pipeline.minutes(job: job, transcript: transcript)
             store.delete(job.id)
             Notifier.post("Ata salva", file.lastPathComponent)
+            return nil
+        } catch is NoSpeechError {
+            store.delete(job.id)
+            Alerts.show(
+                title: "Sem fala suficiente",
+                message:
+                    "A gravação de \(Fmt.listDate(job.startedAt)) não tinha fala suficiente para gerar uma ata. Ela foi descartada.",
+                buttons: ["OK"])
             return nil
         } catch {
             let error = AppError.from(error)
@@ -233,10 +248,6 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func openOutputFolder() {
-        try? FileManager.default.createDirectory(at: Config.outputDir, withIntermediateDirectories: true)
-        NSWorkspace.shared.open(Config.outputDir)
-    }
 }
 
 enum Pipeline {
@@ -251,13 +262,19 @@ enum Pipeline {
         let transcript = TranscriptBuilder.build(
             mic: try await mic, system: try await system,
             micOffset: job.micOffset, systemOffset: job.systemOffset)
-        guard !transcript.segments.isEmpty else { throw AppError("A transcrição veio vazia.") }
+        let words = transcript.segments.reduce(0) { $0 + $1.text.split(whereSeparator: \.isWhitespace).count }
+        guard words >= Config.minWords else { throw NoSpeechError() }
         return transcript
     }
 
     static func minutes(job: Job, transcript: Transcript) async throws -> URL {
         let data = try await Providers.minuter().minutes(transcript: transcript, job: job)
         let markdown = MinutesRenderer.render(data, transcript: transcript, job: job)
-        return try MinutesRenderer.write(markdown, job: job)
+        return try MinutesRenderer.write(markdown, job: job, title: data.title)
     }
+}
+
+/// The recording has too little speech to be worth minutes.
+struct NoSpeechError: LocalizedError {
+    var errorDescription: String? { "Não havia fala suficiente para gerar a ata." }
 }

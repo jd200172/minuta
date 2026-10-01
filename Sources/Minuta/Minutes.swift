@@ -84,14 +84,15 @@ enum MinutesRenderer {
         text.replacingOccurrences(of: "|", with: "\\|").replacingOccurrences(of: "\n", with: " ")
     }
 
-    static func write(_ markdown: String, job: Job) throws -> URL {
+    /// Writes "yyyy-MM-dd HHmm Título.md"; a repeated name gets " (2)", " (3)"…
+    static func write(_ markdown: String, job: Job, title: String) throws -> URL {
         let dir = Config.outputDir
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let stem = Fmt.fileStem(job.startedAt)
+        let stem = AtaName.stem(start: job.startedAt, title: title)
         var url = dir.appendingPathComponent("\(stem).md")
         var n = 2
         while FileManager.default.fileExists(atPath: url.path) {
-            url = dir.appendingPathComponent("\(stem) \(n).md")
+            url = dir.appendingPathComponent("\(stem) (\(n)).md")
             n += 1
         }
         try markdown.write(to: url, atomically: true, encoding: .utf8)

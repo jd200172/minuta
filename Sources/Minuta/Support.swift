@@ -68,6 +68,8 @@ enum Config {
     /// Recorded time, pauses excluded.
     static let maxRecordingSeconds: TimeInterval = 30 * 60
     static let pauseReminderSeconds: TimeInterval = 10 * 60
+    /// Transcripts with fewer words than this are not worth a minutes request (silence, a stray syllable).
+    static let minWords = 10
     static let defaultTranscriber = "gemini"
     static let defaultTranscriberModel = "gemini-3.5-transcribe"
     static let defaultMinuter = "claude"
@@ -130,6 +132,19 @@ enum Fmt {
         let s = Int(seconds)
         if s >= 3600 { return String(format: "%d:%02d:%02d", s / 3600, (s % 3600) / 60, s % 60) }
         return String(format: "%02d:%02d", s / 60, s % 60)
+    }
+
+    /// "dd/MM/yyyy HH:mm", for lists.
+    static func listDate(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "pt_BR")
+        f.dateFormat = "dd/MM/yyyy HH:mm"
+        return f.string(from: date)
+    }
+
+    /// "13 s" under a minute, "28 min" from there.
+    static func shortDuration(_ seconds: Double) -> String {
+        seconds < 60 ? "\(Int(seconds)) s" : "\(Int((seconds / 60).rounded())) min"
     }
 
     static func jobID(_ date: Date) -> String {

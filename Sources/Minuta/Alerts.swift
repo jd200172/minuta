@@ -4,6 +4,7 @@ import AppKit
 enum Alerts {
     /// Shows a modal alert and returns the index of the button the user pressed.
     /// Esc answers with the button at `escape` (the safe one), since NSAlert only maps Esc to a button named "Cancel".
+    @discardableResult
     static func show(
         title: String, message: String, buttons: [String], destructive: Int? = nil, escape: Int = 0
     ) -> Int {

@@ -10,7 +10,7 @@ Fonte: `docs/project-brief.md` (documento original, 2026-09-30). As decisões em
 
 Dentro:
 - macOS 13+. Windows 10/11 em fase posterior (ADR 0003).
-- Interface só na bandeja: menu de contexto e janela de configurações.
+- Interface: menu da bandeja, janela de configurações, janela de atas e janela de leitura da ata (ADR 0015). Sem janela contínua de gravação.
 - Um prompt único de ata (ADR 0005).
 
 Fora do MVP:
@@ -38,7 +38,7 @@ Fora do MVP:
 
 ## Stack
 
-(fontes: ADRs 0001 a 0014 e `Package.swift`)
+(fontes: ADRs 0001 a 0015 e `Package.swift`)
 - App nativo em Swift 6.4, SwiftPM, sem dependências de terceiros, macOS 13+ (ADR 0009). `NSStatusItem` com `NSMenu` para a bandeja (ADR 0014) e uma janela AppKit com conteúdo SwiftUI para as configurações.
 - Captura: ScreenCaptureKit (áudio do sistema) e `AVAudioEngine` (microfone), cada canal em um arquivo mono AAC `.m4a` de 16 kHz (ADRs 0004 e 0009).
 - STT: Gemini 3.5 Transcribe, Files API e Interactions API por `URLSession`, diarização só no canal do sistema (ADR 0008; verificações pendentes: pt-BR, 3 ou mais falantes, termos de dados).
@@ -59,16 +59,18 @@ Fora do MVP:
 
 ## Convenções de código
 
-- Um arquivo por responsabilidade em `Sources/Minuta/`: `Recorder` (captura), `Providers` (protocolos `Transcriber` e `Minuter` e escolha pelo `.env`), `Env` (leitura do `.env`), `Gemini` (STT e montagem da transcrição), `Claude` (transporte da ata), `MinutesPrompt` (prompt, schema e decodificação neutros), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (estados e fluxo), `Alerts` (avisos), `CaptureTest` (teste de captura), `CLI` (modo `--process`), `StatusItemController` (botão e menu da bandeja), `AppDelegate` e `main.swift` (entrada) e `SettingsView` (janela de configurações em página única: chaves, permissões e preferências).
+- Um arquivo por responsabilidade em `Sources/Minuta/`: `Recorder` (captura), `Providers` (protocolos `Transcriber` e `Minuter` e escolha pelo `.env`), `Env` (leitura do `.env`), `Gemini` (STT e montagem da transcrição), `Claude` (transporte da ata), `MinutesPrompt` (prompt, schema e decodificação neutros), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (estados e fluxo), `Alerts` (avisos), `CaptureTest` (teste de captura), `CLI` (modo `--process`), `StatusItemController` (botão e menu da bandeja), `AppDelegate` e `main.swift` (entrada), `AtaLibrary` (lista de atas e nomes de arquivo), `AtasView` (janela de atas), `AtaViewer` e `MarkdownHTML` (leitura da ata), `ClosableWindow` (⌘W e Esc) e `SettingsView` (janela de configurações em página única: chaves, permissões e preferências).
 - Sem dependências de terceiros. Mudança de modo de linguagem Swift ou nova dependência exige ADR.
 - Formatador: `swift format` (do toolchain), configurado em `.swift-format` (4 espaços, 120 colunas). Rodar `swift format --in-place --recursive Sources Tests` antes de commitar; `swift format lint --recursive Sources Tests` só confere. Linter: nenhum por ora.
 
 ## Arquitetura
 
 Gravação (uma por vez) separada da fila de jobs (vários). Estados:
-1. Ocioso: ícone de microfone. Menu: Iniciar gravação, Abrir pasta de atas, Configurações…, Sair (ADR 0011). Sair durante a gravação pede confirmação.
+1. Ocioso: ícone de microfone. Menu: Iniciar gravação, Atas recentes (5), Atas…, Configurações…, Sair (ADRs 0011 e 0015). Sair durante a gravação pede confirmação.
 2. Gravando ou pausada (ADR 0013): menu Pausar/Continuar gravação e Encerrar gravação; contador de tempo gravado ao lado do ícone; dois arquivos mono em streaming para a pasta do job em Application Support.
 3. Job: transcrevendo, gerando ata, concluído. O estado fica só no ícone. Após a transcrição segmentada gravada, o áudio é apagado; a ata é o passo seguinte sobre o texto. Falha: aviso do macOS com a causa e as opções Tentar de novo, Depois e Descartar; o áudio ou a transcrição ficam guardados.
+
+Atas (ADR 0015): arquivos `AAAA-MM-DD HHmm Título.md` são a fonte da verdade; a lista é refeita lendo a pasta. Apagar move para a Lixeira. Transcrição com menos de 10 palavras não gera ata.
 
 Estrutura da ata (ADR 0005): Resumo, Participantes, Decisões, Itens de ação, Pontos em aberto, Resumo por tema, Transcrição com âncoras `t-<segundos>`. Frontmatter: `TODO` definir campos.
 
@@ -113,6 +115,7 @@ Instrução do usuário no chat > `AGENTS.md` > `.agents/STYLE.md` > skill. Em s
 - 2026-10-01: janela de configurações redesenhada em página única, sem abas (ADR 0011 parcialmente substituído).
 - 2026-10-01: regra de interface: seguir as Human Interface Guidelines da Apple. Pedido do usuário.
 - 2026-10-01: ADR 0014. Estado do app pela cor de fundo do botão na barra de menus, com ícone fixo; desvio das HIG aceito. Pedido e confirmação do usuário.
+- 2026-10-01: ADR 0015. Janela de atas com lista, leitura e Lixeira; nome do arquivo com título; sem ata para transcrição sem fala. Escopo de interface ampliado a pedido do usuário.
 
 ## Sincronização
 

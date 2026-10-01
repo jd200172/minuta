@@ -19,29 +19,12 @@ final class SettingsWindowController {
     }
 
     private func makeWindow() -> NSWindow {
-        let window = SettingsWindow(contentViewController: NSHostingController(rootView: SettingsView()))
+        let window = ClosableWindow(contentViewController: NSHostingController(rootView: SettingsView()))
         window.title = "Configurações"
         window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
         window.center()
         return window
-    }
-}
-
-/// The app has no main menu, so ⌘W and Esc are handled here to close the window like any macOS settings window.
-private final class SettingsWindow: NSWindow {
-    override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
-            event.charactersIgnoringModifiers == "w"
-        {
-            performClose(nil)
-            return true
-        }
-        return super.performKeyEquivalent(with: event)
-    }
-
-    override func cancelOperation(_ sender: Any?) {
-        performClose(sender)
     }
 }
 
