@@ -26,7 +26,7 @@ A diarização separa as vozes, mas só o texto da conversa dá os nomes, e muit
 
 ## Consequências
 
-- Os artigos do texto do modelo não são corrigidos: "O Participante 1 respondeu" vira "O Marina respondeu". Só regenerar o resumo com os nomes resolveria, e isso fica fora desta etapa.
+- Atualização de 2026-10-01: pelo ADR 0017, os nomes informados entram no pedido do resumo e valem em qualquer modelo gerado depois, e refazer o resumo usa os nomes atuais. Os artigos já escritos não são corrigidos: "O Participante 1 respondeu" vira "O Marina respondeu". Só regenerar o resumo com os nomes resolveria, e isso fica fora desta etapa.
 - Desfazer troca o nome de volta em todo o texto. Se a ata já tinha o mesmo nome escrito por outro motivo, ele também muda; a dica ao lado do campo avisa quando o nome já aparece no texto.
 - Atas antigas guardam "(canal do microfone)" na linha do usuário; a anotação some quando essa linha é editada, e as demais linhas ficam como estão.
 - Atas editadas à mão fora do formato do app podem não ser reconhecidas pela folha; nesse caso ela mostra o que conseguir ler.

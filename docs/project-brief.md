@@ -1,6 +1,6 @@
 # Documento de Projeto: Agente de Sumarização de Reuniões (MVP)
 
-> Documento original, mantido como histórico. As decisões em `docs/decisions/` (ADRs 0001 a 0007) prevalecem onde divergem: destino, pipeline de IA, plataformas, captura, estrutura da ata, participantes, e tipos de reunião e notas adiados.
+> Documento original, mantido como histórico. As decisões em `docs/decisions/` (ADRs 0001 a 0017) prevalecem onde divergem: destino, pipeline de IA, plataformas, captura, estrutura da ata, participantes, e tipos de reunião e notas adiados.
 
 ## 1. Escopo e Restrições
 

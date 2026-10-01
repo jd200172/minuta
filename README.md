@@ -1,8 +1,8 @@
 # minuta
 
-Aplicativo de barra de menus para macOS que grava uma reunião virtual, transcreve o áudio e gera uma ata em Markdown com resumo, participantes, decisões, ações e pontos em aberto. Cada decisão e ação aponta para o trecho da transcrição que a originou.
+Aplicativo de barra de menus para macOS que grava uma reunião virtual, transcreve o áudio e gera uma ata em Markdown com um resumo no modelo adequado ao tipo da reunião (decisão, acompanhamento, problemas e ideias, informativa ou geral), participantes, itens de ação e pontos em aberto. Cada item aponta para o trecho da transcrição que o originou.
 
-Uso próprio. Estado atual: MVP validado com áudio sintético; falta validar com voz real (ver [Estado](#estado)).
+Uso próprio. Estado atual: MVP validado com áudio sintético em oito cenários; falta validar com voz real (ver [Estado](#estado)).
 
 ## Como funciona
 
@@ -10,9 +10,16 @@ Uso próprio. Estado atual: MVP validado com áudio sintético; falta validar co
 2. **Transcrição.** Cada arquivo vai para o Gemini 3.5 Transcribe. O canal do sistema passa por diarização e vira "Participante 1", "Participante 2" etc.; o do microfone leva o seu nome. O áudio é apagado assim que a transcrição é gravada.
 3. **Classificação e resumo.** A transcrição segmentada vai para o Claude Sonnet 5.5, que sugere um de cinco modelos de resumo (Decisão, Acompanhamento, Problemas e ideias, Informativa, Geral) e um título. O app gera o resumo no modelo sugerido. Na janela de leitura, você corrige os nomes dos participantes e troca de modelo: o que já foi gerado fica guardado e troca na hora, e o que não existe é gerado ao clicar. O app valida que todo trecho citado existe e monta o arquivo `.md`.
 
-O resultado é um arquivo por reunião na pasta escolhida, com a transcrição ao final. O nome é `AAAA-MM-DD HHmm Título.md`, e ao lado fica `AAAA-MM-DD HHmm.resumos.json`, com todos os resumos gerados dessa reunião. O `.md` mostra o resumo escolhido e é legível sozinho. O menu mostra as 5 últimas atas, e **Atas…** abre a lista completa, com leitura em página, Lixeira e as gravações ainda em andamento. Se a pasta sumir ou algum arquivo estiver vazio ou ilegível, a janela avisa; ela não sabe de uma ata que foi apagada, então mantenha a pasta com backup (por exemplo, no OneDrive). Um exemplo, gerado com o áudio sintético de teste, está em [`tools/synthetic-meeting/sample/ata.md`](tools/synthetic-meeting/sample/ata.md).
+O resultado é um arquivo por reunião na pasta escolhida, com a transcrição ao final. O nome é `AAAA-MM-DD HHmm Título.md`, e ao lado fica `AAAA-MM-DD HHmm.resumos.json`, com a transcrição segmentada e todos os resumos gerados dessa reunião. O `.md` mostra o resumo escolhido e é legível sozinho, também fora do app. O prefixo com a data e a hora de início da gravação não muda; o título pode ser renomeado.
 
-Os nomes dos participantes só substituem o rótulo quando a transcrição os identifica (apresentação, saudação ou vocativo), e a ata marca o nome como inferido. Quando o app não identifica alguém, o lápis ao lado de cada participante, na janela de leitura, renomeia aquela voz no próprio lugar; o nome vale só para aquela ata e substitui o rótulo em todo o texto.
+- **Janela de leitura.** Abaixo do título ficam as cinco chips de modelo. A chip do modelo exibido vem preenchida, e um ponto marca os modelos que já têm resumo; clicar em um deles troca na hora, e clicar em um novo gera o resumo. A linha "Sugerido: …" mostra o que a classificação indicou e por quê. O ícone de atualizar refaz o resumo do modelo exibido. O lápis ao lado do título renomeia a reunião no lugar, e o lápis de cada participante nomeia aquela voz.
+- **Janela Atas…** É uma tabela no estilo do Finder, com colunas Data, Título, Resumo e Duração ordenáveis. Return renomeia, duplo clique ou ⌘O abre, e ⌘⌫ move para a Lixeira, sem pergunta. O botão direito traz Abrir, Mostrar no Finder, Resumo ▸ (os cinco modelos), Mover para a Lixeira e Renomear. As gravações ainda em andamento aparecem como linhas da tabela, com Tentar de novo e Descartar… no menu de contexto.
+- **Menu da barra.** Mostra as 5 últimas atas.
+- **Pasta de atas.** Se ela sumir, ou se algum arquivo estiver vazio ou ilegível, a janela avisa. O app não sabe de uma ata que foi apagada, então mantenha a pasta com backup (por exemplo, no OneDrive).
+
+Um exemplo de ata, gerada com o áudio sintético de teste, está em [`tools/synthetic-meeting/sample/ata.md`](tools/synthetic-meeting/sample/ata.md) (formato anterior ao ADR 0017).
+
+Os nomes dos participantes só substituem o rótulo quando a transcrição os identifica (apresentação, saudação ou vocativo), e a ata marca o nome como inferido. Quando o app não identifica alguém, o lápis ao lado de cada participante, na janela de leitura, renomeia aquela voz no próprio lugar; o nome vale só para aquela ata, substitui o rótulo em todo o texto e entra nos resumos gerados depois. Atas geradas antes dos modelos de resumo continuam abrindo como antes, sem as chips.
 
 ## Requisitos
 
@@ -38,9 +45,9 @@ O app não aparece no Dock. Abra-o pelo Spotlight ou pelo Launchpad. Abrir o app
 2. Em **Chaves e modelos de IA**, abra o arquivo e preencha `GOOGLE_API_KEY` e `ANTHROPIC_API_KEY`. O arquivo é `~/Library/Application Support/Minuta/.env`, com permissão `600`, e o app o lê a cada uso.
 3. Conceda **Microfone** e **Gravação de tela e áudio do sistema**. Depois da segunda, o macOS pede para reabrir o app.
 4. Use **Testar captura** para confirmar que o som chega.
-5. Escolha **Iniciar gravação** no menu. O tempo gravado aparece ao lado do ícone. Use **Pausar gravação** e **Continuar gravação** para um intervalo e **Encerrar gravação** para gerar a ata; uma notificação avisa quando ela estiver pronta.
+5. Escolha **Iniciar gravação** no menu. O tempo gravado aparece ao lado do ícone. Use **Pausar gravação** e **Continuar gravação** para um intervalo e **Encerrar gravação** para processar. O app transcreve, sugere um modelo de resumo e gera o resumo sugerido; uma notificação avisa quando o resumo estiver pronto, ou que a transcrição foi salva e que falta escolher o modelo.
 
-O ícone é sempre o microfone, e o estado aparece no fundo do botão: sem fundo (parado), verde com o tempo correndo (gravando), vermelho com o tempo parado e o símbolo de pausa (pausada) e amarelo com um spinner (gerando a ata). Se você iniciar outra gravação durante o processamento, vale a cor da gravação e o spinner fica ao lado do tempo. Erros viram um aviso com a causa e, se for o caso, a opção de tentar de novo.
+O ícone é sempre o microfone, e o estado aparece no fundo do botão: sem fundo (parado), verde com o tempo correndo (gravando), vermelho com o tempo parado e o símbolo de pausa (pausada) e amarelo com um spinner (transcrevendo ou classificando). Se você iniciar outra gravação durante o processamento, vale a cor da gravação e o spinner fica ao lado do tempo. Erros viram um aviso com a causa e, se for o caso, a opção de tentar de novo.
 
 ## Limites
 
@@ -52,7 +59,7 @@ O ícone é sempre o microfone, e o estado aparece no fundo do botão: sem fundo
 
 ## Provedores
 
-A transcrição e a ata usam provedores escolhidos no mesmo `.env` (`TRANSCRIBER`, `TRANSCRIBER_MODEL`, `MINUTER`, `MINUTER_MODEL`). Hoje existem `gemini` e `claude`. Um provedor novo exige um adaptador no código e um teste com a reunião sintética ([ADR 0012](docs/decisions/0012-env-file-and-provider-seams.md)).
+A transcrição, a classificação e o resumo usam provedores escolhidos no mesmo `.env` (`TRANSCRIBER`, `TRANSCRIBER_MODEL`, `MINUTER`, `MINUTER_MODEL`). Hoje existem `gemini` e `claude`. Um provedor novo exige um adaptador no código e um teste com a reunião sintética ([ADR 0012](docs/decisions/0012-env-file-and-provider-seams.md)).
 
 ## Privacidade
 
@@ -61,26 +68,26 @@ O áudio das reuniões é enviado ao Google, e o texto, à Anthropic. O app não
 ## Desenvolvimento
 
 ```bash
-swift test                                   # testes (transcrição, Markdown, .env, erros, atas, participantes)
+swift test                                   # testes (transcrição, Markdown, modelos de resumo, dois arquivos, .env, erros, atas, participantes)
 ./scripts/build-app.sh                       # compila e monta build/Minuta.app
 python3 tools/synthetic-meeting/build.py --all  # gera o áudio sintético de teste (oito cenários)
-build/Minuta.app/Contents/MacOS/Minuta --process <pasta> --out <pasta>
+build/Minuta.app/Contents/MacOS/Minuta --process <pasta> --out <pasta> [--model <modelo>|all]
 ```
 
-O último comando roda transcrição e ata sobre `mic.m4a` e `system.m4a` de uma pasta, usando as chaves do `.env`, sem alterar a pasta configurada no app.
+O último comando roda transcrição, classificação e resumo sobre `mic.m4a` e `system.m4a` de uma pasta, usando as chaves do `.env`, sem alterar a pasta configurada no app. Gera o modelo sugerido (Geral, sem sugestão), ou o modelo pedido, ou os cinco com `all`.
 
 Estrutura:
-- `Sources/Minuta/`: o app. `Recorder` (captura), `Providers` (escolha pelo `.env`), `Gemini` (transcrição), `Claude` e `MinutesPrompt` (ata), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (fluxo). Interface: `StatusItemController` (botão e menu da barra), `AtasView` e `AtaLibrary` (janela de atas), `AtaViewer`, `MarkdownHTML`, `ParticipantEditor` e `ParticipantRename` (leitura da ata e nomes dos participantes) e `SettingsView` (configurações).
+- `Sources/Minuta/`: o app. `Recorder` (captura), `Providers` (escolha pelo `.env`), `Gemini` (transcrição), `Claude`, `MinutesPrompt` e `SummaryModels` (classificação e os cinco modelos de resumo), `Minutes` (Markdown), `AtaStore` e `SummaryService` (os dois arquivos da reunião e a troca de modelo), `Job` (estado em disco), `AppModel` (fluxo). Interface: `StatusItemController` (botão e menu da barra), `AtasView` e `AtaLibrary` (janela de atas), `AtaViewer`, `MarkdownHTML`, `TitleRename`, `ParticipantEditor` e `ParticipantRename` (leitura da ata, chips de modelo, título e nomes dos participantes) e `SettingsView` (configurações).
 - `Tests/MinutaTests/`: testes.
 - `scripts/`: instalação, assinatura local e ícone.
-- `tools/synthetic-meeting/`: gerador de áudio de teste, gabarito e amostras.
+- `tools/synthetic-meeting/`: gerador de áudio de teste, com oito cenários (`scenarios/`), gabaritos e amostras.
 - `docs/`: brief original, [plano de validação](docs/validation-plan.md) e [decisões](docs/decisions/).
 
 ## Estado
 
-- **Validado com áudio sintético** (4 vozes, 253 s): transcrição com cerca de 1% de diferença, 28 de 28 falas do sistema com o falante certo, e ata com decisões, ações e prazos corretos. Detalhes em [`docs/validation-plan.md`](docs/validation-plan.md).
-- **Validado pelo usuário:** captura do áudio do sistema pelo app, gravação com microfone, pausa e continuação, gravação de teste de fone sem participante falso e Apagar uma ata pela janela de atas.
-- **Pendente:** voz real com 3 ou mais participantes, gravação longa (consumo e estabilidade) e termos de dados dos provedores.
+- **Validado com áudio sintético** (oito reuniões de 3 a 4 minutos, com 2 a 4 vozes): transcrição com cerca de 1% de diferença e 28 de 28 falas do sistema com o falante certo na reunião original; a classificação acertou o modelo esperado nos oito cenários, inclusive o caso vago (sem sugestão) e o sem nomes. Detalhes em [`docs/validation-plan.md`](docs/validation-plan.md).
+- **Validado pelo usuário:** captura do áudio do sistema pelo app, gravação com microfone, pausa e continuação, gravação de teste de fone sem participante falso, Apagar uma ata pela janela de atas, e as chips de modelo e a janela de atas, que ele testou e ajustou depois dos mockups aprovados.
+- **Pendente:** voz real com 3 ou mais participantes, gravação longa (consumo e estabilidade), termos de dados dos provedores, e o envio da ata por e-mail e a consulta por conectores, que ficam para uma etapa com ADR próprio.
 
 O histórico do trabalho e os próximos passos estão em [`STATUS.md`](STATUS.md).
 

@@ -1,6 +1,6 @@
 # 0001. Destino de persistência: Markdown local
 
-Status: aceita
+Status: aceita; o ADR 0017 acrescentou um segundo arquivo por reunião (`.resumos.json`) ao lado do `.md`
 Data: 2026-09-30
 Substitui: seção 2 (Persistência) e seção 4 (formulário de configurações) de `docs/project-brief.md`.
 

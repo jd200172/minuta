@@ -143,6 +143,8 @@ Os testes 1 e 7 podem começar agora.
 
 **Decisão afetada.** ADR 0002 e ADR 0005.
 
+> Atualização de 2026-10-01: o prompt único deste teste deu lugar a um prompt comum mais um bloco por modelo de resumo (ADR 0017). Os resultados abaixo valem para o formato anterior; o teste 8 cobre o fluxo atual.
+
 **Passos.**
 1. Montar o prompt único da ata, com a data da reunião (30/09/2026) como âncora.
 2. Enviar a transcrição segmentada, com IDs, do teste 2.
@@ -215,6 +217,39 @@ Os testes 1 e 7 podem começar agora.
 **Se falhar.** Sem retenção aceitável, trocar de provedor ou restringir o uso a reuniões sem conteúdo sensível.
 
 **Resultado.** Pendente.
+
+---
+
+## Teste 8. Classificação e modelos de resumo
+
+**Pergunta.** A classificação sugere o modelo certo, o título é aceitável e cada modelo produz um resumo rastreável, sem inventar responsável, prazo nem decisão?
+
+**Decisão afetada.** ADR 0017.
+
+**Material.** Oito cenários em `tools/synthetic-meeting/scenarios/`, cada um com `script.json`, `expected.md` e o índice em `scenarios/README.md`. Áudio gerado por `python3 tools/synthetic-meeting/build.py --all`. Cobrem os cinco modelos e três casos para o classificador: ambíguo (decisão com status no começo), vago (conversa curta sem conteúdo) e dois participantes sem nomes ditos.
+
+**Passos.**
+1. Converter `mic.wav` e `system.wav` de cada cenário para `.m4a` (`afconvert -f m4af -d aac -b 32000`).
+2. Rodar `Minuta --process <pasta> --out <pasta> --date <data>` (opcionalmente `--model all`).
+3. Conferir o modelo sugerido, a justificativa e o título contra o `expected.md`; abrir a ata e conferir seções, responsáveis, prazos e armadilhas.
+4. Para o cenário 8, esvaziar o campo "Seu nome" antes de rodar.
+
+**Aprovação.**
+- Modelo sugerido igual ao esperado, ou entre as alternativas aceitáveis do `expected.md`. No cenário vago, sem sugestão.
+- Título curto, sem nome de pessoa, data nem assunto inventado.
+- Nenhum responsável, prazo ou decisão sem evidência; proposta descartada fora das decisões.
+- Todos os IDs citados existem na transcrição.
+
+**Se falhar.** Ajustar o bloco do modelo (`SummaryModels`) ou o prompt do classificador. Se um provedor novo for adotado, repetir o teste inteiro.
+
+**Resultado (2026-10-01, Claude Sonnet 5.5, duas rodadas).** Classificação correta em todos os cenários rodados: sete na primeira rodada (02 a 08) e os oito na segunda.
+- 01 Decisão, 02 Acompanhamento, 03 Problemas e ideias, 04 Informativa, 05 Geral e 06 Decisão (ambíguo; Acompanhamento também seria aceito).
+- 07 (vago): "Geral (confiança baixa, sem sugestão)", com título "Alinhamento genérico de pendências". O resumo não inventou assunto, decisão, responsável nem prazo.
+- 08 (sem nomes, "Seu nome" vazio): Acompanhamento na segunda rodada e Decisão na primeira, ambos aceitos. Participantes "Eu" e "Participante 1", sem nome inferido.
+- Troca de modelo no app: um modelo já gerado troca na hora; um novo gera e fica marcado com ponto. Refazer substitui só o do modelo exibido.
+- No cenário 6, a diarização juntou a fala da Gabriela à da Roberta num segmento, e uma ação saiu com a pessoa errada. É limite da transcrição, não do resumo.
+- Não conferido em detalhe: todas as seções de cada `expected.md` (responsáveis e prazos por cenário). Fica nos próximos passos do `STATUS.md`.
+- Não medido: custo em tokens e tempo por reunião.
 
 ---
 

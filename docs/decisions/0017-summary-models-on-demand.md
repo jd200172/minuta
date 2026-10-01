@@ -72,7 +72,7 @@ Brainstorm e resolução de problemas formam um modelo só: a frequência de bra
 - Um ícone de atualizar ao fim das chips refaz o resumo do modelo escolhido ("Refazer este resumo"). Não pede confirmação: é uma ação nomeada, e o resumo gerado de novo substitui só o daquele modelo.
 - Não há aviso de substituição ao trocar de modelo, porque nada se descarta.
 
-**Lista de atas.** Mostra o modelo escolhido numa etiqueta. Ignora os `.resumos.json`. Apagar uma ata move os dois arquivos para a Lixeira.
+**Lista de atas.** Mostra o modelo escolhido na coluna Resumo, com ponto colorido e nome (ADR 0015). Ignora os `.resumos.json`. Mover uma ata para a Lixeira move os dois arquivos. O menu de contexto da ata tem o submenu Resumo, com os cinco modelos.
 
 ## Consequências
 

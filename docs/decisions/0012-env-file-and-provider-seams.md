@@ -27,7 +27,7 @@ O app lê o arquivo a cada uso, então editar dispensa reiniciar. Na primeira ab
 
 **Regras dos modelos.** O prompt, o schema JSON e a decodificação da ata ficam em `MinutesPrompt`, neutros em relação ao provedor. Cada adaptador só trata do transporte e do mecanismo de saída estruturada do seu provedor. A validação continua no app (`TranscriptBuilder`, `MinutesRenderer`): IDs inexistentes viram "sem evidência na transcrição". O prompt reduz erros; a validação os impede de chegar na ata.
 
-**Teste de conformidade.** Um provedor novo roda uma vez sobre a reunião sintética (`tools/synthetic-meeting/`) e é comparado com `expected.md` antes do uso.
+**Teste de conformidade.** Um provedor novo roda uma vez sobre a reunião sintética (`tools/synthetic-meeting/`, oito cenários em `scenarios/`) e é comparado com o `expected.md` de cada um antes do uso.
 
 ## Consequências
 

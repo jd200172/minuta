@@ -1,45 +1,39 @@
 # Status
 
-Atualizado em: 2026-10-01
+Atualizado em: 2026-10-01 (fim do dia)
 
 ## Em andamento
-- Nada em execução. ADRs 0001 a 0017 em `docs/decisions/` (o 0017, resumos por tipo de reunião, está implementado); o 0010 (limite de 30 minutos) é proposta e aguarda confirmação. 57 testes passam. O app está instalado em `/Applications/Minuta.app`.
+- Nada em execução. ADRs 0001 a 0017 em `docs/decisions/`; o 0010 (limite de 30 minutos) é proposta e aguarda confirmação. 57 testes passam. O app está instalado em `/Applications/Minuta.app`.
 
 Estado atual do app:
-- Barra de menus com `NSStatusItem`: ícone de microfone fixo e estado pelo fundo do botão (verde gravando, vermelho pausado, amarelo processando) (ADRs 0011 e 0014).
+- Barra de menus com `NSStatusItem`: ícone de microfone fixo e estado pelo fundo do botão (verde gravando, vermelho pausado, amarelo processando); menu com Iniciar gravação, as 5 atas recentes, Atas…, Configurações… e Sair (ADRs 0011, 0014 e 0015).
 - Gravação com pausar, continuar e encerrar, contador, lembrete de pausa, confirmação ao sair gravando e limite de 30 minutos de tempo gravado (ADRs 0010 e 0013).
-- Transcrição pelo Gemini 3.5 Transcribe e ata pelo Claude Sonnet 5.5, com provedores e chaves no `.env` (ADRs 0002, 0008 e 0012).
-- Janela "Atas…" (lista por data e título, Abrir, Apagar com Lixeira, gravações em andamento com Tentar de novo e Descartar), 5 atas recentes no menu, leitura em página com links para a transcrição, verificação da pasta de atas e nome de arquivo com título (ADR 0015).
-- Nomes de participantes pelo lápis da janela de leitura, valendo só na própria ata (ADR 0016).
-- Configurações em página única, com a versão no rodapé; regra de seguir as HIG da Apple.
+- Transcrição pelo Gemini 3.5 Transcribe, classificação e resumo pelo Claude Sonnet 5.5, com provedores e chaves no `.env` (ADRs 0002, 0008, 0012 e 0017).
+- Resumos por tipo de reunião (ADR 0017): ao fim da transcrição, o app classifica a reunião (modelo, confiança, justificativa e título), grava o `.md` e o `.resumos.json` e gera o resumo no modelo sugerido. Cinco modelos: Decisão, Acompanhamento, Problemas e ideias, Informativa e Geral. Todos os resumos gerados ficam guardados no secundário; o escolhido é copiado no `.md`, que é legível sozinho.
+- Janela de leitura: chips de modelo abaixo do título (ponto nos já gerados, linha "Sugerido", indicador ao gerar, ícone de refazer), lápis no título e lápis de cada participante, ambos renomeando no lugar (ADRs 0016 e 0017).
+- Janela "Atas…" no estilo do Finder (ADR 0015): tabela com colunas Data, Título, Resumo e Duração ordenáveis, sem botões nas linhas, gravações em andamento como linhas, datas relativas, ponto colorido na coluna Resumo, menu de contexto (Abrir, Mostrar no Finder, Resumo ▸, Mover para a Lixeira, Renomear; Tentar de novo e Descartar… nas gravações), Return renomeia, duplo clique e ⌘O abrem, ⌘⌫ move para a Lixeira sem pergunta. Verificação da pasta de atas e nome de arquivo por data e hora.
+- Configurações em página única, com a versão no rodapé; regra de seguir as HIG da Apple, com dois desvios registrados (botão da barra de menus, ADR 0014; chips de modelo, ADR 0017).
 
-Verificado pelo usuário: captura do áudio do sistema, gravação com microfone, pausa e continuação, gravação de teste de fone e Apagar uma ata.
+Verificado pelo usuário: captura do áudio do sistema, gravação com microfone, pausa e continuação, gravação de teste de fone, Apagar uma ata, e o desenho das chips e da janela de atas (aprovado em mockups; o usuário testou as janelas e pediu ajustes, já aplicados).
 
-Verificado por mim no app instalado (capturas de tela e scripts): todos os estados do botão, a janela de atas, a leitura com os links, a faixa de pasta ausente, o campo de renomear e o desfazer.
+Verificado por mim no app instalado (capturas de tela e teclas enviadas direto ao processo): todos os estados do botão, a janela de atas, a leitura com os links, a faixa de pasta ausente, o campo de renomear e o desfazer, trocar de modelo (instantâneo para um guardado, geração para um novo), refazer o resumo, renomear o título, ordenar por cabeçalho, menu de contexto com o submenu Resumo, Return, Esc, ⌘O, ⌘W, duplo clique e ⌘⌫.
+
+Verificado com chaves reais: os cenários sintéticos (`tools/synthetic-meeting/scenarios/`) passaram pelo `--process` (sete na primeira rodada, os oito na segunda), e a classificação acertou o modelo esperado em todos (01 Decisão, 02 Acompanhamento, 03 Problemas e ideias, 04 Informativa, 05 Geral, 06 Decisão, 07 sem sugestão por confiança baixa, 08 Acompanhamento ou Decisão). O cenário 8 rodou com "Seu nome" vazio (rótulo "Eu"). As atas do cenário foram copiadas para a pasta de atas do usuário e depois apagadas por ele. Plano de validação: teste 8.
 
 Ainda sem teste manual:
-- Janela de atas: Descartar, Tentar de novo e Mostrar no Finder; botões da faixa de pasta ausente.
+- Janela de atas: linhas de gravação em andamento (só teste unitário), Tentar de novo, Descartar…, Mostrar no Finder, gerar um modelo novo pelo submenu Resumo, a janela de leitura acompanhando um renomear feito na lista, menu de uma ata com problema e botões da faixa de pasta ausente.
+- Falha de rede na geração automática do resumo; secundário apagado ou ilegível (o `.md` continua legível, mas não dá para trocar de modelo; reconstruir a partir do principal não foi feito).
 - Renomear: rolar ou redimensionar com o campo aberto; nomes inferidos pelo modelo no app; atas muito longas.
 - Configurações: Permitir, Testar captura, Escolher… e Abrir ao iniciar o Mac.
-- Barra de menus clara, outros papéis de parede e VoiceOver.
+- Barra de menus clara, outros papéis de parede e VoiceOver (inclusive nas chips de modelo).
 
-## ADR 0017 implementado (2026-10-01)
-- Classificação ao fim da transcrição (modelo, confiança, justificativa, título), gravação do `.md` e do `.resumos.json` e geração automática do modelo sugerido. Cinco chips de modelo na página de leitura, abaixo do título (ponto nos já gerados, linha "Sugerido", indicador ao gerar, ícone de refazer), e lápis no título que renomeia no lugar. Desenho escolhido pelo usuário entre três mockups; desvio da HIG registrado no ADR 0017. Lista de atas com etiqueta do modelo, "Sem resumo" e "Gerando resumo…".
-- Código novo: `SummaryModels`, `AtaStore`, `SummaryService`; mudaram `MinutesPrompt`, `Minutes`, `Claude`, `Providers`, `AppModel`, `AtaLibrary`, `AtaViewer`, `AtasView`, `CLI`. 57 testes passam.
-- Verificado com chaves reais nos oito cenários sintéticos (`tools/synthetic-meeting/scenarios/`): a classificação acertou o modelo esperado nos sete rodados com o `--process` (02 a 08: Acompanhamento, Problemas e ideias, Informativa, Geral, Decisão, sem sugestão no vago, Decisão no 08). O cenário 1 não foi rodado de novo. No app instalado: abrir ata, trocar para modelo guardado (instantâneo), gerar modelo novo (Informativa numa ata com só um resumo) e a linha "Sugerido".
-- Segunda rodada (2026-10-01, versão instalada b1f7660, build 19): os oito cenários passaram pelo `--process` com chaves reais e as atas foram copiadas para a pasta de atas do usuário, com horário 09:01 a 09:08 (`2026-09-30 0901` a `2026-09-22 0908`) e o `.resumos.json` de cada uma. Classificação: 01 Decisão, 02 Acompanhamento, 03 Problemas e ideias, 04 Informativa, 05 Geral, 06 Decisão, 07 sem sugestão (confiança baixa), 08 Acompanhamento. O cenário 8 rodou com "Seu nome" vazio e a lista mostra "Eu". A ata anterior ao ADR 0017 abre na janela nova sem o controle de modelos.
-- No cenário 6, a diarização juntou a fala da Gabriela à da Roberta (Participante 1) em um segmento, e a ação "verificar a versão 3.1" saiu com a Roberta. É limite da transcrição (duas vozes femininas em turnos seguidos), não do resumo.
-- Três pedidos ao Google voltaram com limite de pedidos na primeira rodada (3 por minuto na camada gratuita) e passaram ao repetir com intervalo.
-- Verificado no app instalado depois da troca para chips: gerar modelo novo (indicador e ponto), refazer o resumo e renomear o título no lugar (arquivo renomeado, `.resumos.json` intacto).
-- Sem teste manual: falha de rede na geração automática, secundário apagado ou ilegível, VoiceOver no controle de modelos (os segmentos não expõem nome pelo AppleScript).
-- Limites conhecidos: o secundário ilegível ou ausente impede trocar de modelo (reconstruir a partir do principal não foi feito); o `--process` grava `duracao_segundos: 0` porque não conhece a duração; nome do usuário com espaço no fim ("JULIANO ") aparece com espaço na lista de participantes.
-- Em aberto: o ADR 0017 deixa fora o envio por e-mail e a consulta por conectores.
-
-## Janela de atas no estilo do Finder (2026-10-01)
-- Tabela sem coluna de ações, com as gravações em andamento como linhas, ponto colorido na coluna Resumo, datas relativas, menu de contexto com o submenu Resumo, Return renomeia, duplo clique e ⌘O abrem, ⌘⌫ move para a Lixeira sem pergunta. Detalhes no ADR 0015. 57 testes passam.
-- Verificado no app instalado, com teclas enviadas direto ao processo do Minuta: ordenação por clique no cabeçalho, menu de contexto e submenu Resumo (visto e "(sugerido)"), Return abrindo o campo de renomear, Esc cancelando, ⌘O abrindo, ⌘W fechando, duplo clique abrindo e ⌘⌫ movendo os dois arquivos para a Lixeira.
-- Sem verificar: linhas de gravação em andamento (só teste unitário), "Tentar de novo" e "Descartar…", gerar um modelo novo pelo submenu, a janela de leitura acompanhando um renomear feito na lista e o menu de uma ata com problema.
-- Cabeçalho: o da `Table` é o do sistema. Tentei ajustar fonte e cor pelo AppKit (trocando a célula de cabeçalho de cada coluna) e não teve efeito, porque o SwiftUI desenha o cabeçalho por conta própria; o código foi removido. Mudar o estilo exige uma `NSTableView` do AppKit (reescrita da janela). Ícone do título removido a pedido do usuário.
+Limites conhecidos:
+- O cabeçalho da `Table` é o do sistema. Tentei ajustar fonte e cor pelo AppKit (trocando a célula de cabeçalho de cada coluna) e não teve efeito, porque o SwiftUI desenha o cabeçalho por conta própria; o código foi removido. Mudar o estilo exige uma `NSTableView` do AppKit (reescrita da janela). Decisão: manter.
+- A `Table` do macOS 13 não permite clicar de novo no nome para renomear, Quick Look nem reordenar colunas.
+- O `--process` grava `duracao_segundos: 0` porque não conhece a duração.
+- O nome do usuário com espaço no fim ("JULIANO ") aparece com o espaço na lista de participantes.
+- No cenário 6, a diarização juntou a fala da Gabriela à da Roberta (Participante 1) num segmento, e uma ação saiu com a pessoa errada. É limite da transcrição (duas vozes femininas em turnos seguidos), não do resumo.
+- A camada gratuita do Google recusa o terceiro pedido por minuto; cada reunião usa dois.
 
 ## Descobertas
 <!-- fato aprendido durante o trabalho que muda o próximo passo -->
@@ -75,19 +69,23 @@ Ainda sem teste manual:
 - Banco de dados ou pasta interna do app para as atas, e um submenu por ata no menu: ver ADR 0015.
 - Folha única com todos os participantes aberta por um botão da barra de título (ADR 0016): invasiva; trocada pelo lápis individual.
 - Anotações "(canal do microfone)" e "nome informado por você" na lista de participantes: redundantes (ADR 0016).
+- Controle de modelos nativo ou menu pop-up na leitura: o usuário escolheu as chips entre três mockups (ADR 0017).
+- Botões e ícones nas linhas da lista de atas: trocados pelo menu de contexto, como no Finder (ADR 0015). Ícone de documento no título: não informa, todas as linhas são do mesmo tipo.
+- Estilo do cabeçalho da tabela pelo AppKit: sem efeito na `Table` do SwiftUI.
 
 ## Próximos
-- Conferir os `expected.md` dos oito cenários contra os resumos gerados e ajustar prompts de modelo onde faltar (acerto de responsáveis, prazos e armadilhas).
-- Testar manualmente "Renomear reunião…", "Refazer este resumo" e as falhas de geração.
+- Conferir os `expected.md` dos oito cenários contra os resumos gerados e ajustar os blocos dos modelos onde faltar (acerto de responsáveis, prazos e armadilhas).
+- Testar manualmente o que está em "Ainda sem teste manual", em especial a falha da geração automática e o secundário ilegível.
 - Conferir nas fontes primárias as citações de Tropman, Romano e Nunamaker e Monge usadas no ADR 0017.
 - Confirmar o limite de 30 minutos (ADR 0010).
-- Gravar uma reunião real com voz (3 ou mais participantes) e conferir transcrição, diarização e ata (teste 6).
+- Gravar uma reunião real com voz (3 ou mais participantes) e conferir transcrição, diarização, classificação e resumo (teste 6).
 - Teste de eco sem fone (alto-falante e microfone abertos), para medir o quanto o eco vaza para a ata e decidir se vale o cancelamento de eco.
-- Medir o custo em tokens e o tempo por ata, e comparar o esforço `medium` com `high`.
+- Medir o custo em tokens e o tempo por reunião (classificação mais resumo), e comparar o esforço `medium` com `high`.
 - Migrar a chave do Google para a camada paga antes de gravar reuniões reais.
 - Ler os termos de dados do Google e da Anthropic (teste 7).
 - Pendências da revisão de HIG: reticências em "Abrir arquivo…" e "Gravando 5 s…", um só botão de destaque em Permissões, "Configurações" ou "Ajustes" (a confirmar) e a grafia do nome do app.
-- Opcionais, se o risco ou o uso pedirem: cópia interna das atas com restauração (detecta ata apagada), regenerar o resumo com os nomes dos participantes (corrige artigos), cancelamento de eco.
+- ADR próprio para o envio da ata por e-mail e a consulta por conectores (exige rever a regra de que nada vai para a nuvem).
+- Opcionais, se o risco ou o uso pedirem: reconstruir o secundário a partir do `.md`, cópia interna das atas com restauração (detecta ata apagada), cancelamento de eco.
 - Confirmar o público do projeto (hoje registrado como uso próprio).
 
 ## Bloqueado
