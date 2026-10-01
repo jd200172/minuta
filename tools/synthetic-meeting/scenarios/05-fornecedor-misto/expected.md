@@ -4,7 +4,7 @@ Data da reunião: 24/09/2026 (quinta-feira). "Seu nome": Juliano. Duração: cer
 
 ## Classificação
 
-- Modelo esperado: Geral. Aceitável: Informativa ou Acompanhamento, com a justificativa citando a mistura de assuntos.
+- Modelo esperado: Geral. Aceitável: Informativa, com a justificativa citando a mistura de assuntos.
 - Não aceitável: Decisão (nada é decidido) e Problemas e ideias.
 - Título plausível: algo como "Conversa com fornecedor sobre entrega, preços e embalagens".
 

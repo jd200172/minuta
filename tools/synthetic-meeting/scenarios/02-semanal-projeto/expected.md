@@ -4,8 +4,7 @@ Data da reunião: 29/09/2026 (terça-feira). "Seu nome": Juliano. Duração: cer
 
 ## Classificação
 
-- Modelo esperado: Acompanhamento. Aceitável: Geral.
-- Não aceitável: Decisão (não há decisão de escopo) e Informativa.
+- Modelo esperado: Geral (reunião de status). Não aceitável: Decisão (não há decisão de escopo) e Informativa (ninguém expõe conteúdo ao grupo; cada pessoa conta o próprio avanço).
 - Título plausível: algo como "Semanal do portal do cliente". Sem nome de pessoa nem data.
 
 ## Canais e vozes
@@ -19,7 +18,9 @@ Data da reunião: 29/09/2026 (terça-feira). "Seu nome": Juliano. Duração: cer
 
 O canal do sistema deve ter 3 falantes distintos e estáveis. Cada um diz o próprio nome na primeira fala.
 
-## Resumo no modelo Acompanhamento
+## Resumo no modelo Geral (um tema por pessoa)
+
+Cada tema traz o que avançou, o que está travado e o que vem a seguir. O conteúdo esperado é o abaixo, organizado por pessoa.
 
 - Progresso: login e recuperação de senha prontos (cobertura de testes em 75%, Patrícia); layout das faturas quase pronto, versão para celular entregue na quarta (Beatriz, "amanhã" = 30/09/2026); 5 de 8 entrevistas feitas (Beatriz); integração de cobrança funcionando em teste (Rafael).
 - Bloqueios: acesso ao ambiente de produção não liberado, pedido duas vezes (Rafael); tempo de resposta da listagem de faturas em 2 s contra meta de menos de 1 s, causa suspeita sem confirmação (consulta sem índice).

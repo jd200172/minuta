@@ -129,6 +129,8 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
             hint = "Gerando o resumo no modelo \(running.title)…"
         } else if let suggestion = sidecar?.classification?.suggestion, let reason = sidecar?.classification?.reason {
             hint = "Sugerido: \(suggestion.title). \(reason)"
+        } else if chosen == nil, AtaStore.frontMatter(text)["modelo"] != nil {
+            hint = "Este resumo usa um modelo que não existe mais. Escolha um dos modelos acima."
         } else if chosen == nil {
             hint = "Não foi possível sugerir um modelo. Escolha um, ou use Geral."
         } else {

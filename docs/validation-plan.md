@@ -226,7 +226,7 @@ Os testes 1 e 7 podem começar agora.
 
 **Decisão afetada.** ADR 0017.
 
-**Material.** Oito cenários em `tools/synthetic-meeting/scenarios/`, cada um com `script.json`, `expected.md` e o índice em `scenarios/README.md`. Áudio gerado por `python3 tools/synthetic-meeting/build.py --all`. Cobrem os cinco modelos e três casos para o classificador: ambíguo (decisão com status no começo), vago (conversa curta sem conteúdo) e dois participantes sem nomes ditos.
+**Material.** Oito cenários em `tools/synthetic-meeting/scenarios/`, cada um com `script.json`, `expected.md` e o índice em `scenarios/README.md`. Áudio gerado por `python3 tools/synthetic-meeting/build.py --all`. Cobrem os quatro modelos e três casos para o classificador: ambíguo (decisão com status no começo), vago (conversa curta sem conteúdo) e dois participantes sem nomes ditos.
 
 **Passos.**
 1. Converter `mic.wav` e `system.wav` de cada cenário para `.m4a` (`afconvert -f m4af -d aac -b 32000`).
@@ -243,9 +243,10 @@ Os testes 1 e 7 podem começar agora.
 **Se falhar.** Ajustar o bloco do modelo (`SummaryModels`) ou o prompt do classificador. Se um provedor novo for adotado, repetir o teste inteiro.
 
 **Resultado (2026-10-01, Claude Sonnet 5.5, duas rodadas).** Classificação correta em todos os cenários rodados: sete na primeira rodada (02 a 08) e os oito na segunda.
-- 01 Decisão, 02 Acompanhamento, 03 Problemas e ideias, 04 Informativa, 05 Geral e 06 Decisão (ambíguo; Acompanhamento também seria aceito).
+- 01 Decisão, 02 Acompanhamento, 03 Problemas e ideias, 04 Informativa, 05 Geral e 06 Decisão (ambíguo; Acompanhamento também seria aceito). O Acompanhamento deixou de existir no ADR 0018; os `expected.md` agora esperam Geral nesses casos.
 - 07 (vago): "Geral (confiança baixa, sem sugestão)", com título "Alinhamento genérico de pendências". O resumo não inventou assunto, decisão, responsável nem prazo.
 - 08 (sem nomes, "Seu nome" vazio): Acompanhamento na segunda rodada e Decisão na primeira, ambos aceitos. Participantes "Eu" e "Participante 1", sem nome inferido.
+- Segunda verificação, após o ADR 0018 (2026-10-01, cenários 01 a 05, quatro modelos em cada): classificação correta nos cinco (02 Geral, 05 Geral com confiança alta). Modelo errado: seções vazias em 03 (Decisão), 04 (Decisão), 02 (Problemas e ideias) e sem perguntas inventadas em 05 (Informativa). Ainda aparece "decisão" sem decisão do grupo em Decisão nos cenários 02 e 05.
 - Troca de modelo no app: um modelo já gerado troca na hora; um novo gera e fica marcado com ponto. Refazer substitui só o do modelo exibido.
 - No cenário 6, a diarização juntou a fala da Gabriela à da Roberta num segmento, e uma ação saiu com a pessoa errada. É limite da transcrição, não do resumo.
 - Não conferido em detalhe: todas as seções de cada `expected.md` (responsáveis e prazos por cenário). Fica nos próximos passos do `STATUS.md`.

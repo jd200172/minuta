@@ -11,18 +11,18 @@ struct SectionSpec {
     let empty: String
 }
 
-/// The five summary models (ADR 0017), one per function a meeting serves. The core of every summary
-/// (resumo, participantes, itens de ação, pontos em aberto, transcrição) is shared; each model adds its own
-/// sections between Participantes and Itens de ação.
+/// The four summary models (ADRs 0017 and 0018): three with their own function and Geral for the rest. The
+/// core of every summary (resumo, participantes, itens de ação, pontos em aberto, transcrição) is shared;
+/// each model adds its own sections between Participantes and Itens de ação. Files written before ADR 0018
+/// may name the removed "acompanhamento" model; they stay readable but it is no longer a model.
 enum SummaryModel: String, Codable, CaseIterable, Identifiable {
-    case decisao, acompanhamento, problemas, informativa, geral
+    case decisao, problemas, informativa, geral
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .decisao: "Decisão"
-        case .acompanhamento: "Acompanhamento"
         case .problemas: "Problemas e ideias"
         case .informativa: "Informativa"
         case .geral: "Geral"
@@ -34,14 +34,12 @@ enum SummaryModel: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .decisao:
             "Reunião cujo resultado principal é decidir: o grupo avalia opções e fecha o que será feito."
-        case .acompanhamento:
-            "Reunião recorrente de acompanhamento do trabalho em curso: cada pessoa conta o avanço, o que está travado e os próximos passos."
         case .problemas:
             "Reunião para discutir um problema ou levantar ideias (brainstorm): muitas propostas, sem fechar escolha."
         case .informativa:
-            "Reunião em que uma ou poucas pessoas transmitem conteúdo (apresentação, treinamento, palestra), com perguntas."
+            "Reunião em que uma ou poucas pessoas expõem conteúdo ao grupo (apresentação, treinamento, palestra), com perguntas do público. Reunião de status, em que cada pessoa conta o próprio avanço, não é informativa."
         case .geral:
-            "Reunião de propósito misto, sem função dominante, ou com pouco conteúdo para classificar."
+            "Reunião de propósito misto, sem função dominante, de status da equipe (cada pessoa conta o avanço, o que está travado e os próximos passos) ou com pouco conteúdo para classificar."
         }
     }
 
@@ -52,13 +50,8 @@ enum SummaryModel: String, Codable, CaseIterable, Identifiable {
             """
             Esta reunião é de decisão. Decisão é o que o grupo concordou em fazer daqui para frente. \
             Proposta descartada, alternativa rejeitada e discussão sem conclusão não entram em "decisions"; \
-            registre-as em "discarded", com o motivo.
-            """
-        case .acompanhamento:
-            """
-            Esta reunião é de acompanhamento. Organize por pessoa o que avançou ("progress"), o que está \
-            travado ("blockers") e o que vem a seguir ("nextsteps"). Meta ou previsão dita por alguém não é \
-            decisão do grupo.
+            registre-as em "discarded", com o motivo. Meta, previsão ou estimativa dita por alguém não é decisão. \
+            Se o grupo não decidiu nada, devolva "decisions" vazio.
             """
         case .problemas:
             """
@@ -70,15 +63,18 @@ enum SummaryModel: String, Codable, CaseIterable, Identifiable {
             """
         case .informativa:
             """
-            Esta reunião é informativa: alguém apresenta conteúdo. Em "mainpoints" registre os pontos \
-            principais apresentados. Em "data" liste números, datas e fatos citados, como foram ditos. Em \
-            "questions" registre as perguntas feitas e a resposta de cada uma. Recomendação geral dada ao \
-            público não é ação com responsável.
+            Esta reunião é informativa: uma ou poucas pessoas expõem conteúdo e o grupo pergunta. Em \
+            "mainpoints" registre os pontos principais apresentados. Em "data" liste só números, datas e fatos \
+            citados como foram ditos; proposta e estimativa não são dados. Em "questions" registre só perguntas \
+            que alguém fez de fato, com a resposta de cada uma; não crie pergunta a partir de um assunto. \
+            Recomendação geral dada ao público não é ação com responsável.
             """
         case .geral:
             """
-            Esta reunião mistura assuntos ou tem pouco conteúdo. Em "topics" resuma cada assunto tratado, em \
-            um título curto e um texto objetivo. Proposta ou estimativa não é decisão. Se quase nada \
+            Esta reunião mistura assuntos, é de status da equipe ou tem pouco conteúdo. Em "topics" resuma cada \
+            assunto tratado, em um título curto e um texto objetivo. Se for de status, use um tema por pessoa, \
+            com o que avançou, o que está travado e o que vem a seguir. Proposta, meta ou estimativa não é \
+            decisão. Se quase nada \
             concreto foi dito, diga isso no resumo; não invente assunto, decisão, responsável nem prazo.
             """
         }
@@ -94,18 +90,6 @@ enum SummaryModel: String, Codable, CaseIterable, Identifiable {
                 SectionSpec(
                     key: "discarded", title: "Alternativas descartadas", topics: false,
                     hint: "Propostas rejeitadas e o motivo.", empty: "Nenhuma alternativa descartada."),
-            ]
-        case .acompanhamento:
-            return [
-                SectionSpec(
-                    key: "progress", title: "Progresso", topics: false,
-                    hint: "O que avançou, por pessoa.", empty: "Nenhum progresso registrado."),
-                SectionSpec(
-                    key: "blockers", title: "Bloqueios", topics: false,
-                    hint: "O que está travado e por quê.", empty: "Nenhum bloqueio registrado."),
-                SectionSpec(
-                    key: "nextsteps", title: "Próximos passos", topics: false,
-                    hint: "O que vem a seguir, com quem e quando foi dito.", empty: "Nenhum próximo passo registrado."),
             ]
         case .problemas:
             return [
@@ -181,4 +165,25 @@ struct Classification: Codable, Equatable {
     var title: String
 
     var suggestion: SummaryModel? { confident ? model : nil }
+
+    init(model: SummaryModel, confident: Bool, reason: String, title: String) {
+        self.model = model
+        self.confident = confident
+        self.reason = reason
+        self.title = title
+    }
+
+    /// A classification written before ADR 0018 may name a model that no longer exists. It keeps the
+    /// reason and the title and becomes a classification without a suggestion.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let raw = try c.decode(String.self, forKey: .model)
+        let known = SummaryModel(rawValue: raw)
+        model = known ?? .geral
+        confident = try c.decode(Bool.self, forKey: .confident) && known != nil
+        reason = try c.decode(String.self, forKey: .reason)
+        title = try c.decode(String.self, forKey: .title)
+    }
+
+    enum CodingKeys: String, CodingKey { case model, confident, reason, title }
 }

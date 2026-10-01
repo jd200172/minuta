@@ -4,7 +4,7 @@ Referência para conferir a transcrição e a ata. Os tempos por fala estão em 
 
 ## Classificação
 
-- Modelo esperado: Decisão. Aceitável: Acompanhamento, com justificativa coerente.
+- Modelo esperado: Decisão. Aceitável: Geral, com justificativa coerente.
 - Não aceitável: Informativa e Problemas e ideias.
 - "Seu nome": Juliano.
 - Título plausível: algo como "Adiamento do lançamento da versão 2". Sem nome de pessoa.

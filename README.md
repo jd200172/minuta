@@ -1,6 +1,6 @@
 # minuta
 
-Aplicativo de barra de menus para macOS que grava uma reunião virtual, transcreve o áudio e gera uma ata em Markdown com um resumo no modelo adequado ao tipo da reunião (decisão, acompanhamento, problemas e ideias, informativa ou geral), participantes, itens de ação e pontos em aberto. Cada item aponta para o trecho da transcrição que o originou.
+Aplicativo de barra de menus para macOS que grava uma reunião virtual, transcreve o áudio e gera uma ata em Markdown com um resumo no modelo adequado ao tipo da reunião (decisão, problemas e ideias, informativa ou geral), participantes, itens de ação e pontos em aberto. Cada item aponta para o trecho da transcrição que o originou.
 
 Uso próprio. Estado atual: MVP validado com áudio sintético em oito cenários; falta validar com voz real (ver [Estado](#estado)).
 
@@ -8,12 +8,12 @@ Uso próprio. Estado atual: MVP validado com áudio sintético em oito cenários
 
 1. **Captura.** O app grava o microfone e o áudio do sistema (a voz dos outros participantes) em dois arquivos mono, AAC `.m4a` a 16 kHz. Sem microfone conectado, grava só o áudio do sistema.
 2. **Transcrição.** Cada arquivo vai para o Gemini 3.5 Transcribe. O canal do sistema passa por diarização e vira "Participante 1", "Participante 2" etc.; o do microfone leva o seu nome. O áudio é apagado assim que a transcrição é gravada.
-3. **Classificação e resumo.** A transcrição segmentada vai para o Claude Sonnet 5.5, que sugere um de cinco modelos de resumo (Decisão, Acompanhamento, Problemas e ideias, Informativa, Geral) e um título. O app gera o resumo no modelo sugerido. Na janela de leitura, você corrige os nomes dos participantes e troca de modelo: o que já foi gerado fica guardado e troca na hora, e o que não existe é gerado ao clicar. O app valida que todo trecho citado existe e monta o arquivo `.md`.
+3. **Classificação e resumo.** A transcrição segmentada vai para o Claude Sonnet 5.5, que sugere um de quatro modelos de resumo (Decisão, Problemas e ideias, Informativa, Geral) e um título. O app gera o resumo no modelo sugerido. Na janela de leitura, você corrige os nomes dos participantes e troca de modelo: o que já foi gerado fica guardado e troca na hora, e o que não existe é gerado ao clicar. O app valida que todo trecho citado existe e monta o arquivo `.md`.
 
 O resultado é um arquivo por reunião na pasta escolhida, com a transcrição ao final. O nome é `AAAA-MM-DD HHmm Título.md`, e ao lado fica `AAAA-MM-DD HHmm.resumos.json`, com a transcrição segmentada e todos os resumos gerados dessa reunião. O `.md` mostra o resumo escolhido e é legível sozinho, também fora do app. O prefixo com a data e a hora de início da gravação não muda; o título pode ser renomeado.
 
-- **Janela de leitura.** Abaixo do título ficam as cinco chips de modelo. A chip do modelo exibido vem preenchida, e um ponto marca os modelos que já têm resumo; clicar em um deles troca na hora, e clicar em um novo gera o resumo. A linha "Sugerido: …" mostra o que a classificação indicou e por quê. O ícone de atualizar refaz o resumo do modelo exibido. O lápis ao lado do título renomeia a reunião no lugar, e o lápis de cada participante nomeia aquela voz.
-- **Janela Atas…** É uma tabela no estilo do Finder, com colunas Data, Título, Resumo e Duração ordenáveis. Return renomeia, duplo clique ou ⌘O abre, e ⌘⌫ move para a Lixeira, sem pergunta. O botão direito traz Abrir, Mostrar no Finder, Resumo ▸ (os cinco modelos), Mover para a Lixeira e Renomear. As gravações ainda em andamento aparecem como linhas da tabela, com Tentar de novo e Descartar… no menu de contexto.
+- **Janela de leitura.** Abaixo do título ficam as quatro chips de modelo. A chip do modelo exibido vem preenchida, e um ponto marca os modelos que já têm resumo; clicar em um deles troca na hora, e clicar em um novo gera o resumo. A linha "Sugerido: …" mostra o que a classificação indicou e por quê. O ícone de atualizar refaz o resumo do modelo exibido. O lápis ao lado do título renomeia a reunião no lugar, e o lápis de cada participante nomeia aquela voz.
+- **Janela Atas…** É uma tabela no estilo do Finder, com colunas Data, Título, Resumo e Duração ordenáveis. Return renomeia, duplo clique ou ⌘O abre, e ⌘⌫ move para a Lixeira, sem pergunta. O botão direito traz Abrir, Mostrar no Finder, Resumo ▸ (os quatro modelos), Mover para a Lixeira e Renomear. As gravações ainda em andamento aparecem como linhas da tabela, com Tentar de novo e Descartar… no menu de contexto.
 - **Menu da barra.** Mostra as 5 últimas atas.
 - **Pasta de atas.** Se ela sumir, ou se algum arquivo estiver vazio ou ilegível, a janela avisa. O app não sabe de uma ata que foi apagada, então mantenha a pasta com backup (por exemplo, no OneDrive).
 
@@ -74,10 +74,10 @@ python3 tools/synthetic-meeting/build.py --all  # gera o áudio sintético de te
 build/Minuta.app/Contents/MacOS/Minuta --process <pasta> --out <pasta> [--model <modelo>|all]
 ```
 
-O último comando roda transcrição, classificação e resumo sobre `mic.m4a` e `system.m4a` de uma pasta, usando as chaves do `.env`, sem alterar a pasta configurada no app. Gera o modelo sugerido (Geral, sem sugestão), ou o modelo pedido, ou os cinco com `all`.
+O último comando roda transcrição, classificação e resumo sobre `mic.m4a` e `system.m4a` de uma pasta, usando as chaves do `.env`, sem alterar a pasta configurada no app. Gera o modelo sugerido (Geral, sem sugestão), ou o modelo pedido, ou todos com `all`.
 
 Estrutura:
-- `Sources/Minuta/`: o app. `Recorder` (captura), `Providers` (escolha pelo `.env`), `Gemini` (transcrição), `Claude`, `MinutesPrompt` e `SummaryModels` (classificação e os cinco modelos de resumo), `Minutes` (Markdown), `AtaStore` e `SummaryService` (os dois arquivos da reunião e a troca de modelo), `Job` (estado em disco), `AppModel` (fluxo). Interface: `StatusItemController` (botão e menu da barra), `AtasView` e `AtaLibrary` (janela de atas), `AtaViewer`, `MarkdownHTML`, `TitleRename`, `ParticipantEditor` e `ParticipantRename` (leitura da ata, chips de modelo, título e nomes dos participantes) e `SettingsView` (configurações).
+- `Sources/Minuta/`: o app. `Recorder` (captura), `Providers` (escolha pelo `.env`), `Gemini` (transcrição), `Claude`, `MinutesPrompt` e `SummaryModels` (classificação e os quatro modelos de resumo), `Minutes` (Markdown), `AtaStore` e `SummaryService` (os dois arquivos da reunião e a troca de modelo), `Job` (estado em disco), `AppModel` (fluxo). Interface: `StatusItemController` (botão e menu da barra), `AtasView` e `AtaLibrary` (janela de atas), `AtaViewer`, `MarkdownHTML`, `TitleRename`, `ParticipantEditor` e `ParticipantRename` (leitura da ata, chips de modelo, título e nomes dos participantes) e `SettingsView` (configurações).
 - `Tests/MinutaTests/`: testes.
 - `scripts/`: instalação, assinatura local e ícone.
 - `tools/synthetic-meeting/`: gerador de áudio de teste, com oito cenários (`scenarios/`), gabaritos e amostras.

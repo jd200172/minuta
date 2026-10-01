@@ -5,7 +5,7 @@ Data da reunião: 23/09/2026 (quarta-feira). "Seu nome": Juliano. Duração: cer
 ## Classificação (baixa confiança)
 
 - Resultado esperado: sem sugestão, ou Geral com justificativa que reconheça a falta de conteúdo.
-- Não aceitável: Decisão, Acompanhamento ou Problemas e ideias com justificativa que invente conteúdo.
+- Não aceitável: Decisão ou Problemas e ideias com justificativa que invente conteúdo.
 - Título: genérico ("Alinhamento sem pauta definida" ou equivalente). Não pode inventar assunto, cliente ou projeto.
 - Se a classificação falhar ou vier sem sugestão, nada é gerado automaticamente e a interface mostra o aviso e os cinco modelos sem destaque.
 

@@ -4,7 +4,7 @@ Data da reunião: 01/10/2026 (quinta-feira). "Seu nome": Juliano. Duração: cer
 
 ## Classificação (caso ambíguo)
 
-- Modelo esperado: Decisão ou Acompanhamento. Os dois são aceitáveis, desde que a justificativa cite o panorama inicial e a decisão sobre o prazo.
+- Modelo esperado: Decisão ou Geral. Os dois são aceitáveis, desde que a justificativa cite o panorama inicial e a decisão sobre o prazo.
 - Preferência: Decisão, porque a decisão é o resultado da reunião.
 - Não aceitável: Informativa e Problemas e ideias.
 - Título plausível: algo como "Decisão de escopo da versão 3".

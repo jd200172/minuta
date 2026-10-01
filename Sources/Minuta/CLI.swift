@@ -3,7 +3,7 @@ import Foundation
 /// Developer mode: runs the transcription and minutes pipeline on existing audio files.
 ///
 /// Usage: Minuta --process <dir with mic.m4a and system.m4a> --out <output dir> [--date 2026-09-30T14:02:00-03:00]
-///        [--model decisao|acompanhamento|problemas|informativa|geral|all]
+///        [--model decisao|problemas|informativa|geral|all]
 /// Writes transcript.json, the meeting file and its sidecar into the output dir, classifies the meeting and
 /// generates the summary in the suggested model (Geral without a suggestion), or in the model(s) asked for.
 enum CLI {

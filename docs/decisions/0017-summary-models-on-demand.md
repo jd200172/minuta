@@ -1,6 +1,6 @@
 # 0017. Resumos por tipo de reunião, guardados por modelo
 
-Status: aceita; implementada
+Status: aceita; implementada; parcialmente substituída pela `docs/decisions/0018-four-summary-models.md` (o modelo Acompanhamento deixou de existir, e a Informativa foi redefinida)
 Data: 2026-10-01
 Substitui: o prompt único e a estrutura única de ata do `docs/decisions/0005-minutes-structure-and-traceability.md`, e o adiamento dos tipos de reunião do `docs/decisions/0007-defer-meeting-types-and-notes.md`. A rastreabilidade do ADR 0005 continua valendo. Notas continuam adiadas (ADR 0007).
 Complementa: `docs/decisions/0015-minutes-library.md` (nome do arquivo e renomeação do título) e `docs/decisions/0016-manual-participant-names.md`.

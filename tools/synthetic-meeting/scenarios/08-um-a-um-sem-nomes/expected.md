@@ -4,7 +4,7 @@ Data da reunião: 22/09/2026 (terça-feira). "Seu nome": vazio (rótulo "Eu"). D
 
 ## Classificação
 
-- Modelo esperado: Acompanhamento ou Decisão. Os dois são aceitáveis.
+- Modelo esperado: Geral ou Decisão. Os dois são aceitáveis.
 - Aceitável: Geral.
 - Não aceitável: Informativa e Problemas e ideias.
 - Título plausível: algo como "Priorização da carga de trabalho". Sem nomes.

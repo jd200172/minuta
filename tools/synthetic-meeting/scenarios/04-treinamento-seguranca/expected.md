@@ -5,7 +5,7 @@ Data da reunião: 25/09/2026 (sexta-feira). "Seu nome": Juliano. Duração: cerc
 ## Classificação
 
 - Modelo esperado: Informativa. Aceitável: Geral.
-- Não aceitável: Decisão e Acompanhamento.
+- Não aceitável: Decisão e Problemas e ideias.
 - Título plausível: algo como "Treinamento de segurança da informação". Sem nome de pessoa.
 
 ## Canais e vozes

@@ -3,13 +3,13 @@
 Atualizado em: 2026-10-01 (fim do dia)
 
 ## Em andamento
-- Nada em execução. ADRs 0001 a 0017 em `docs/decisions/`; o 0010 (limite de 30 minutos) é proposta e aguarda confirmação. 57 testes passam. O app está instalado em `/Applications/Minuta.app`.
+- Nada em execução. ADRs 0001 a 0018 em `docs/decisions/`; o 0010 (limite de 30 minutos) é proposta e aguarda confirmação. 61 testes passam. Os quatro modelos de resumo (ADR 0018) estão no código e instalados em `/Applications/Minuta.app`. Falta abrir uma ata antiga com `modelo: acompanhamento` para ver a linha de aviso na janela de leitura (só há teste unitário).
 
 Estado atual do app:
 - Barra de menus com `NSStatusItem`: ícone de microfone fixo e estado pelo fundo do botão (verde gravando, vermelho pausado, amarelo processando); menu com Iniciar gravação, as 5 atas recentes, Atas…, Configurações… e Sair (ADRs 0011, 0014 e 0015).
 - Gravação com pausar, continuar e encerrar, contador, lembrete de pausa, confirmação ao sair gravando e limite de 30 minutos de tempo gravado (ADRs 0010 e 0013).
 - Transcrição pelo Gemini 3.5 Transcribe, classificação e resumo pelo Claude Sonnet 5.5, com provedores e chaves no `.env` (ADRs 0002, 0008, 0012 e 0017).
-- Resumos por tipo de reunião (ADR 0017): ao fim da transcrição, o app classifica a reunião (modelo, confiança, justificativa e título), grava o `.md` e o `.resumos.json` e gera o resumo no modelo sugerido. Cinco modelos: Decisão, Acompanhamento, Problemas e ideias, Informativa e Geral. Todos os resumos gerados ficam guardados no secundário; o escolhido é copiado no `.md`, que é legível sozinho.
+- Resumos por tipo de reunião (ADRs 0017 e 0018): ao fim da transcrição, o app classifica a reunião (modelo, confiança, justificativa e título), grava o `.md` e o `.resumos.json` e gera o resumo no modelo sugerido. Quatro modelos: Decisão, Problemas e ideias, Informativa e Geral (ADR 0018; o Acompanhamento saiu, e reunião de status vai para Geral). Todos os resumos gerados ficam guardados no secundário; o escolhido é copiado no `.md`, que é legível sozinho.
 - Janela de leitura: chips de modelo abaixo do título (ponto nos já gerados, linha "Sugerido", indicador ao gerar, ícone de refazer), lápis no título e lápis de cada participante, ambos renomeando no lugar (ADRs 0016 e 0017).
 - Janela "Atas…" no estilo do Finder (ADR 0015): tabela com colunas Data, Título, Resumo e Duração ordenáveis, sem botões nas linhas, gravações em andamento como linhas, datas relativas, ponto colorido na coluna Resumo, menu de contexto (Abrir, Mostrar no Finder, Resumo ▸, Mover para a Lixeira, Renomear; Tentar de novo e Descartar… nas gravações), Return renomeia, duplo clique e ⌘O abrem, ⌘⌫ move para a Lixeira sem pergunta. Verificação da pasta de atas e nome de arquivo por data e hora.
 - Configurações em página única, com a versão no rodapé; regra de seguir as HIG da Apple, com dois desvios registrados (botão da barra de menus, ADR 0014; chips de modelo, ADR 0017).
@@ -18,7 +18,7 @@ Verificado pelo usuário: captura do áudio do sistema, gravação com microfone
 
 Verificado por mim no app instalado (capturas de tela e teclas enviadas direto ao processo): todos os estados do botão, a janela de atas, a leitura com os links, a faixa de pasta ausente, o campo de renomear e o desfazer, trocar de modelo (instantâneo para um guardado, geração para um novo), refazer o resumo, renomear o título, ordenar por cabeçalho, menu de contexto com o submenu Resumo, Return, Esc, ⌘O, ⌘W, duplo clique e ⌘⌫.
 
-Verificado com chaves reais: os cenários sintéticos (`tools/synthetic-meeting/scenarios/`) passaram pelo `--process` (sete na primeira rodada, os oito na segunda), e a classificação acertou o modelo esperado em todos (01 Decisão, 02 Acompanhamento, 03 Problemas e ideias, 04 Informativa, 05 Geral, 06 Decisão, 07 sem sugestão por confiança baixa, 08 Acompanhamento ou Decisão). O cenário 8 rodou com "Seu nome" vazio (rótulo "Eu"). As atas do cenário foram copiadas para a pasta de atas do usuário e depois apagadas por ele. Plano de validação: teste 8.
+Verificado com chaves reais: os cenários sintéticos (`tools/synthetic-meeting/scenarios/`) passaram pelo `--process` (sete na primeira rodada, os oito na segunda), e a classificação acertou o modelo esperado em todos (01 Decisão, 02 Acompanhamento (hoje Geral, ADR 0018), 03 Problemas e ideias, 04 Informativa, 05 Geral, 06 Decisão, 07 sem sugestão por confiança baixa, 08 Acompanhamento ou Decisão; Acompanhamento deixou de existir no ADR 0018). O cenário 8 rodou com "Seu nome" vazio (rótulo "Eu"). As atas do cenário foram copiadas para a pasta de atas do usuário e depois apagadas por ele. Plano de validação: teste 8.
 
 Ainda sem teste manual:
 - Janela de atas: linhas de gravação em andamento (só teste unitário), Tentar de novo, Descartar…, Mostrar no Finder, gerar um modelo novo pelo submenu Resumo, a janela de leitura acompanhando um renomear feito na lista, menu de uma ata com problema e botões da faixa de pasta ausente.
@@ -37,6 +37,7 @@ Limites conhecidos:
 
 ## Descobertas
 <!-- fato aprendido durante o trabalho que muda o próximo passo -->
+- Comparação dos cinco modelos nos cenários 01 a 05 (25 resumos, 2026-10-01): o miolo muda pouco, e o modelo errado impõe estrutura sem evidência (decisão inventada, meta tratada como decisão, bloqueio fabricado). Resultado no ADR 0018. Com a regra de seção vazia e os blocos reforçados, os mesmos cenários melhoraram (seções vazias no modelo errado, classificação correta nos cinco), mas o Decisão do 05 e do 02 ainda preenche "decisões" sem decisão do grupo.
 - Gemini 3.5 Transcribe limita o áudio a 30 minutos por pedido com diarização ou timestamps por palavra (documentação do Google). Uma gravação de 60 minutos exigiria dividir em partes sem garantia de rótulos de falante consistentes (ADR 0010).
 - Gemini 3.5 Transcribe marca como experimental a atribuição com 3 ou mais falantes e não cita português especificamente (fonte secundária).
 - `custom_vocabulary` não combina com diarização nem com timestamps no Gemini 3.5 Transcribe.
@@ -55,6 +56,7 @@ Limites conhecidos:
 
 ## Descartado
 <!-- hipótese ou abordagem descartada e o motivo -->
+- Modelo Acompanhamento e Informativa ampla: o Geral entrega o mesmo conteúdo e a Informativa se confundia com o status (ADR 0018). Estrutura única adaptativa sem seletor: recomendada pela comparação, mas o usuário manteve três tipos próprios mais o Geral.
 - Keychain para as chaves: o aviso de autorização volta em qualquer build com assinatura diferente (ADR 0012).
 - Python com `pystray`, `pyobjc` e `customtkinter`: mais dependências e empacotamento frágil com uma só plataforma (ADR 0009).
 - Notion e Supabase como destino do MVP (ADR 0001).
@@ -74,7 +76,9 @@ Limites conhecidos:
 - Estilo do cabeçalho da tabela pelo AppKit: sem efeito na `Table` do SwiftUI.
 
 ## Próximos
-- Conferir os `expected.md` dos oito cenários contra os resumos gerados e ajustar os blocos dos modelos onde faltar (acerto de responsáveis, prazos e armadilhas).
+- Conferir os `expected.md` dos oito cenários contra os resumos gerados e ajustar os blocos dos modelos onde faltar (acerto de responsáveis, prazos e armadilhas). Rodar os cenários 06 a 08 com os quatro modelos (só 01 a 05 foram refeitos depois do ADR 0018).
+- Avaliar se Decisão em reunião sem decisão deve ser bloqueada ou só avisada (o prompt reduz, não impede; ADR 0018).
+- Reuniões reais: confirmar que quatro modelos bastam e que o Geral de status serve no lugar do Acompanhamento.
 - Testar manualmente o que está em "Ainda sem teste manual", em especial a falha da geração automática e o secundário ilegível.
 - Conferir nas fontes primárias as citações de Tropman, Romano e Nunamaker e Monge usadas no ADR 0017.
 - Confirmar o limite de 30 minutos (ADR 0010).

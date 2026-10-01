@@ -5,7 +5,7 @@ Data da reunião: 28/09/2026 (segunda-feira). "Seu nome": Juliano. Duração: ce
 ## Classificação
 
 - Modelo esperado: Problemas e ideias. Aceitável: Geral.
-- Não aceitável: Decisão (o facilitador diz que não se decide nada) e Acompanhamento.
+- Não aceitável: Decisão (o facilitador diz que não se decide nada) e Informativa.
 - Título plausível: algo como "Ideias para reduzir cancelamentos". Sem nome de pessoa.
 
 ## Canais e vozes

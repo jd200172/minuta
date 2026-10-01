@@ -10,6 +10,8 @@ enum MinutesPrompt {
 
         Regras:
         - Use somente o que está na transcrição. Não invente fatos, nomes, responsáveis nem prazos.
+        - Seção sem conteúdo sustentado pela transcrição fica com a lista vazia. Não preencha seção só para \
+        completar a estrutura.
         - Cada item e cada tema cita em "sources" os IDs dos segmentos que o sustentam: \
         no máximo 3, os mais diretos, em ordem cronológica. Não cite todos os segmentos do assunto.
         - Ação exige uma tarefa concreta. Em "owner", use o rótulo exato do falante, como aparece na \

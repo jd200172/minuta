@@ -225,6 +225,42 @@ final class SummaryModelTests: XCTestCase {
             try MinutesPrompt.decodeClassification(#"{"model":"outro","confidence":"alta","reason":"","title":""}"#))
     }
 
+    func testThereAreFourModelsAndNoAcompanhamento() {
+        XCTAssertEqual(Set(SummaryModel.allCases.map(\.rawValue)), ["decisao", "problemas", "informativa", "geral"])
+        XCTAssertNil(SummaryModel(rawValue: "acompanhamento"))
+        XCTAssertFalse(MinutesPrompt.classifierSystem.contains("(Acompanhamento)"))
+    }
+
+    func testPromptTellsToLeaveSectionsWithoutEvidenceEmpty() {
+        for model in SummaryModel.allCases {
+            XCTAssertTrue(MinutesPrompt.system(for: model).contains("Seção sem conteúdo sustentado"))
+        }
+    }
+
+    func testClassificationNamingARemovedModelStillDecodesWithoutSuggestion() throws {
+        let json = #"{"model":"acompanhamento","confident":true,"reason":"Status.","title":"Semanal"}"#
+        let c = try JSONDecoder().decode(Classification.self, from: Data(json.utf8))
+        XCTAssertNil(c.suggestion)
+        XCTAssertEqual(c.title, "Semanal")
+        XCTAssertEqual(c.reason, "Status.")
+        let current = try JSONDecoder().decode(
+            Classification.self,
+            from: Data(#"{"model":"decisao","confident":true,"reason":"x","title":"y"}"#.utf8))
+        XCTAssertEqual(current.suggestion, .decisao)
+    }
+
+    func testSidecarWithARemovedModelStillReads() throws {
+        let json = """
+            {"inicio":"2026-09-30T14:02:00-03:00","duracao_segundos":10,"segments":[],
+            "classification":{"model":"acompanhamento","confident":true,"reason":"r","title":"t"},
+            "summaries":{"acompanhamento":{"summary":"R","participants":[],"sections":{},"actions":[],"open_points":[]}}}
+            """
+        let sidecar = try JSONDecoder().decode(Sidecar.self, from: Data(json.utf8))
+        XCTAssertNil(sidecar.classification?.suggestion)
+        XCTAssertEqual(sidecar.summaries.count, 1)
+        XCTAssertFalse(sidecar.has(.geral))
+    }
+
     func testUserMessageCarriesGivenNames() {
         let transcript = Transcript(segments: [
             Segment(id: "t-000001", speaker: "Participante 1", start: 1, text: "Oi.")
@@ -240,10 +276,10 @@ final class SummaryModelTests: XCTestCase {
 final class AtaHeadModelTests: XCTestCase {
     func testHeadReadsTitleAndModelFromFrontMatter() {
         let head = AtaHead.parse(
-            "---\ninicio: 2026-09-30T14:02:00-03:00\nduracao_segundos: 253\ntitulo: Do cabeçalho\nmodelo: acompanhamento\n---\n\n# Outro\n"
+            "---\ninicio: 2026-09-30T14:02:00-03:00\nduracao_segundos: 253\ntitulo: Do cabeçalho\nmodelo: informativa\n---\n\n# Outro\n"
         )
         XCTAssertEqual(head.title, "Do cabeçalho")
-        XCTAssertEqual(head.model, .acompanhamento)
+        XCTAssertEqual(head.model, .informativa)
         XCTAssertFalse(head.noSummary)
         let none = AtaHead.parse("---\ninicio: 2026-09-30T14:02:00-03:00\nresumo: nenhum\n---\n\n# Sem título\n")
         XCTAssertTrue(none.noSummary)

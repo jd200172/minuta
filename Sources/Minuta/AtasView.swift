@@ -403,9 +403,9 @@ extension SummaryModel {
     var tint: Color {
         switch self {
         case .decisao: .blue
-        case .acompanhamento: .green
         case .problemas: .purple
-        case .informativa, .geral: .gray
+        case .informativa: .green
+        case .geral: .gray
         }
     }
 }
