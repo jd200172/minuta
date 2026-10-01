@@ -20,12 +20,6 @@ final class AppModel: ObservableObject {
     private var pausedAt: Date?
     private var nextReminder = Config.pauseReminderSeconds
 
-    var iconName: String {
-        if recordingStart != nil { return isPaused ? "pause.circle.fill" : "record.circle.fill" }
-        if processing > 0 { return "arrow.triangle.2.circlepath" }
-        return "mic"
-    }
-
     init() {
         Env.prepare()
         // A recording cut off mid-capture leaves an unreadable .m4a: nothing to recover.

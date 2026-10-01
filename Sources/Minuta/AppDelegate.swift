@@ -1,6 +1,14 @@
-import SwiftUI
+import AppKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var statusItem: StatusItemController?
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // The developer CLI mode runs headless: no status item, no pending-recording prompts.
+        guard !CLI.requested() else { return }
+        MainActor.assumeIsolated { statusItem = StatusItemController(model: AppModel.shared) }
+    }
+
     /// Quitting during a recording (running or paused) loses it, so ask first.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         MainActor.assumeIsolated {
@@ -18,31 +26,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         Task { @MainActor in SettingsOpener.open() }
         return true
-    }
-}
-
-@main
-struct MinutaApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
-    @StateObject private var model = AppModel.shared
-
-    init() {
-        if CLI.requested() {
-            Task {
-                let code = await CLI.run()
-                exit(code)
-            }
-        }
-    }
-
-    var body: some Scene {
-        MenuBarExtra {
-            MenuContent(model: model)
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: model.iconName)
-                if let text = model.elapsedText { Text(text).monospacedDigit() }
-            }
-        }
     }
 }

@@ -40,7 +40,7 @@ O app não aparece no Dock. Abra-o pelo Spotlight ou pelo Launchpad. Abrir o app
 4. Use **Testar captura** para confirmar que o som chega.
 5. Escolha **Iniciar gravação** no menu. O tempo gravado aparece ao lado do ícone. Use **Pausar gravação** e **Continuar gravação** para um intervalo e **Encerrar gravação** para gerar a ata; uma notificação avisa quando ela estiver pronta.
 
-O estado aparece no ícone: microfone (ocioso), ponto de gravação com o tempo (gravando), pausa com o tempo (pausada) e setas (processando). Erros viram um aviso com a causa e, se for o caso, a opção de tentar de novo.
+O ícone é sempre o microfone, e o estado aparece no fundo do botão: sem fundo (parado), verde com o tempo correndo (gravando), vermelho com o tempo parado e o símbolo de pausa (pausada) e amarelo com um spinner (gerando a ata). Se você iniciar outra gravação durante o processamento, vale a cor da gravação e o spinner fica ao lado do tempo. Erros viram um aviso com a causa e, se for o caso, a opção de tentar de novo.
 
 ## Limites
 

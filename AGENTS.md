@@ -10,7 +10,7 @@ Fonte: `docs/project-brief.md` (documento original, 2026-09-30). As decisões em
 
 Dentro:
 - macOS 13+. Windows 10/11 em fase posterior (ADR 0003).
-- Interface só na bandeja: menu de contexto e formulário nativo de configurações.
+- Interface só na bandeja: menu de contexto e janela de configurações.
 - Um prompt único de ata (ADR 0005).
 
 Fora do MVP:
@@ -39,7 +39,7 @@ Fora do MVP:
 ## Stack
 
 (fontes: ADRs 0001 a 0014 e `Package.swift`)
-- App nativo em Swift 6.4, SwiftPM, sem dependências de terceiros, macOS 13+ (ADR 0009). SwiftUI `MenuBarExtra` para a bandeja e `Window` para as configurações.
+- App nativo em Swift 6.4, SwiftPM, sem dependências de terceiros, macOS 13+ (ADR 0009). `NSStatusItem` com `NSMenu` para a bandeja (ADR 0014) e uma janela AppKit com conteúdo SwiftUI para as configurações.
 - Captura: ScreenCaptureKit (áudio do sistema) e `AVAudioEngine` (microfone), cada canal em um arquivo mono AAC `.m4a` de 16 kHz (ADRs 0004 e 0009).
 - STT: Gemini 3.5 Transcribe, Files API e Interactions API por `URLSession`, diarização só no canal do sistema (ADR 0008; verificações pendentes: pt-BR, 3 ou mais falantes, termos de dados).
 - LLM da ata: Claude Sonnet 5.5 pela Messages API, saída estruturada e `fallbacks: "default"` (ADR 0002).
@@ -59,7 +59,7 @@ Fora do MVP:
 
 ## Convenções de código
 
-- Um arquivo por responsabilidade em `Sources/Minuta/`: `Recorder` (captura), `Providers` (protocolos `Transcriber` e `Minuter` e escolha pelo `.env`), `Env` (leitura do `.env`), `Gemini` (STT e montagem da transcrição), `Claude` (transporte da ata), `MinutesPrompt` (prompt, schema e decodificação neutros), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (estados e fluxo), `Alerts` (avisos), `CaptureTest` (teste de captura), `CLI` (modo `--process`), `MenuContent` e `SettingsView` (janela de configurações em página única: chaves, permissões e preferências).
+- Um arquivo por responsabilidade em `Sources/Minuta/`: `Recorder` (captura), `Providers` (protocolos `Transcriber` e `Minuter` e escolha pelo `.env`), `Env` (leitura do `.env`), `Gemini` (STT e montagem da transcrição), `Claude` (transporte da ata), `MinutesPrompt` (prompt, schema e decodificação neutros), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (estados e fluxo), `Alerts` (avisos), `CaptureTest` (teste de captura), `CLI` (modo `--process`), `StatusItemController` (botão e menu da bandeja), `AppDelegate` e `main.swift` (entrada) e `SettingsView` (janela de configurações em página única: chaves, permissões e preferências).
 - Sem dependências de terceiros. Mudança de modo de linguagem Swift ou nova dependência exige ADR.
 - Formatador: `swift format` (do toolchain), configurado em `.swift-format` (4 espaços, 120 colunas). Rodar `swift format --in-place --recursive Sources Tests` antes de commitar; `swift format lint --recursive Sources Tests` só confere. Linter: nenhum por ora.
 
@@ -72,7 +72,7 @@ Gravação (uma por vez) separada da fila de jobs (vários). Estados:
 
 Estrutura da ata (ADR 0005): Resumo, Participantes, Decisões, Itens de ação, Pontos em aberto, Resumo por tema, Transcrição com âncoras `t-<segundos>`. Frontmatter: `TODO` definir campos.
 
-Na inicialização, descarta gravações cortadas no meio (arquivo ilegível) e mostra um aviso por gravação pendente, com Processar, Depois e Descartar. Sinalização de estado (ADR 0014, implementação pendente): ícone de microfone fixo; fundo verde ao gravar (relógio correndo), vermelho em pausa (relógio parado e símbolo de pausa), amarelo ao processar (spinner); gravação e processamento juntos mostram a cor da gravação com o spinner. O estado nunca depende só da cor.
+Na inicialização, descarta gravações cortadas no meio (arquivo ilegível) e mostra um aviso por gravação pendente, com Processar, Depois e Descartar. Sinalização de estado (ADR 0014): ícone de microfone fixo; fundo verde ao gravar (relógio correndo), vermelho em pausa (relógio parado e símbolo de pausa), amarelo ao processar (spinner); gravação e processamento juntos mostram a cor da gravação com o spinner. O estado nunca depende só da cor.
 
 ## Critério de pronto
 

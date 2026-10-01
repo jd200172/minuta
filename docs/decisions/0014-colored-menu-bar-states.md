@@ -1,6 +1,6 @@
 # 0014. Estado do app pela cor de fundo do botão na barra de menus
 
-Status: aceita; implementação pendente
+Status: aceita; implementada com `NSStatusItem`
 Data: 2026-10-01
 Substitui, em parte: `docs/decisions/0013-pause-resume-end-recording.md` (ícones por estado).
 
@@ -21,7 +21,7 @@ O botão mostra sempre o ícone de microfone. O estado vem do fundo e dos elemen
 
 Gravação e processamento ao mesmo tempo: vale a cor da gravação (verde ou vermelho), com o spinner ao lado do relógio enquanto houver processamento em andamento. Ao terminar o processamento, o botão volta ao estado inicial; a notificação "Ata salva" ou o aviso de erro seguem como hoje.
 
-O relógio tem largura fixa, para o botão não empurrar os outros itens da barra. Ícone e texto são brancos sobre verde e vermelho, e escuros sobre amarelo.
+O relógio tem largura fixa, para o botão não empurrar os outros itens da barra. Ícone e texto são escuros sobre verde e amarelo, e brancos sobre vermelho: o branco sobre o verde do sistema tem contraste baixo.
 
 **Daltonismo.** Verde e vermelho se confundem na deficiência de visão de cores mais comum. O símbolo de pausa ao lado do relógio e o relógio parado mantêm a distinção por forma, como a regra de sinalização do `AGENTS.md` exige.
 
@@ -29,7 +29,8 @@ O relógio tem largura fixa, para o botão não empurrar os outros itens da barr
 
 ## Consequências
 
-- O `MenuBarExtra` do SwiftUI não desenha fundo colorido nem animação por conta própria. A implementação escolhe entre desenhar o botão como imagem a cada atualização (custa uma renderização por segundo e por quadro do spinner) e trocar para `NSStatusItem` com `NSMenu`, que aceita fundo na camada do botão e animação nativa, mas altera o ADR 0009. Recomendação: `NSStatusItem`. Decidir antes de implementar.
+- O `MenuBarExtra` do SwiftUI não desenha fundo colorido nem animação por conta própria. A implementação escolhe entre desenhar o botão como imagem a cada atualização (custa uma renderização por segundo e por quadro do spinner) e trocar para `NSStatusItem` com `NSMenu`, que aceita fundo na camada do botão e animação nativa, mas altera o ADR 0009. Escolhido: `NSStatusItem` com `NSMenu`.
+- Implementação: `StatusItemController` desenha uma pílula (fundo na camada, ícone, relógio de largura fixa, símbolo de pausa e `NSProgressIndicator`) dentro do botão do item; parado, o botão é o ícone padrão em modo template. O ponto de entrada passou a ser `main.swift` com `AppDelegate`, sem cena SwiftUI.
 - O spinner é novo: o ícone de processamento atual é estático.
 - Contraste do ícone e do relógio precisa ser conferido nas barras clara e escura e com papéis de parede diferentes.
 - A forma do ícone deixa de indicar o estado; o relógio, o símbolo de pausa e o spinner o substituem.

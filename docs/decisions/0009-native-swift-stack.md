@@ -4,6 +4,8 @@ Status: aceita
 Data: 2026-09-30
 Substitui: stack Python do brief (`pystray`, `customtkinter`, `sounddevice`) e o formato de arquivo do ADR 0004 (Ogg/Opus em um arquivo de dois canais).
 
+Nota (2026-10-01): a bandeja deixou de usar `MenuBarExtra` e passou a `NSStatusItem` com `NSMenu` (ADR 0014); o resto da decisão vale.
+
 ## Contexto
 
 O usuário pediu a solução mais simples possível, com o menor consumo de recursos, e delegou a escolha da stack. Com macOS como única plataforma do MVP (ADR 0003), a razão do Python no brief, multiplataforma, deixa de valer. O ambiente tem Swift 6.4 e Xcode 27.
