@@ -39,7 +39,7 @@ struct GeminiTranscriber {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, response) = try await session.data(for: request)
-        try httpCheck(response, data, service: "Google (transcrição)")
+        try httpCheck(response, data, provider: .google)
         return try parse(data)
     }
 
@@ -55,7 +55,7 @@ struct GeminiTranscriber {
         start.setValue("application/json", forHTTPHeaderField: "Content-Type")
         start.httpBody = Data(#"{"file":{"display_name":"minuta"}}"#.utf8)
         let (startData, startResponse) = try await session.data(for: start)
-        try httpCheck(startResponse, startData, service: "Google (envio do áudio)")
+        try httpCheck(startResponse, startData, provider: .google)
         guard let http = startResponse as? HTTPURLResponse,
               let location = http.value(forHTTPHeaderField: "X-Goog-Upload-URL"),
               let uploadURL = URL(string: location) else {
@@ -68,7 +68,7 @@ struct GeminiTranscriber {
         send.setValue("0", forHTTPHeaderField: "X-Goog-Upload-Offset")
         send.setValue("upload, finalize", forHTTPHeaderField: "X-Goog-Upload-Command")
         let (data, response) = try await session.upload(for: send, from: payload)
-        try httpCheck(response, data, service: "Google (envio do áudio)")
+        try httpCheck(response, data, provider: .google)
         guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let info = root["file"] as? [String: Any],
               let uri = info["uri"] as? String, let name = info["name"] as? String else {

@@ -1,7 +1,7 @@
 # Plano de validação
 
 Data: 2026-09-30
-Status: testes 2, 3 e 5 executados com o áudio sintético em 2026-09-30; teste 4 parcial. Testes 1, 6 e 7 pendentes.
+Status: testes 2, 3 e 5 executados com o áudio sintético em 2026-09-30; teste 4 parcial. Teste 1 parcial (captura do sistema funciona). Testes 6 e 7 pendentes.
 
 Sete testes que respondem as dúvidas técnicas das decisões antes de escrever o app. A ordem segue o risco: o que mais pode inviabilizar o projeto vem primeiro. Cada teste tem critério de aprovação e registra o resultado neste arquivo. Resultado negativo reabre o ADR indicado.
 
@@ -49,7 +49,10 @@ Os testes 1 e 7 podem começar agora.
 
 **Se falhar.** Registrar qual caminho funcionou (ScreenCaptureKit ou driver virtual) e o custo para o usuário. Se nenhum funcionar, o projeto perde o canal do sistema e o ADR 0004 precisa ser reescrito.
 
-**Resultado.** Pendente.
+**Resultado parcial (2026-09-30, relatado pelo usuário).** O teste de captura de 5 s da tela de configurações funcionou: o app capturou o áudio do sistema por ScreenCaptureKit, com a identidade de assinatura local e as permissões concedidas.
+- Este Mac é um Mac mini sem dispositivo de entrada de áudio. O microfone não foi testado, e o app grava só o áudio do sistema nesse caso.
+- Não testado: gravação de 60 minutos (e de 30, o limite atual), consumo de CPU e memória durante a gravação, desconexão de fone no meio da gravação, eco do microfone.
+- Decisão confirmada: ScreenCaptureKit serve como caminho de captura no macOS, sem driver virtual.
 
 ---
 

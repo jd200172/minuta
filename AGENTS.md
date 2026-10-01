@@ -47,27 +47,29 @@ Fora do MVP:
 
 (fontes: `Package.swift`, `scripts/build-app.sh`, `tools/synthetic-meeting/build.py`)
 - `./scripts/setup-signing.sh` (uma vez) cria a identidade de assinatura local "Minuta Dev" num chaveiro separado. Mantém as permissões do macOS entre builds.
-- `./scripts/build-app.sh` compila em release e monta `build/Minuta.app`, assinado com essa identidade. Abrir com `open build/Minuta.app`.
+- `./scripts/build-app.sh` compila em release e monta `build/Minuta.app`, assinado com essa identidade.
+- `./scripts/install.sh` compila, instala em `/Applications/Minuta.app` e abre. É o caminho normal de uso.
+- `swift scripts/make-icon.swift` regenera `Resources/AppIcon.icns`.
 - `build/Minuta.app/Contents/MacOS/Minuta --process <pasta com mic.m4a e system.m4a> --out <pasta> [--date ISO8601]` roda transcrição e ata sobre áudios existentes, com as chaves do Keychain, e grava `transcript.json` e a ata em `--out`. Não altera a pasta configurada no app. Serve para os testes 2 a 5 do plano de validação.
 - `swift test` roda os testes do montador de transcrição e do gerador de Markdown. Não há teste automatizado de captura nem das chamadas de rede.
 - `python3 tools/synthetic-meeting/build.py` gera em `tools/synthetic-meeting/out/` o áudio sintético da reunião e o `ground-truth.json`. Requer macOS (`say`, `afconvert`) e ffmpeg com libopus. Resultado esperado em `tools/synthetic-meeting/expected.md`.
 
 ## Convenções de código
 
-- Um arquivo por responsabilidade em `Sources/Minuta/`: `Recorder` (captura), `Gemini` (STT e montagem da transcrição), `Claude` (ata), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (estados e fluxo), `MenuContent` e `SettingsView` (interface).
+- Um arquivo por responsabilidade em `Sources/Minuta/`: `Recorder` (captura), `Gemini` (STT e montagem da transcrição), `Claude` (ata), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (estados e fluxo), `Alerts` (avisos), `KeyCheck` (verifica chaves), `CaptureTest` (teste de captura), `CLI` (modo `--process`), `MenuContent` e `SettingsView` (janela de configurações em abas).
 - Sem dependências de terceiros. Mudança de modo de linguagem Swift ou nova dependência exige ADR.
 - Formatador e linter: `TODO`.
 
 ## Arquitetura
 
 Gravação (uma por vez) separada da fila de jobs (vários). Estados:
-1. Ocioso: ícone neutro, áudio desativado.
+1. Ocioso: ícone de microfone. Menu: Iniciar gravação, Abrir pasta de atas, Configurações…, Sair (ADR 0011).
 2. Gravando: "Iniciar gravação"; dois arquivos mono em streaming para a pasta do job em Application Support.
-3. Job: transcrevendo, gerando ata, gravando arquivo, concluído ou falha. Após a transcrição segmentada gravada, o áudio é apagado; a ata é o passo seguinte sobre o texto.
+3. Job: transcrevendo, gerando ata, concluído. O estado fica só no ícone. Após a transcrição segmentada gravada, o áudio é apagado; a ata é o passo seguinte sobre o texto. Falha: aviso do macOS com a causa e as opções Tentar de novo, Depois e Descartar; o áudio ou a transcrição ficam guardados.
 
 Estrutura da ata (ADR 0005): Resumo, Participantes, Decisões, Itens de ação, Pontos em aberto, Resumo por tema, Transcrição com âncoras `t-<segundos>`. Frontmatter: `TODO` definir campos.
 
-Na inicialização, lê a pasta de jobs pendentes e lista cada um com "Tentar novamente" e "Descartar gravação". Sinalização de estado por forma de ícone, não só por cor.
+Na inicialização, descarta gravações cortadas no meio (arquivo ilegível) e mostra um aviso por gravação pendente, com Processar, Depois e Descartar. Sinalização de estado por forma de ícone, não só por cor.
 
 ## Critério de pronto
 
@@ -101,6 +103,7 @@ Instrução do usuário no chat > `AGENTS.md` > `.agents/STYLE.md` > skill. Em s
 - 2026-09-30: ADR 0006 revisado. Só reuniões virtuais; rótulo do usuário vem do campo "Seu nome" (vazio: "Eu"); proibido agrupar participantes em rótulo coletivo.
 - 2026-09-30: ADR 0008. STT do MVP é o Gemini 3.5 Transcribe, com verificações pendentes. LLM da ata é o Claude Sonnet 5.5 (ADR 0002).
 - 2026-09-30: ADR 0009 (app nativo em Swift, AAC `.m4a` por canal) e primeira versão do código. ADR 0010 propõe limite de 30 minutos por causa do limite do STT; aguarda confirmação.
+- 2026-09-30: ADR 0011 (menu mínimo, erros por aviso, instalação em /Applications, configurações em abas).
 - 2026-09-30: pipeline validado com áudio sintético (transcrição, diarização e ata). Modo `--process` adicionado ao app para testes.
 
 ## Sincronização

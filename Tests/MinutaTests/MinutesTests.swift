@@ -72,3 +72,30 @@ final class KeychainTests: XCTestCase {
         XCTAssertNil(Keychain.get(account))
     }
 }
+
+final class ErrorMessageTests: XCTestCase {
+    func testRejectedKeyOpensSettings() {
+        let error = AppError.http(status: 401, provider: .google, body: Data())
+        XCTAssertTrue(error.opensSettings)
+        XCTAssertTrue(error.message.hasPrefix("Google:"))
+    }
+
+    func testRateLimitDoesNotExposeRawBody() {
+        let body = Data(#"{"error":{"message":"Rate limit exceeded for model gemini-3.5-transcribe"}}"#.utf8)
+        let error = AppError.http(status: 429, provider: .google, body: body)
+        XCTAssertFalse(error.message.contains("gemini-3.5-transcribe"))
+        XCTAssertFalse(error.opensSettings)
+    }
+
+    func testOtherStatusIncludesApiMessage() {
+        let body = Data(#"{"error":{"message":"Campo inválido"}}"#.utf8)
+        let error = AppError.http(status: 400, provider: .anthropic, body: body)
+        XCTAssertTrue(error.message.contains("Campo inválido"))
+        XCTAssertTrue(error.message.contains("400"))
+    }
+
+    func testOfflineMapsToPlainMessage() {
+        let error = AppError.from(URLError(.notConnectedToInternet))
+        XCTAssertEqual(error.message, "Sem conexão com a internet.")
+    }
+}

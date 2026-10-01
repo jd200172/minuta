@@ -26,12 +26,12 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
     func ensurePermissions() async throws {
         if Recorder.hasMicrophone, AVCaptureDevice.authorizationStatus(for: .audio) != .authorized {
             guard await AVCaptureDevice.requestAccess(for: .audio) else {
-                throw AppError("Permita o microfone em Configurações > Permissões.")
+                throw AppError("Permita o microfone em Configurações > Permissões.", opensSettings: true)
             }
         }
         if !CGPreflightScreenCaptureAccess() {
             CGRequestScreenCaptureAccess()
-            throw AppError("Permita a Gravação de Tela e Áudio do Sistema em Configurações > Permissões e use Reabrir o minuta.")
+            throw AppError("Permita a Gravação de Tela e Áudio do Sistema em Configurações > Permissões e use Reabrir o minuta.", opensSettings: true)
         }
     }
 

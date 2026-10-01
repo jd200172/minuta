@@ -3,7 +3,7 @@
 Atualizado em: 2026-09-30
 
 ## Em andamento
-- Primeira versão do app em Swift (ADR 0009): compila, abre na barra de menus e tem 3 testes passando. O pipeline de transcrição e ata foi exercitado de ponta a ponta com o áudio sintético e as chaves reais (modo `--process`). A captura de áudio pelo app ainda não foi testada: depende das permissões do macOS concedidas por uma pessoa.
+- Primeira versão do app em Swift (ADR 0009): compila, abre na barra de menus e tem 3 testes passando. O pipeline de transcrição e ata foi exercitado de ponta a ponta com o áudio sintético e as chaves reais (modo `--process`). A captura do áudio do sistema pelo app foi testada pelo usuário e funcionou (teste de 5 s). Falta uma gravação completa pelo menu, até a ata.
 - Decisões em `docs/decisions/` (ADRs 0001 a 0010). O ADR 0010 (limite de 30 minutos) é proposta e aguarda confirmação.
 - Áudio sintético de teste em `tools/synthetic-meeting/out/` (253 s, 4 vozes: 1 no microfone, 3 no sistema, 3 sobreposições). Gabarito em `tools/synthetic-meeting/expected.md`.
 - Mockups das telas no chat. Não implementados: tela de primeiro uso, teste de captura, "Abrir transcrição" na falha da ata.
@@ -34,12 +34,14 @@ Atualizado em: 2026-09-30
 - Dois arquivos por reunião, ata e transcrição (ADR 0005).
 
 ## Próximos
+- Interface revisada e instalada em `/Applications` (ADR 0011): menu mínimo, erros por aviso, configurações em abas. Verificado por captura de tela das três abas. Não verificado: cliques nos botões, avisos de erro, opção Abrir ao iniciar o Mac.
 - Confirmar o limite de 30 minutos (ADR 0010).
-- Rodar o app: conceder microfone e Gravação de Tela e gravar 30 segundos com um vídeo tocando (teste 1 do `docs/validation-plan.md`).
+- Gravar 30 a 60 segundos de um vídeo com fala pelo menu do app e conferir a ata em `~/Documents/Atas`.
+- Conectar um microfone e repetir o teste de captura, para validar o canal do usuário e o eco.
 - Medir o custo em tokens e o tempo por ata, e comparar o esforço `medium` com `high`.
 - Migrar a chave do Google para a camada paga antes de gravar reuniões reais.
 - Ler os termos de dados do Google e da Anthropic (teste 7).
 - Confirmar o público do projeto (hoje registrado como uso próprio).
 
 ## Bloqueado
-- Teste de captura pelo app (teste 1): depende das permissões do macOS concedidas por você.
+- Nada.

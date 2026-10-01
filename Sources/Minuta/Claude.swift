@@ -96,7 +96,7 @@ struct ClaudeMinuter {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, response) = try await URLSession.shared.data(for: request)
-        try httpCheck(response, data, service: "Anthropic (ata)")
+        try httpCheck(response, data, provider: .anthropic)
 
         guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw AppError("Anthropic (ata): resposta inválida.")

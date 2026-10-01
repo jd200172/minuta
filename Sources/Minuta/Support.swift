@@ -4,8 +4,60 @@ import UserNotifications
 
 struct AppError: LocalizedError {
     let message: String
-    init(_ message: String) { self.message = message }
+    /// True when the fix is in Settings (missing key, rejected key, missing permission).
+    let opensSettings: Bool
+
+    init(_ message: String, opensSettings: Bool = false) {
+        self.message = message
+        self.opensSettings = opensSettings
+    }
+
     var errorDescription: String? { message }
+
+    /// Turns any error into a short message for the user.
+    static func from(_ error: Error) -> AppError {
+        if let error = error as? AppError { return error }
+        if let error = error as? URLError {
+            switch error.code {
+            case .notConnectedToInternet, .networkConnectionLost, .cannotFindHost,
+                 .cannotConnectToHost, .dnsLookupFailed, .internationalRoamingOff:
+                return AppError("Sem conexão com a internet.")
+            case .timedOut:
+                return AppError("A conexão demorou demais. Tente de novo.")
+            default: break
+            }
+        }
+        return AppError(error.localizedDescription)
+    }
+
+    static func http(status: Int, provider: Provider, body: Data) -> AppError {
+        let name = provider.name
+        switch status {
+        case 401, 403:
+            return AppError("\(name): a chave foi recusada. Confira em Configurações > Chaves de API.", opensSettings: true)
+        case 429:
+            return AppError("\(name): limite de pedidos atingido. Aguarde um minuto e tente de novo.")
+        case 413:
+            return AppError("\(name): o áudio é grande demais.")
+        case 500...599:
+            return AppError("\(name): o serviço está com problema. Tente de novo mais tarde.")
+        default:
+            let detail = apiMessage(body)
+            return AppError("\(name): pedido recusado (erro \(status)).\(detail.isEmpty ? "" : " \(detail)")")
+        }
+    }
+
+    private static func apiMessage(_ data: Data) -> String {
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let error = root["error"] as? [String: Any],
+              let message = error["message"] as? String else { return "" }
+        return String(message.prefix(160))
+    }
+}
+
+enum Provider {
+    case google, anthropic
+    var name: String { self == .google ? "Google" : "Anthropic" }
 }
 
 enum Config {
@@ -127,10 +179,11 @@ enum Fmt {
     }
 }
 
-func httpCheck(_ response: URLResponse, _ data: Data, service: String) throws {
-    guard let http = response as? HTTPURLResponse else { throw AppError("\(service): resposta inválida.") }
+func httpCheck(_ response: URLResponse, _ data: Data, provider: Provider) throws {
+    guard let http = response as? HTTPURLResponse else {
+        throw AppError("\(provider.name): resposta inválida.")
+    }
     guard (200..<300).contains(http.statusCode) else {
-        let body = String(data: data.prefix(300), encoding: .utf8) ?? ""
-        throw AppError("\(service): erro \(http.statusCode). \(body)")
+        throw AppError.http(status: http.statusCode, provider: provider, body: data)
     }
 }
