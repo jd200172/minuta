@@ -80,7 +80,7 @@ Estrutura:
 
 - **Validado com áudio sintético** (4 vozes, 253 s): transcrição com cerca de 1% de diferença, 28 de 28 falas do sistema com o falante certo, e ata com decisões, ações e prazos corretos. Detalhes em [`docs/validation-plan.md`](docs/validation-plan.md).
 - **Validado pelo usuário:** captura do áudio do sistema pelo app, gravação com microfone, pausa e continuação, e gravação de teste de fone sem participante falso.
-- **Pendente:** voz real com 3 ou mais participantes, gravação longa (consumo e estabilidade), termos de dados dos provedores e a revisão da janela de configurações (mockup aprovado, ainda não implementado).
+- **Pendente:** voz real com 3 ou mais participantes, gravação longa (consumo e estabilidade), termos de dados dos provedores.
 
 O histórico do trabalho e os próximos passos estão em [`STATUS.md`](STATUS.md).
 

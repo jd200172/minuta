@@ -58,7 +58,7 @@ Fora do MVP:
 
 ## Convenções de código
 
-- Um arquivo por responsabilidade em `Sources/Minuta/`: `Recorder` (captura), `Providers` (protocolos `Transcriber` e `Minuter` e escolha pelo `.env`), `Env` (leitura do `.env`), `Gemini` (STT e montagem da transcrição), `Claude` (transporte da ata), `MinutesPrompt` (prompt, schema e decodificação neutros), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (estados e fluxo), `Alerts` (avisos), `CaptureTest` (teste de captura), `CLI` (modo `--process`), `MenuContent` e `SettingsView` (janela de configurações em abas Geral e Permissões).
+- Um arquivo por responsabilidade em `Sources/Minuta/`: `Recorder` (captura), `Providers` (protocolos `Transcriber` e `Minuter` e escolha pelo `.env`), `Env` (leitura do `.env`), `Gemini` (STT e montagem da transcrição), `Claude` (transporte da ata), `MinutesPrompt` (prompt, schema e decodificação neutros), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (estados e fluxo), `Alerts` (avisos), `CaptureTest` (teste de captura), `CLI` (modo `--process`), `MenuContent` e `SettingsView` (janela de configurações em página única: chaves, permissões e preferências).
 - Sem dependências de terceiros. Mudança de modo de linguagem Swift ou nova dependência exige ADR.
 - Formatador: `swift format` (do toolchain), configurado em `.swift-format` (4 espaços, 120 colunas). Rodar `swift format --in-place --recursive Sources Tests` antes de commitar; `swift format lint --recursive Sources Tests` só confere. Linter: nenhum por ora.
 
@@ -109,6 +109,7 @@ Instrução do usuário no chat > `AGENTS.md` > `.agents/STYLE.md` > skill. Em s
 - 2026-09-30: pipeline validado com áudio sintético (transcrição, diarização e ata). Modo `--process` adicionado ao app para testes.
 - 2026-10-01: ADR 0012. Chaves e escolha de provedor/modelo em `.env` (substitui o Keychain); STT e LLM atrás de protocolos. Regra de credenciais alterada com confirmação do usuário.
 - 2026-10-01: ADR 0013. Pausar, continuar e encerrar gravação; contador na barra de menus; confirmação ao sair gravando; lembrete de pausa.
+- 2026-10-01: janela de configurações redesenhada em página única, sem abas (ADR 0011 parcialmente substituído).
 
 ## Sincronização
 

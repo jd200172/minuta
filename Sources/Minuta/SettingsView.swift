@@ -6,7 +6,7 @@ import SwiftUI
 
 // MARK: - Window
 
-/// The settings window: a standard macOS preferences window with toolbar tabs.
+/// The settings window: one page with three blocks (keys, permissions, preferences).
 @MainActor
 final class SettingsWindowController {
     static let shared = SettingsWindowController()
@@ -19,49 +19,90 @@ final class SettingsWindowController {
     }
 
     private func makeWindow() -> NSWindow {
-        let tabs = PreferencesTabController()
-        tabs.tabStyle = .toolbar
-        tabs.addTabViewItem(item("Geral", "gearshape", GeneralPane(model: AppModel.shared)))
-        tabs.addTabViewItem(item("Permissões", "lock.shield", PermissionsPane(model: AppModel.shared)))
-        let window = NSWindow(contentViewController: tabs)
+        let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView()))
+        window.title = "Configurações"
         window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
         window.center()
         return window
     }
-
-    private func item<V: View>(_ label: String, _ symbol: String, _ view: V) -> NSTabViewItem {
-        let host = NSHostingController(rootView: view)
-        host.sizingOptions = [.preferredContentSize]
-        let item = NSTabViewItem(viewController: host)
-        item.label = label
-        item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: label)
-        return item
-    }
 }
 
-/// Keeps the window title in sync with the selected tab, as macOS preferences windows do.
-private final class PreferencesTabController: NSTabViewController {
-    override func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
-        super.tabView(tabView, didSelect: tabViewItem)
-        view.window?.title = tabViewItem?.label ?? ""
-    }
+private let pageWidth: CGFloat = 640
+private let pageHeight: CGFloat = 490
 
-    override func viewDidAppear() {
-        super.viewDidAppear()
-        view.window?.title = tabViewItems[selectedTabViewItemIndex].label
-    }
-}
+// MARK: - Page
 
-private let paneWidth: CGFloat = 640
+struct SettingsView: View {
+    @ObservedObject private var model = AppModel.shared
+    @AppStorage(Config.userNameKey) private var userName = ""
+    @AppStorage(Config.outputDirKey) private var outputDir = ""
+    @State private var launchAtLogin = false
+    @State private var loginMessage: String?
+    @State private var hasMic = true
+    @State private var micStatus = AVAuthorizationStatus.notDetermined
+    @State private var screenAllowed = false
+    @State private var startedWithoutScreen: Bool?
+    @State private var testing = false
+    @State private var testMessage: String?
 
-/// Puts the app version at the bottom of every settings pane, so it is always clear which build is running.
-private struct VersionFooter: ViewModifier {
-    let height: CGFloat
-
-    func body(content: Content) -> some View {
+    var body: some View {
         VStack(spacing: 0) {
-            content
+            Form {
+                Section("Chaves e modelos de IA") {
+                    LabeledContent("Arquivo de chaves") {
+                        Button("Abrir arquivo…") { Env.open() }
+                    }
+                }
+
+                Section("Permissões") {
+                    LabeledContent("Microfone") { microphoneStatus }
+                    LabeledContent("Gravação de tela e áudio do sistema") {
+                        HStack {
+                            if screenAllowed {
+                                Text("Permitido").foregroundStyle(.secondary)
+                            } else {
+                                Text("Não permitido").foregroundStyle(.red)
+                                Button("Permitir") { requestScreen() }.buttonStyle(.borderedProminent)
+                            }
+                        }
+                    }
+                    if screenAllowed, startedWithoutScreen == true {
+                        LabeledContent("Reabrir o minuta") {
+                            Button("Reabrir") { relaunch() }
+                        }
+                    }
+                    LabeledContent("Teste de captura") {
+                        Button(testing ? "Gravando 5 s…" : "Testar captura") { runTest() }
+                            .disabled(testing || model.recordingStart != nil)
+                    }
+                    if let testMessage {
+                        Text(testMessage).font(.callout).foregroundStyle(.secondary)
+                    }
+                }
+
+                Section("Preferências") {
+                    TextField("Seu nome", text: $userName, prompt: Text("Eu"))
+                        .multilineTextAlignment(.trailing)
+                    LabeledContent("Pasta das atas") {
+                        HStack {
+                            Text(
+                                ((outputDir.isEmpty ? Config.outputDir.path : outputDir) as NSString)
+                                    .abbreviatingWithTildeInPath
+                            )
+                            .lineLimit(1).truncationMode(.middle).foregroundStyle(.secondary)
+                            .frame(maxWidth: 280, alignment: .trailing)
+                            Button("Escolher…") { chooseFolder() }
+                        }
+                    }
+                    Toggle("Abrir ao iniciar o Mac", isOn: Binding(get: { launchAtLogin }, set: setLaunchAtLogin))
+                    if let loginMessage {
+                        Text(loginMessage).font(.callout).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .formStyle(.grouped)
+
             Text(AppVersion.text)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -71,67 +112,36 @@ private struct VersionFooter: ViewModifier {
                 .padding(.top, 4)
                 .padding(.bottom, 12)
         }
-        .frame(width: paneWidth, height: height)
-    }
-}
-
-private func statusLabel(_ text: String, ok: Bool?) -> some View {
-    Group {
-        switch ok {
-        case .some(true):
-            Label(text, systemImage: "checkmark.circle.fill").foregroundStyle(.green)
-        case .some(false):
-            Label(text, systemImage: "xmark.circle.fill").foregroundStyle(.red)
-        case .none:
-            Label(text, systemImage: "minus.circle").foregroundStyle(.secondary)
+        .frame(width: pageWidth, height: pageHeight)
+        .onAppear {
+            refresh()
+            refreshLogin()
+            if startedWithoutScreen == nil { startedWithoutScreen = !screenAllowed }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            refresh()
         }
     }
-}
 
-// MARK: - Geral
-
-struct GeneralPane: View {
-    @ObservedObject var model: AppModel
-    @AppStorage(Config.userNameKey) private var userName = ""
-    @AppStorage(Config.outputDirKey) private var outputDir = ""
-    @State private var launchAtLogin = false
-    @State private var loginMessage: String?
-
-    var body: some View {
-        Form {
-            Section {
-                TextField("Seu nome", text: $userName, prompt: Text("Eu"))
-            } footer: {
-                Text("Aparece na ata e na transcrição no lugar de “Eu”.")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            Section {
-                LabeledContent("Pasta das atas") {
-                    HStack {
-                        Text(outputDir.isEmpty ? Config.outputDir.path : outputDir)
-                            .lineLimit(1).truncationMode(.middle).foregroundStyle(.secondary)
-                        Button("Escolher…") { chooseFolder() }
-                        Button("Abrir") { model.openOutputFolder() }
-                    }
-                }
-            }
-
-            Section {
-                LabeledContent("Chaves e modelos de IA") {
-                    Button("Abrir arquivo…") { Env.open() }
-                }
-            }
-
-            Section {
-                Toggle("Abrir ao iniciar o Mac", isOn: Binding(get: { launchAtLogin }, set: setLaunchAtLogin))
-            } footer: {
-                if let loginMessage { Text(loginMessage).frame(maxWidth: .infinity, alignment: .leading) }
+    @ViewBuilder private var microphoneStatus: some View {
+        if !hasMic {
+            Text("Nenhum microfone conectado").foregroundStyle(.secondary)
+        } else if micStatus == .authorized {
+            Text("Permitido").foregroundStyle(.secondary)
+        } else {
+            HStack {
+                Text("Não permitido").foregroundStyle(.red)
+                Button("Permitir") { requestMic() }.buttonStyle(.borderedProminent)
             }
         }
-        .formStyle(.grouped)
-        .modifier(VersionFooter(height: 372))
-        .onAppear { refreshLogin() }
+    }
+
+    // MARK: Actions
+
+    private func refresh() {
+        hasMic = Recorder.hasMicrophone
+        micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+        screenAllowed = CGPreflightScreenCaptureAccess()
     }
 
     private func refreshLogin() {
@@ -157,75 +167,6 @@ struct GeneralPane: View {
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
         if panel.runModal() == .OK, let url = panel.url { outputDir = url.path }
-    }
-}
-
-// MARK: - Permissões
-
-struct PermissionsPane: View {
-    @ObservedObject var model: AppModel
-    @State private var hasMic = true
-    @State private var micStatus = AVAuthorizationStatus.notDetermined
-    @State private var screenAllowed = false
-    @State private var testing = false
-    @State private var testMessage: String?
-
-    var body: some View {
-        Form {
-            Section {
-                LabeledContent("Microfone") {
-                    HStack {
-                        if !hasMic {
-                            Label("Nenhum microfone conectado", systemImage: "mic.slash").foregroundStyle(.secondary)
-                        } else {
-                            statusLabel(
-                                micStatus == .authorized ? "Permitido" : "Não permitido",
-                                ok: micStatus == .authorized)
-                            if micStatus != .authorized { Button("Permitir") { requestMic() } }
-                        }
-                    }
-                }
-                LabeledContent("Gravação de tela e áudio do sistema") {
-                    HStack {
-                        statusLabel(screenAllowed ? "Permitido" : "Não permitido", ok: screenAllowed)
-                        if !screenAllowed { Button("Permitir") { requestScreen() } }
-                    }
-                }
-            } header: {
-                Text("Permissões do macOS")
-            } footer: {
-                HStack {
-                    Text("Depois de permitir a gravação de tela, o macOS pede para reabrir o app.")
-                    Spacer()
-                    Button("Reabrir o minuta") { relaunch() }
-                }
-            }
-
-            Section {
-                HStack {
-                    Button(testing ? "Gravando 5 s…" : "Testar captura") { runTest() }
-                        .disabled(testing || model.recordingStart != nil)
-                    if let testMessage { Text(testMessage).font(.callout).foregroundStyle(.secondary) }
-                }
-            } header: {
-                Text("Teste de captura")
-            } footer: {
-                Text("Toque um som no Mac e fale durante o teste. Nada é enviado nem salvo.")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-        .formStyle(.grouped)
-        .modifier(VersionFooter(height: 392))
-        .onAppear { refresh() }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            refresh()
-        }
-    }
-
-    private func refresh() {
-        hasMic = Recorder.hasMicrophone
-        micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-        screenAllowed = CGPreflightScreenCaptureAccess()
     }
 
     private func requestMic() {

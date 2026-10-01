@@ -10,6 +10,7 @@ Atualizado em: 2026-10-01
 
 - ADR 0012 implementado: chaves e provedores no `.env` (`~/Library/Application Support/Minuta/.env`), `Transcriber` e `Minuter` como protocolos, aba de chaves removida, migração do Keychain na primeira abertura. Compila e os 9 testes passam. Não executado: o app não foi instalado nem aberto depois da mudança (o usuário removeu `/Applications/Minuta.app`), então a migração, o botão que abre o arquivo e o aviso de chave ausente estão sem teste manual.
 - ADR 0013 implementado: pausar, continuar e encerrar a gravação, contador na barra de menus, confirmação ao sair gravando e lembrete de pausa a cada 10 min. Compila e os testes passam. Sem teste manual: o menu nos três estados, a pausa no áudio gravado, o contador e o aviso de saída.
+- Janela de configurações em página única implementada (mockup B atualizado), instalada e verificada por captura de tela. Não verificado por clique: botões Permitir, Testar captura, Escolher…, o interruptor Abrir ao iniciar o Mac e a linha Reabrir o minuta.
 
 ## Descobertas
 <!-- fato aprendido durante o trabalho que muda o próximo passo -->
