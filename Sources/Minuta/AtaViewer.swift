@@ -31,7 +31,7 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         let controller = NSViewController()
         controller.view = web
         let window = ClosableWindow(contentViewController: controller)
-        window.title = document.title
+        window.title = document.title.isEmpty ? url.deletingPathExtension().lastPathComponent : document.title
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
         window.setContentSize(NSSize(width: 720, height: 780))
         window.contentMinSize = NSSize(width: 480, height: 320)

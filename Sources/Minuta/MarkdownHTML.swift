@@ -69,7 +69,7 @@ enum MarkdownHTML {
             }
         }
         flush()
-        return Document(title: title.isEmpty ? "Ata" : title, html: page(title: title, body: body))
+        return Document(title: title, html: page(title: title.isEmpty ? "Ata" : title, body: body))
     }
 
     // MARK: Pieces

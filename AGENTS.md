@@ -70,7 +70,7 @@ Gravação (uma por vez) separada da fila de jobs (vários). Estados:
 2. Gravando ou pausada (ADR 0013): menu Pausar/Continuar gravação e Encerrar gravação; contador de tempo gravado ao lado do ícone; dois arquivos mono em streaming para a pasta do job em Application Support.
 3. Job: transcrevendo, gerando ata, concluído. O estado fica só no ícone. Após a transcrição segmentada gravada, o áudio é apagado; a ata é o passo seguinte sobre o texto. Falha: aviso do macOS com a causa e as opções Tentar de novo, Depois e Descartar; o áudio ou a transcrição ficam guardados.
 
-Atas (ADR 0015): arquivos `AAAA-MM-DD HHmm Título.md` são a fonte da verdade; a lista é refeita lendo a pasta. Apagar move para a Lixeira. Transcrição com menos de 10 palavras não gera ata.
+Atas (ADR 0015): arquivos `AAAA-MM-DD HHmm Título.md` são a fonte da verdade; a lista é refeita lendo a pasta. Apagar move para a Lixeira. Transcrição com menos de 10 palavras não gera ata. Ao ler a pasta, o app avisa pasta ausente ou ilegível e marca arquivos de ata vazios, ilegíveis ou sem cabeçalho; não detecta ata apagada.
 
 Estrutura da ata (ADR 0005): Resumo, Participantes, Decisões, Itens de ação, Pontos em aberto, Resumo por tema, Transcrição com âncoras `t-<segundos>`. Frontmatter: `TODO` definir campos.
 

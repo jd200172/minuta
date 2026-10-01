@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import UserNotifications
 
@@ -80,6 +81,25 @@ enum Config {
     static var userName: String {
         let name = UserDefaults.standard.string(forKey: userNameKey) ?? ""
         return name.trimmingCharacters(in: .whitespaces).isEmpty ? "Eu" : name
+    }
+
+    /// The last output folder seen to exist. It tells "the folder is gone" apart from "never created".
+    static var seenOutputDir: String? {
+        get { UserDefaults.standard.string(forKey: "seenOutputDir") }
+        set { UserDefaults.standard.set(newValue, forKey: "seenOutputDir") }
+    }
+
+    /// Asks for a folder and saves it as the output folder. Returns false when the user cancels.
+    @MainActor @discardableResult
+    static func chooseOutputFolder() -> Bool {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.prompt = "Escolher"
+        guard panel.runModal() == .OK, let url = panel.url else { return false }
+        UserDefaults.standard.set(url.path, forKey: outputDirKey)
+        return true
     }
 
     /// Set by the developer CLI mode so it never touches the user's saved folder.

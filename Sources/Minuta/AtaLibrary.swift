@@ -1,10 +1,31 @@
 import Foundation
 
+/// Why a file with a minutes file name cannot be shown as a normal ata.
+enum AtaProblem: Equatable {
+    case empty, unreadable, noHeader
+
+    var label: String {
+        switch self {
+        case .empty: "Arquivo vazio"
+        case .unreadable: "Não foi possível ler"
+        case .noHeader: "Sem cabeçalho de ata"
+        }
+    }
+
+    /// A file without a header still reads as a page; an empty or unreadable one has nothing to show.
+    var canOpen: Bool { self == .noHeader }
+}
+
+enum FolderState: Equatable {
+    case ok, missing, unreadable
+}
+
 struct Ata: Identifiable, Equatable {
     let url: URL
     let start: Date
     let title: String
     let duration: TimeInterval?
+    var problem: AtaProblem?
     var id: URL { url }
 }
 
@@ -75,6 +96,7 @@ final class AtaLibrary: ObservableObject {
 
     @Published private(set) var atas: [Ata] = []
     @Published private(set) var pending: [Job] = []
+    @Published private(set) var folder: FolderState = .ok
     private var generation = 0
 
     func refresh() {
@@ -83,9 +105,18 @@ final class AtaLibrary: ObservableObject {
         let current = generation
         let dir = Config.outputDir
         Task.detached {
-            let found = AtaLibrary.scan(dir)
+            let result = AtaLibrary.scan(dir)
             await MainActor.run {
-                if current == self.generation { self.atas = found }
+                guard current == self.generation else { return }
+                self.atas = result.atas
+                // A folder that was never there (first run, or a folder just chosen) is not a warning.
+                // Only one that was seen before and is gone now is.
+                if result.folder == .missing, Config.seenOutputDir != dir.path {
+                    self.folder = .ok
+                } else {
+                    self.folder = result.folder
+                    if result.folder == .ok { Config.seenOutputDir = dir.path }
+                }
             }
         }
     }
@@ -101,31 +132,62 @@ final class AtaLibrary: ObservableObject {
         refresh()
     }
 
+    /// Creates the folder again after it went missing.
+    func recreateFolder() {
+        try? FileManager.default.createDirectory(at: Config.outputDir, withIntermediateDirectories: true)
+        refresh()
+    }
+
     /// Most recent first; same start time: by title.
-    nonisolated static func scan(_ dir: URL) -> [Ata] {
-        let urls =
-            (try? FileManager.default.contentsOfDirectory(
-                at: dir, includingPropertiesForKeys: [.contentModificationDateKey], options: [.skipsHiddenFiles])) ?? []
+    nonisolated static func scan(_ dir: URL) -> (atas: [Ata], folder: FolderState) {
+        let fm = FileManager.default
+        var isDirectory: ObjCBool = false
+        guard fm.fileExists(atPath: dir.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+            return ([], .missing)
+        }
+        guard
+            let urls = try? fm.contentsOfDirectory(
+                at: dir, includingPropertiesForKeys: [.contentModificationDateKey], options: [.skipsHiddenFiles])
+        else { return ([], .unreadable) }
+
         let found: [Ata] = urls.compactMap { url in
             guard url.pathExtension.lowercased() == "md" else { return nil }
-            let named = AtaName.parse(url.deletingPathExtension().lastPathComponent)
-            let head = AtaHead.parse(readHead(url))
-            guard named != nil || head.start != nil else { return nil }
+            let stem = url.deletingPathExtension().lastPathComponent
+            let named = AtaName.parse(stem)
+            let (head, problem) = inspect(url)
+            // Files that do not look like minutes (personal notes) are not ours: only ata-named ones are flagged.
+            if named == nil { guard problem == nil, head.start != nil else { return nil } }
             let modified = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
             return Ata(
                 url: url, start: named?.start ?? head.start ?? modified ?? Date(),
-                title: head.title ?? named?.title ?? "Sem título", duration: head.duration)
+                title: problem == nil ? (head.title ?? named?.title ?? "Sem título") : stem,
+                duration: head.duration, problem: problem)
         }
-        return found.sorted {
+        let sorted = found.sorted {
             $0.start != $1.start
                 ? $0.start > $1.start : $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
         }
+        return (sorted, .ok)
     }
 
-    private nonisolated static func readHead(_ url: URL) -> String {
-        guard let handle = try? FileHandle(forReadingFrom: url) else { return "" }
+    /// Reads the first lines of a file and says what is wrong with it, if anything.
+    nonisolated static func inspect(_ url: URL) -> (head: AtaHead, problem: AtaProblem?) {
+        let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int) ?? nil
+        if size == 0 { return (AtaHead(), .empty) }
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return (AtaHead(), .unreadable) }
         defer { try? handle.close() }
-        let data = (try? handle.read(upToCount: 2048)) ?? Data()
-        return String(decoding: data, as: UTF8.self)
+        guard let data = try? handle.read(upToCount: 2048), !data.isEmpty, let text = decodeHead(data) else {
+            return (AtaHead(), .unreadable)
+        }
+        let head = AtaHead.parse(text)
+        return (head, head.start == nil && head.title == nil ? .noHeader : nil)
+    }
+
+    /// UTF-8 text from a prefix of a file; the cut may land inside a multi-byte character.
+    nonisolated static func decodeHead(_ data: Data) -> String? {
+        for drop in 0...3 where data.count > drop {
+            if let text = String(data: data.dropLast(drop), encoding: .utf8) { return text }
+        }
+        return nil
     }
 }

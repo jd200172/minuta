@@ -175,7 +175,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             add(menu, "Iniciar gravação", #selector(start))
         }
         menu.addItem(.separator())
-        let recent = Array(AtaLibrary.shared.atas.prefix(5))
+        let recent = Array(AtaLibrary.shared.atas.filter { $0.problem == nil }.prefix(5))
         if !recent.isEmpty {
             let header = NSMenuItem(title: "Atas recentes", action: nil, keyEquivalent: "")
             header.isEnabled = false

@@ -34,7 +34,8 @@ struct AtasView: View {
     @ObservedObject private var model = AppModel.shared
 
     var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            if library.folder != .ok { FolderBanner(state: library.folder) }
             if library.atas.isEmpty && library.pending.isEmpty {
                 VStack(spacing: 6) {
                     Text("Nenhuma ata ainda").font(.headline)
@@ -68,17 +69,63 @@ struct AtasView: View {
     }
 }
 
+/// Shown above the list when the output folder is gone or cannot be read.
+private struct FolderBanner: View {
+    let state: FolderState
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle").font(.title3).foregroundStyle(.red)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(state == .missing ? "A pasta de atas não foi encontrada" : "Não foi possível ler a pasta de atas")
+                    .fontWeight(.medium)
+                Text((Config.outputDir.path as NSString).abbreviatingWithTildeInPath)
+                    .font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+            }
+            Spacer(minLength: 8)
+            Button("Escolher outra pasta…") {
+                if Config.chooseOutputFolder() { AtaLibrary.shared.refresh() }
+            }
+            .controlSize(.small)
+            if state == .missing {
+                Button("Recriar pasta") { AtaLibrary.shared.recreateFolder() }.controlSize(.small)
+            } else {
+                Button("Tentar de novo") { AtaLibrary.shared.refresh() }.controlSize(.small)
+            }
+        }
+        .padding(10)
+        .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.red.opacity(0.35), lineWidth: 0.5))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+}
+
 private struct AtaRow: View {
     let ata: Ata
 
     var body: some View {
         HStack(spacing: 10) {
             Text(Fmt.listDate(ata.start)).foregroundStyle(.secondary).frame(width: 120, alignment: .leading)
-            Text(ata.title).lineLimit(1).truncationMode(.tail)
+            HStack(spacing: 6) {
+                if ata.problem != nil {
+                    Image(systemName: "exclamationmark.triangle").foregroundStyle(.red)
+                }
+                Text(ata.title).lineLimit(1).truncationMode(.tail)
+            }
             Spacer(minLength: 8)
-            Text(ata.duration.map(Fmt.shortDuration) ?? "").foregroundStyle(.secondary)
-                .frame(width: 56, alignment: .trailing)
-            Button("Abrir") { AtaViewerController.shared.open(ata.url) }.controlSize(.small)
+            if let problem = ata.problem {
+                Text(problem.label).font(.caption).foregroundStyle(.red)
+            } else {
+                Text(ata.duration.map(Fmt.shortDuration) ?? "").foregroundStyle(.secondary)
+                    .frame(width: 56, alignment: .trailing)
+            }
+            if ata.problem?.canOpen ?? true {
+                Button("Abrir") { AtaViewerController.shared.open(ata.url) }.controlSize(.small)
+            } else {
+                Button("Mostrar no Finder") { NSWorkspace.shared.activateFileViewerSelecting([ata.url]) }
+                    .controlSize(.small)
+            }
             Button {
                 trash()
             } label: {

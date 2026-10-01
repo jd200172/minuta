@@ -44,10 +44,48 @@ final class AtaScanTests: XCTestCase {
         try write("anotações.md", "# Notas pessoais\n")
         try write("2026-10-01 0900 Sem cabeçalho.md", "sem frontmatter")
 
-        let atas = AtaLibrary.scan(dir)
-        XCTAssertEqual(atas.map(\.title), ["Teste", "Sem cabeçalho", "Alinhamento do lançamento"])
+        let result = AtaLibrary.scan(dir)
+        XCTAssertEqual(result.folder, .ok)
+        let atas = result.atas
+        XCTAssertEqual(
+            atas.map(\.title), ["Teste", "2026-10-01 0900 Sem cabeçalho", "Alinhamento do lançamento"])
         XCTAssertEqual(atas[0].duration, 13)
+        XCTAssertEqual(atas[1].problem, .noHeader)
         XCTAssertEqual(atas[2].duration, 240)
+    }
+
+    func testScanFlagsEmptyAndUnreadableFilesAndIgnoresForeignOnes() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("atas-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let fm = FileManager.default
+        fm.createFile(atPath: dir.appendingPathComponent("2026-09-30 1402 Vazia.md").path, contents: Data())
+        fm.createFile(
+            atPath: dir.appendingPathComponent("2026-09-30 0915 Binária.md").path,
+            contents: Data([0xFF, 0xFE, 0xFA, 0x00, 0xC3, 0x28]))
+        fm.createFile(atPath: dir.appendingPathComponent("lista.md").path, contents: Data())
+        fm.createFile(atPath: dir.appendingPathComponent("notas.txt").path, contents: Data("x".utf8))
+
+        let atas = AtaLibrary.scan(dir).atas
+        XCTAssertEqual(atas.count, 2, "só arquivos com nome de ata são marcados")
+        XCTAssertEqual(atas.first { $0.title.contains("Vazia") }?.problem, .empty)
+        XCTAssertEqual(atas.first { $0.title.contains("Binária") }?.problem, .unreadable)
+    }
+
+    func testFolderStates() throws {
+        let missing = FileManager.default.temporaryDirectory.appendingPathComponent("nao-existe-\(UUID().uuidString)")
+        XCTAssertEqual(AtaLibrary.scan(missing).folder, .missing)
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("vazia-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        XCTAssertEqual(AtaLibrary.scan(dir).folder, .ok)
+        XCTAssertTrue(AtaLibrary.scan(dir).atas.isEmpty)
+    }
+
+    func testDecodeHeadToleratesACutMultiByteCharacter() {
+        let full = Data("# Reunião".utf8)
+        XCTAssertNotNil(AtaLibrary.decodeHead(full.dropLast(1)), "corte no meio do ã")
+        XCTAssertNil(AtaLibrary.decodeHead(Data([0xFF, 0xFE, 0x00, 0xC3, 0x28])))
     }
 }
 

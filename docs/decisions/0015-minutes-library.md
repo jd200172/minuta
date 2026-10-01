@@ -22,6 +22,13 @@ As atas ficavam numa pasta aberta pelo Finder. O menu tinha "Abrir pasta de atas
 
 **Nome do arquivo.** `AAAA-MM-DD HHmm Título.md`. O título é higienizado (caracteres reservados saem, `:` vira ` -`, no máximo 80 caracteres), e um nome repetido recebe ` (2)`, ` (3)`. Atas antigas mantêm o nome. A lista mostra o título que está dentro do arquivo (a primeira linha `# `), e usa o do nome só quando o conteúdo não pode ser lido. A data vem do nome, do frontmatter ou da modificação do arquivo, nessa ordem. Arquivos `.md` sem nome de ata e sem `inicio` no frontmatter são ignorados.
 
+**Verificação da pasta (atualização de 2026-10-01).** A cada leitura da pasta o app confere o que dá para ver:
+- Pasta ausente: faixa no topo da janela com "Escolher outra pasta…" e "Recriar pasta". Só avisa se a pasta já foi vista antes (o app guarda o último caminho visto, em `seenOutputDir`); uma pasta nunca criada, como na primeira execução ou logo após escolher outra, não gera aviso.
+- Pasta ilegível: a mesma faixa, com "Escolher outra pasta…" e "Tentar de novo".
+- Arquivo com nome de ata e problema: marcado na lista, na ordem de data, com o nome do arquivo no lugar do título e o motivo: "Arquivo vazio", "Não foi possível ler" (não abre, ou não é UTF-8) ou "Sem cabeçalho de ata" (sem `inicio` nem título; ainda abre). Os dois primeiros oferecem "Mostrar no Finder", e todos oferecem a Lixeira.
+- Arquivos `.md` sem nome de ata e sem `inicio` no frontmatter continuam ignorados, e os marcados não entram nas "Atas recentes".
+- Fora do alcance: uma ata apagada. O app não guarda o que já existiu, então não vê o que sumiu. Uma cópia interna com restauração (nível C da discussão) ficou para depois.
+
 **Sem fala suficiente.** Uma transcrição com menos de 10 palavras não gera ata: o app não chama o Claude, não grava arquivo, descarta a gravação e mostra um aviso.
 
 ## Consequências

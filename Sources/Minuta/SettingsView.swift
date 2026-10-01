@@ -162,11 +162,7 @@ struct SettingsView: View {
     }
 
     private func chooseFolder() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.canCreateDirectories = true
-        if panel.runModal() == .OK, let url = panel.url { outputDir = url.path }
+        if Config.chooseOutputFolder() { AtaLibrary.shared.refresh() }
     }
 
     private func requestMic() {
