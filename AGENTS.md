@@ -46,7 +46,8 @@ Fora do MVP:
 ## Comandos
 
 (fontes: `Package.swift`, `scripts/build-app.sh`, `tools/synthetic-meeting/build.py`)
-- `./scripts/build-app.sh` compila em release e monta `build/Minuta.app`, assinado de forma ad hoc. Abrir com `open build/Minuta.app`.
+- `./scripts/setup-signing.sh` (uma vez) cria a identidade de assinatura local "Minuta Dev" num chaveiro separado. Mantém as permissões do macOS entre builds.
+- `./scripts/build-app.sh` compila em release e monta `build/Minuta.app`, assinado com essa identidade. Abrir com `open build/Minuta.app`.
 - `build/Minuta.app/Contents/MacOS/Minuta --process <pasta com mic.m4a e system.m4a> --out <pasta> [--date ISO8601]` roda transcrição e ata sobre áudios existentes, com as chaves do Keychain, e grava `transcript.json` e a ata em `--out`. Não altera a pasta configurada no app. Serve para os testes 2 a 5 do plano de validação.
 - `swift test` roda os testes do montador de transcrição e do gerador de Markdown. Não há teste automatizado de captura nem das chamadas de rede.
 - `python3 tools/synthetic-meeting/build.py` gera em `tools/synthetic-meeting/out/` o áudio sintético da reunião e o `ground-truth.json`. Requer macOS (`say`, `afconvert`) e ffmpeg com libopus. Resultado esperado em `tools/synthetic-meeting/expected.md`.

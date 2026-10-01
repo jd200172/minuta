@@ -21,7 +21,7 @@ struct MinutaApp: App {
         }
 
         Window("Configurações do minuta", id: "settings") {
-            SettingsView()
+            SettingsView(model: model)
         }
         .windowResizability(.contentSize)
     }

@@ -60,3 +60,15 @@ final class MinutesTests: XCTestCase {
         XCTAssertTrue(md.contains("- Juliano (canal do microfone)"))
     }
 }
+
+final class KeychainTests: XCTestCase {
+    func testSetUpdateAndRemove() {
+        let account = "test-\(UUID().uuidString)"
+        XCTAssertEqual(Keychain.set("first", account: account), errSecSuccess)
+        XCTAssertEqual(Keychain.get(account), "first")
+        XCTAssertEqual(Keychain.set("second", account: account), errSecSuccess, "salvar de novo deve atualizar")
+        XCTAssertEqual(Keychain.get(account), "second")
+        XCTAssertEqual(Keychain.set("", account: account), errSecSuccess)
+        XCTAssertNil(Keychain.get(account))
+    }
+}

@@ -58,6 +58,9 @@ final class AppModel: ObservableObject {
                                          systemURL: dir.appendingPathComponent("system.m4a"))
                 currentJob = job
                 recordingStart = now
+                if !recorder.micActive {
+                    Notifier.post("Sem microfone", "Nenhum microfone encontrado. Gravando só o áudio do sistema.")
+                }
                 limitTimer = Timer.scheduledTimer(withTimeInterval: Config.maxRecordingSeconds,
                                                   repeats: false) { _ in
                     Task { @MainActor in self.stopRecording() }
@@ -142,7 +145,10 @@ enum Pipeline {
             throw AppError("Chave da API do Google ausente. Salve em Configurações.")
         }
         let gemini = GeminiTranscriber(apiKey: key)
-        async let mic = gemini.transcribe(file: dir.appendingPathComponent("mic.m4a"), diarize: false)
+        let micURL = dir.appendingPathComponent("mic.m4a")
+        let noMic: (text: String, words: [Word]) = ("", [])
+        async let mic = FileManager.default.fileExists(atPath: micURL.path)
+            ? gemini.transcribe(file: micURL, diarize: false) : noMic
         async let system = gemini.transcribe(file: dir.appendingPathComponent("system.m4a"), diarize: true)
         let transcript = TranscriptBuilder.build(
             mic: try await mic, system: try await system,

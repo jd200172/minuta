@@ -16,20 +16,28 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
     private var micStart: Double?
     private var systemStart: Double?
 
+    /// True when this recording has a microphone track. A Mac without an input device records the system audio only.
+    private(set) var micActive = false
+
+    static var hasMicrophone: Bool {
+        AVCaptureDevice.default(for: .audio) != nil
+    }
+
     func ensurePermissions() async throws {
-        if AVCaptureDevice.authorizationStatus(for: .audio) != .authorized {
+        if Recorder.hasMicrophone, AVCaptureDevice.authorizationStatus(for: .audio) != .authorized {
             guard await AVCaptureDevice.requestAccess(for: .audio) else {
-                throw AppError("Permita o microfone em Ajustes do Sistema > Privacidade e Segurança.")
+                throw AppError("Permita o microfone em Configurações > Permissões.")
             }
         }
         if !CGPreflightScreenCaptureAccess() {
             CGRequestScreenCaptureAccess()
-            throw AppError("Permita Gravação de Tela e Áudio do Sistema em Ajustes do Sistema e reabra o minuta.")
+            throw AppError("Permita a Gravação de Tela e Áudio do Sistema em Configurações > Permissões e use Reabrir o minuta.")
         }
     }
 
     func start(micURL: URL, systemURL: URL) async throws {
-        micFile = try makeFile(micURL)
+        micActive = false
+        micFile = nil
         systemFile = try makeFile(systemURL)
         micStart = nil
         systemStart = nil
@@ -51,17 +59,23 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
         try scStream.addStreamOutput(self, type: .audio, sampleHandlerQueue: queue)
         try scStream.addStreamOutput(self, type: .screen, sampleHandlerQueue: queue)
 
-        let input = engine.inputNode
-        let inputFormat = input.outputFormat(forBus: 0)
-        guard let micFile else { throw AppError("Arquivo do microfone indisponível.") }
-        micConverter = AVAudioConverter(from: inputFormat, to: micFile.processingFormat)
-        input.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, time in
-            self?.handleMic(buffer, time)
+        if Recorder.hasMicrophone {
+            let input = engine.inputNode
+            let inputFormat = input.outputFormat(forBus: 0)
+            if inputFormat.sampleRate > 0, inputFormat.channelCount > 0 {
+                let file = try makeFile(micURL)
+                micFile = file
+                micConverter = AVAudioConverter(from: inputFormat, to: file.processingFormat)
+                input.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, time in
+                    self?.handleMic(buffer, time)
+                }
+                NotificationCenter.default.addObserver(
+                    self, selector: #selector(engineChanged), name: .AVAudioEngineConfigurationChange, object: engine)
+                engine.prepare()
+                try engine.start()
+                micActive = true
+            }
         }
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(engineChanged), name: .AVAudioEngineConfigurationChange, object: engine)
-        engine.prepare()
-        try engine.start()
 
         try await scStream.startCapture()
         stream = scStream
@@ -69,9 +83,11 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
 
     /// Stops both captures, closes the files and returns each track's start offset in seconds.
     func stop() async -> (mic: Double, system: Double) {
-        NotificationCenter.default.removeObserver(self, name: .AVAudioEngineConfigurationChange, object: engine)
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
+        if micActive {
+            NotificationCenter.default.removeObserver(self, name: .AVAudioEngineConfigurationChange, object: engine)
+            engine.inputNode.removeTap(onBus: 0)
+            engine.stop()
+        }
         try? await stream?.stopCapture()
         stream = nil
         queue.sync {}

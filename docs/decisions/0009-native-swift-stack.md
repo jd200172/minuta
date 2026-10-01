@@ -24,13 +24,13 @@ App nativo em Swift, como pacote SwiftPM, sem dependências de terceiros.
 - Credenciais: Keychain pela API Security.
 - Rede: `URLSession` direto para as APIs do Google (Files e Interactions) e da Anthropic (Messages). A Anthropic não tem SDK oficial em Swift.
 - Jobs pendentes: em `~/Library/Application Support/Minuta/pending/`, não no diretório temporário do SO, para sobreviver a reinício.
-- Build: `scripts/build-app.sh` monta o `.app` a partir do SwiftPM, sem projeto Xcode, e assina de forma ad hoc.
+- Build: `scripts/build-app.sh` monta o `.app` a partir do SwiftPM, sem projeto Xcode, e assina com a identidade local de `scripts/setup-signing.sh` (ad hoc como alternativa).
 
 ## Consequências
 
 - Um só binário, sem runtime. Memória medida em repouso: cerca de 79 MB de RSS e 0% de CPU, o piso de um app SwiftUI.
 - O arquivo `.m4a` não é legível se o app travar no meio da gravação, porque o índice só é escrito ao fechar. Ogg toleraria isso. O app trata perda de stream (fone desconectado, parada do ScreenCaptureKit) fechando os arquivos, mas uma queda do processo perde aquela gravação. Aceito no MVP.
-- Assinatura ad hoc muda a identidade do binário a cada build. O macOS pode pedir as permissões de novo, e o Keychain pode pedir autorização a cada build. Um certificado de desenvolvimento estável resolve; não há nenhum instalado neste Mac.
+- A assinatura ad hoc muda a identidade do binário a cada build, e o macOS pede as permissões de novo a cada vez. `scripts/setup-signing.sh` cria uma identidade local "Minuta Dev", autoassinada, num chaveiro separado (`~/Library/Keychains/minuta-dev.keychain-db`), sem alterar o chaveiro de login nem as configurações de confiança. O requisito designado da assinatura passa a depender do identificador e do certificado, e não do hash do binário, então as permissões persistem entre builds. Sem a identidade, o build cai para assinatura ad hoc e avisa.
 - O Windows exigiria um segundo app. Está fora do escopo do MVP.
 - Não há teste de captura automatizado: depende de permissões do macOS concedidas por uma pessoa.
 

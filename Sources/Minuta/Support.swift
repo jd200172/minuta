@@ -35,7 +35,9 @@ enum Config {
 }
 
 enum Keychain {
-    private static let service = "app.minuta.Minuta"
+    // Service name changed from "app.minuta.Minuta" so items written by earlier, differently
+    // signed builds (which this build cannot modify silently) are left alone.
+    private static let service = "app.minuta.Minuta.keys"
 
     static func get(_ account: String) -> String? {
         let query: [String: Any] = [
@@ -51,17 +53,29 @@ enum Keychain {
         return String(data: data, encoding: .utf8)
     }
 
-    static func set(_ value: String, account: String) {
+    /// Saves (or removes, when empty) a value. Returns the Security framework status.
+    static func set(_ value: String, account: String) -> OSStatus {
         let base: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
         ]
-        SecItemDelete(base as CFDictionary)
-        guard !value.isEmpty else { return }
+        if value.isEmpty {
+            let status = SecItemDelete(base as CFDictionary)
+            return status == errSecItemNotFound ? errSecSuccess : status
+        }
+        let data = Data(value.utf8)
         var add = base
-        add[kSecValueData as String] = Data(value.utf8)
-        SecItemAdd(add as CFDictionary, nil)
+        add[kSecValueData as String] = data
+        let status = SecItemAdd(add as CFDictionary, nil)
+        if status == errSecDuplicateItem {
+            return SecItemUpdate(base as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+        }
+        return status
+    }
+
+    static func message(_ status: OSStatus) -> String {
+        (SecCopyErrorMessageString(status, nil) as String?) ?? "erro \(status)"
     }
 }
 

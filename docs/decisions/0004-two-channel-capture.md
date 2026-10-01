@@ -23,3 +23,7 @@ Gravar dois canais no mesmo arquivo: canal 1 é o microfone (o usuário) e canal
 ## Alternativas descartadas
 
 - Mixagem em mono: arquivo menor e fluxo mais simples, mas perde a origem da fala e duplica texto por eco.
+
+## Atualização 2026-09-30
+
+Sem dispositivo de entrada de áudio (por exemplo, um Mac mini sem microfone conectado), o app grava só o canal do sistema e avisa o usuário. Nesse caso a ata não terá as falas do usuário.
