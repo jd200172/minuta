@@ -22,7 +22,6 @@ final class SettingsWindowController {
         let tabs = PreferencesTabController()
         tabs.tabStyle = .toolbar
         tabs.addTabViewItem(item("Geral", "gearshape", GeneralPane(model: AppModel.shared)))
-        tabs.addTabViewItem(item("Chaves de API", "key", KeysPane()))
         tabs.addTabViewItem(item("Permissões", "lock.shield", PermissionsPane(model: AppModel.shared)))
         let window = NSWindow(contentViewController: tabs)
         window.styleMask = [.titled, .closable]
@@ -99,13 +98,19 @@ struct GeneralPane: View {
             }
 
             Section {
+                LabeledContent("Chaves e modelos de IA") {
+                    Button("Abrir arquivo…") { Env.open() }
+                }
+            }
+
+            Section {
                 Toggle("Abrir ao iniciar o Mac", isOn: Binding(get: { launchAtLogin }, set: setLaunchAtLogin))
             } footer: {
                 if let loginMessage { Text(loginMessage).frame(maxWidth: .infinity, alignment: .leading) }
             }
         }
         .formStyle(.grouped)
-        .frame(width: paneWidth, height: 300)
+        .frame(width: paneWidth, height: 340)
         .onAppear { refreshLogin() }
     }
 
@@ -131,96 +136,6 @@ struct GeneralPane: View {
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
         if panel.runModal() == .OK, let url = panel.url { outputDir = url.path }
-    }
-}
-
-// MARK: - Chaves de API
-
-struct KeysPane: View {
-    var body: some View {
-        Form {
-            KeySection(title: "Google (transcrição)", account: Config.googleAccount,
-                       linkTitle: "Criar uma chave no Google AI Studio",
-                       link: "https://aistudio.google.com/apikey", check: KeyCheck.google)
-            KeySection(title: "Anthropic (ata)", account: Config.anthropicAccount,
-                       linkTitle: "Criar uma chave no Claude Console",
-                       link: "https://platform.claude.com/settings/keys", check: KeyCheck.anthropic)
-        }
-        .formStyle(.grouped)
-        .frame(width: paneWidth, height: 380)
-    }
-}
-
-private struct KeySection: View {
-    let title: String
-    let account: String
-    let linkTitle: String
-    let link: String
-    let check: (String) async -> AppError?
-
-    @State private var key = ""
-    @State private var saved = false
-    @State private var checking = false
-    @State private var result: AppError?
-    @State private var verified = false
-    @State private var saveError: String?
-
-    var body: some View {
-        Section {
-            SecureField("Chave", text: $key)
-                .onSubmit { save() }
-            HStack {
-                if let saveError {
-                    statusLabel(saveError, ok: false)
-                } else if checking {
-                    Label("Verificando…", systemImage: "hourglass").foregroundStyle(.secondary)
-                } else if let result {
-                    statusLabel(result.message, ok: false)
-                } else if verified {
-                    statusLabel("Chave válida", ok: true)
-                } else {
-                    statusLabel(saved ? "Salva no Keychain" : "Sem chave", ok: saved ? true : nil)
-                }
-                Spacer()
-                Button("Verificar") { verify() }
-            }
-            .font(.callout)
-        } header: {
-            Text(title)
-        } footer: {
-            Link(linkTitle, destination: URL(string: link)!)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .onAppear {
-            key = Keychain.get(account) ?? ""
-            saved = !key.isEmpty
-        }
-        .onDisappear { save() }
-    }
-
-    private func save() {
-        let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
-        key = trimmed
-        let status = Keychain.set(trimmed, account: account)
-        saveError = status == errSecSuccess ? nil : "Não foi possível salvar: \(Keychain.message(status))"
-        saved = Keychain.get(account) != nil
-        verified = false
-        result = nil
-    }
-
-    private func verify() {
-        save()
-        guard saved else {
-            result = AppError("Cole a chave antes de verificar.")
-            return
-        }
-        checking = true
-        Task {
-            let outcome = await check(key)
-            checking = false
-            result = outcome
-            verified = outcome == nil
-        }
     }
 }
 

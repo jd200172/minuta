@@ -16,6 +16,15 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
     private var micStart: Double?
     private var systemStart: Double?
 
+    private let pauseLock = NSLock()
+    private var pausedFlag = false
+
+    /// While true, incoming audio is dropped, so both files hold only the recorded time.
+    var paused: Bool {
+        get { pauseLock.lock(); defer { pauseLock.unlock() }; return pausedFlag }
+        set { pauseLock.lock(); defer { pauseLock.unlock() }; pausedFlag = newValue }
+    }
+
     /// True when this recording has a microphone track. A Mac without an input device records the system audio only.
     private(set) var micActive = false
 
@@ -26,16 +35,17 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
     func ensurePermissions() async throws {
         if Recorder.hasMicrophone, AVCaptureDevice.authorizationStatus(for: .audio) != .authorized {
             guard await AVCaptureDevice.requestAccess(for: .audio) else {
-                throw AppError("Permita o microfone em Configurações > Permissões.", opensSettings: true)
+                throw AppError("Permita o microfone em Configurações > Permissões.", fix: .settings)
             }
         }
         if !CGPreflightScreenCaptureAccess() {
             CGRequestScreenCaptureAccess()
-            throw AppError("Permita a Gravação de Tela e Áudio do Sistema em Configurações > Permissões e use Reabrir o minuta.", opensSettings: true)
+            throw AppError("Permita a Gravação de Tela e Áudio do Sistema em Configurações > Permissões e use Reabrir o minuta.", fix: .settings)
         }
     }
 
     func start(micURL: URL, systemURL: URL) async throws {
+        paused = false
         micActive = false
         micFile = nil
         systemFile = try makeFile(systemURL)
@@ -113,7 +123,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     private func handleMic(_ buffer: AVAudioPCMBuffer, _ time: AVAudioTime) {
-        guard let file = micFile, let converter = micConverter else { return }
+        guard !paused, let file = micFile, let converter = micConverter else { return }
         if micStart == nil {
             micStart = AVAudioTime.seconds(forHostTime: time.hostTime)
         }
@@ -121,7 +131,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
-        guard type == .audio, sampleBuffer.isValid, let file = systemFile,
+        guard type == .audio, !paused, sampleBuffer.isValid, let file = systemFile,
               let buffer = pcmBuffer(from: sampleBuffer) else { return }
         if systemStart == nil {
             systemStart = CMTimeGetSeconds(sampleBuffer.presentationTimeStamp)

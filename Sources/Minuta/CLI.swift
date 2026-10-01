@@ -20,6 +20,7 @@ enum CLI {
             print("Uso: Minuta --process <pasta> --out <pasta> [--date ISO8601]")
             return 2
         }
+        Env.prepare()
         let outURL = URL(fileURLWithPath: out)
         Config.outputOverride = outURL
         let date = value(after: "--date").flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()

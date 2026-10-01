@@ -61,22 +61,46 @@ final class MinutesTests: XCTestCase {
     }
 }
 
-final class KeychainTests: XCTestCase {
-    func testSetUpdateAndRemove() {
-        let account = "test-\(UUID().uuidString)"
-        XCTAssertEqual(Keychain.set("first", account: account), errSecSuccess)
-        XCTAssertEqual(Keychain.get(account), "first")
-        XCTAssertEqual(Keychain.set("second", account: account), errSecSuccess, "salvar de novo deve atualizar")
-        XCTAssertEqual(Keychain.get(account), "second")
-        XCTAssertEqual(Keychain.set("", account: account), errSecSuccess)
-        XCTAssertNil(Keychain.get(account))
+final class EnvTests: XCTestCase {
+    func testParseHandlesCommentsQuotesAndExport() {
+        let values = Env.parse("""
+        # comentário
+        GOOGLE_API_KEY=abc123
+        export ANTHROPIC_API_KEY = "sk-xyz"
+        MINUTER_MODEL='claude-x'
+
+        SEM_VALOR=
+        linha sem igual
+        """)
+        XCTAssertEqual(values["GOOGLE_API_KEY"], "abc123")
+        XCTAssertEqual(values["ANTHROPIC_API_KEY"], "sk-xyz")
+        XCTAssertEqual(values["MINUTER_MODEL"], "claude-x")
+        XCTAssertEqual(values["SEM_VALOR"], "")
+        XCTAssertEqual(values.count, 4)
+    }
+
+    func testTemplateRoundTripsThroughParse() {
+        let values = Env.parse(Env.template(google: "g-key", anthropic: "a-key"))
+        XCTAssertEqual(values["GOOGLE_API_KEY"], "g-key")
+        XCTAssertEqual(values["ANTHROPIC_API_KEY"], "a-key")
+        XCTAssertEqual(values["TRANSCRIBER"], Config.defaultTranscriber)
+        XCTAssertEqual(values["MINUTER_MODEL"], Config.defaultMinuterModel)
+    }
+}
+
+final class ClockTests: XCTestCase {
+    func testElapsedFormat() {
+        XCTAssertEqual(Fmt.elapsed(0), "00:00")
+        XCTAssertEqual(Fmt.elapsed(754.9), "12:34")
+        XCTAssertEqual(Fmt.elapsed(3725), "1:02:05")
     }
 }
 
 final class ErrorMessageTests: XCTestCase {
     func testRejectedKeyOpensSettings() {
         let error = AppError.http(status: 401, provider: .google, body: Data())
-        XCTAssertTrue(error.opensSettings)
+        XCTAssertEqual(error.fix, .keys)
+        XCTAssertTrue(error.message.contains("GOOGLE_API_KEY"))
         XCTAssertTrue(error.message.hasPrefix("Google:"))
     }
 
@@ -84,7 +108,7 @@ final class ErrorMessageTests: XCTestCase {
         let body = Data(#"{"error":{"message":"Rate limit exceeded for model gemini-3.5-transcribe"}}"#.utf8)
         let error = AppError.http(status: 429, provider: .google, body: body)
         XCTAssertFalse(error.message.contains("gemini-3.5-transcribe"))
-        XCTAssertFalse(error.opensSettings)
+        XCTAssertEqual(error.fix, .none)
     }
 
     func testOtherStatusIncludesApiMessage() {

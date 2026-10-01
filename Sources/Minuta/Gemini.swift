@@ -7,9 +7,10 @@ struct Word {
     var end: Double
 }
 
-/// Transcribes one audio file with Gemini 3.5 Transcribe through the Interactions API.
-struct GeminiTranscriber {
+/// Transcribes one audio file with Gemini Transcribe through the Interactions API.
+struct GeminiTranscriber: Transcriber {
     let apiKey: String
+    let model: String
     private let base = "https://generativelanguage.googleapis.com"
 
     private var session: URLSession {
@@ -27,7 +28,7 @@ struct GeminiTranscriber {
         var mode: [String: Any] = ["type": "verbatim", "timestamp_granularities": ["word"]]
         if diarize { mode["diarization_mode"] = "speaker" }
         let body: [String: Any] = [
-            "model": Config.geminiModel,
+            "model": model,
             "input": [["type": "audio", "uri": uploaded.uri, "mime_type": "audio/m4a"]],
             "generation_config": [
                 "transcription_config": ["language_codes": ["pt-BR"], "mode": mode],

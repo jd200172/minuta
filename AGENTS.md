@@ -25,10 +25,11 @@ Fora do MVP:
 ## Regras e restrições
 
 - Consumo baixo de CPU, memória e disco.
-- Gravação ininterrupta limitada a 60 minutos. No teto, encerra a captura e dispara o processamento. O código usa 30 minutos, porque o Gemini 3.5 Transcribe limita a 30 minutos por pedido com diarização (ADR 0010, proposta aguardando confirmação). A regra de 60 minutos vale até a confirmação.
+- Gravação limitada a 60 minutos de tempo gravado (pausas não contam). No teto, encerra a captura e dispara o processamento. O código usa 30 minutos, porque o Gemini 3.5 Transcribe limita a 30 minutos por pedido com diarização (ADR 0010, proposta aguardando confirmação). A regra de 60 minutos vale até a confirmação.
 - A transcrição é o artefato que importa. O áudio é descartável: fica em disco até a transcrição ser gravada. Em falha de rede, o áudio fica em disco e o menu oferece "Tentar novamente". Em perda de stream (hardware desconectado), fecha o arquivo com cabeçalho válido e encerra a gravação.
 - Áudio sai da máquina só para o STT; texto sai só para o LLM. Nada é armazenado na nuvem pelo app.
-- Credenciais (chaves do STT e do LLM) ficam no cofre do SO (Keychain), não em arquivo próprio. `OUTPUT_DIR` é configuração, não segredo.
+- Credenciais (chaves do STT e do LLM) e a escolha de provedor e modelo ficam em `~/Library/Application Support/Minuta/.env`, permissão `600`, lido a cada uso (ADR 0012). Nunca versionar nem copiar para o repositório. `OUTPUT_DIR` é configuração, não segredo.
+- Provedores atrás dos protocolos `Transcriber` e `Minuter`. As regras da ata (prompt, schema) são neutras e ficam em `MinutesPrompt`; a validação de IDs fica no app, nunca no modelo. Provedor novo passa pela reunião sintética antes do uso.
 - Idiomas: código (identificadores e comentários) em inglês; interface do app e ata em pt-BR.
 - Rastreabilidade (ADR 0005): decisões, ações e pontos em aberto citam IDs de segmento da transcrição. O LLM devolve JSON com os IDs; o app monta o Markdown e valida que todo ID existe. Campo sem evidência vira "não definido". Prazo relativo só vira data com a data da reunião no prompt.
 - Participantes (ADR 0006): o canal do microfone usa o nome do campo "Seu nome" (vazio: "Eu"); os demais vêm da diarização do canal do sistema como "Participante N". Nunca agrupar participantes num rótulo coletivo ("Outros" etc.). Nome só substitui o rótulo com evidência citada na transcrição, e a ata marca o nome como inferido.
@@ -36,12 +37,12 @@ Fora do MVP:
 
 ## Stack
 
-(fontes: ADRs 0001 a 0010 e `Package.swift`)
+(fontes: ADRs 0001 a 0013 e `Package.swift`)
 - App nativo em Swift 6.4, SwiftPM, sem dependências de terceiros, macOS 13+ (ADR 0009). SwiftUI `MenuBarExtra` para a bandeja e `Window` para as configurações.
 - Captura: ScreenCaptureKit (áudio do sistema) e `AVAudioEngine` (microfone), cada canal em um arquivo mono AAC `.m4a` de 16 kHz (ADRs 0004 e 0009).
 - STT: Gemini 3.5 Transcribe, Files API e Interactions API por `URLSession`, diarização só no canal do sistema (ADR 0008; verificações pendentes: pt-BR, 3 ou mais falantes, termos de dados).
 - LLM da ata: Claude Sonnet 5.5 pela Messages API, saída estruturada e `fallbacks: "default"` (ADR 0002).
-- Saída: arquivos `.md` em `OUTPUT_DIR` (ADR 0001). Credenciais no Keychain. Jobs pendentes em `~/Library/Application Support/Minuta/pending/`.
+- Saída: arquivos `.md` em `OUTPUT_DIR` (ADR 0001). Chaves no `.env` (ADR 0012). Jobs pendentes em `~/Library/Application Support/Minuta/pending/`.
 
 ## Comandos
 
@@ -50,21 +51,21 @@ Fora do MVP:
 - `./scripts/build-app.sh` compila em release e monta `build/Minuta.app`, assinado com essa identidade.
 - `./scripts/install.sh` compila, instala em `/Applications/Minuta.app` e abre. É o caminho normal de uso.
 - `swift scripts/make-icon.swift` regenera `Resources/AppIcon.icns`.
-- `build/Minuta.app/Contents/MacOS/Minuta --process <pasta com mic.m4a e system.m4a> --out <pasta> [--date ISO8601]` roda transcrição e ata sobre áudios existentes, com as chaves do Keychain, e grava `transcript.json` e a ata em `--out`. Não altera a pasta configurada no app. Serve para os testes 2 a 5 do plano de validação.
+- `build/Minuta.app/Contents/MacOS/Minuta --process <pasta com mic.m4a e system.m4a> --out <pasta> [--date ISO8601]` roda transcrição e ata sobre áudios existentes, com as chaves do `.env`, e grava `transcript.json` e a ata em `--out`. Não altera a pasta configurada no app. Serve para os testes 2 a 5 do plano de validação.
 - `swift test` roda os testes do montador de transcrição e do gerador de Markdown. Não há teste automatizado de captura nem das chamadas de rede.
 - `python3 tools/synthetic-meeting/build.py` gera em `tools/synthetic-meeting/out/` o áudio sintético da reunião e o `ground-truth.json`. Requer macOS (`say`, `afconvert`) e ffmpeg com libopus. Resultado esperado em `tools/synthetic-meeting/expected.md`.
 
 ## Convenções de código
 
-- Um arquivo por responsabilidade em `Sources/Minuta/`: `Recorder` (captura), `Gemini` (STT e montagem da transcrição), `Claude` (ata), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (estados e fluxo), `Alerts` (avisos), `KeyCheck` (verifica chaves), `CaptureTest` (teste de captura), `CLI` (modo `--process`), `MenuContent` e `SettingsView` (janela de configurações em abas).
+- Um arquivo por responsabilidade em `Sources/Minuta/`: `Recorder` (captura), `Providers` (protocolos `Transcriber` e `Minuter` e escolha pelo `.env`), `Env` (leitura do `.env`), `Gemini` (STT e montagem da transcrição), `Claude` (transporte da ata), `MinutesPrompt` (prompt, schema e decodificação neutros), `Minutes` (Markdown), `Job` (estado em disco), `AppModel` (estados e fluxo), `Alerts` (avisos), `CaptureTest` (teste de captura), `CLI` (modo `--process`), `MenuContent` e `SettingsView` (janela de configurações em abas Geral e Permissões).
 - Sem dependências de terceiros. Mudança de modo de linguagem Swift ou nova dependência exige ADR.
 - Formatador e linter: `TODO`.
 
 ## Arquitetura
 
 Gravação (uma por vez) separada da fila de jobs (vários). Estados:
-1. Ocioso: ícone de microfone. Menu: Iniciar gravação, Abrir pasta de atas, Configurações…, Sair (ADR 0011).
-2. Gravando: "Iniciar gravação"; dois arquivos mono em streaming para a pasta do job em Application Support.
+1. Ocioso: ícone de microfone. Menu: Iniciar gravação, Abrir pasta de atas, Configurações…, Sair (ADR 0011). Sair durante a gravação pede confirmação.
+2. Gravando ou pausada (ADR 0013): menu Pausar/Continuar gravação e Encerrar gravação; contador de tempo gravado ao lado do ícone; dois arquivos mono em streaming para a pasta do job em Application Support.
 3. Job: transcrevendo, gerando ata, concluído. O estado fica só no ícone. Após a transcrição segmentada gravada, o áudio é apagado; a ata é o passo seguinte sobre o texto. Falha: aviso do macOS com a causa e as opções Tentar de novo, Depois e Descartar; o áudio ou a transcrição ficam guardados.
 
 Estrutura da ata (ADR 0005): Resumo, Participantes, Decisões, Itens de ação, Pontos em aberto, Resumo por tema, Transcrição com âncoras `t-<segundos>`. Frontmatter: `TODO` definir campos.
@@ -105,6 +106,8 @@ Instrução do usuário no chat > `AGENTS.md` > `.agents/STYLE.md` > skill. Em s
 - 2026-09-30: ADR 0009 (app nativo em Swift, AAC `.m4a` por canal) e primeira versão do código. ADR 0010 propõe limite de 30 minutos por causa do limite do STT; aguarda confirmação.
 - 2026-09-30: ADR 0011 (menu mínimo, erros por aviso, instalação em /Applications, configurações em abas).
 - 2026-09-30: pipeline validado com áudio sintético (transcrição, diarização e ata). Modo `--process` adicionado ao app para testes.
+- 2026-10-01: ADR 0012. Chaves e escolha de provedor/modelo em `.env` (substitui o Keychain); STT e LLM atrás de protocolos. Regra de credenciais alterada com confirmação do usuário.
+- 2026-10-01: ADR 0013. Pausar, continuar e encerrar gravação; contador na barra de menus; confirmação ao sair gravando; lembrete de pausa.
 
 ## Sincronização
 

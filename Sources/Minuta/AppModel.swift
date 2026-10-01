@@ -5,26 +5,34 @@ import SwiftUI
 final class AppModel: ObservableObject {
     static let shared = AppModel()
 
+    /// Non-nil while a recording session is open, running or paused.
     @Published var recordingStart: Date?
+    @Published private(set) var isPaused = false
+    @Published private(set) var elapsedText: String?
     @Published private(set) var processing = 0
 
     private let store = JobStore()
     private let recorder = Recorder()
     private var currentJob: Job?
-    private var limitTimer: Timer?
+    private var ticker: Timer?
+    private var runningSince: Date?
+    private var elapsedBefore: TimeInterval = 0
+    private var pausedAt: Date?
+    private var nextReminder = Config.pauseReminderSeconds
 
     var iconName: String {
-        if recordingStart != nil { return "record.circle.fill" }
+        if recordingStart != nil { return isPaused ? "pause.circle.fill" : "record.circle.fill" }
         if processing > 0 { return "arrow.triangle.2.circlepath" }
         return "mic"
     }
 
     init() {
         Notifier.requestAuthorization()
+        Env.prepare()
         // A recording cut off mid-capture leaves an unreadable .m4a: nothing to recover.
         for job in store.load() where job.stage == .recording { store.delete(job.id) }
         recorder.onInterrupted = { [weak self] in
-            Task { @MainActor in self?.stopRecording() }
+            Task { @MainActor in self?.endRecording() }
         }
         Task { await reviewPendingJobs() }
     }
@@ -33,9 +41,11 @@ final class AppModel: ObservableObject {
 
     func startRecording() {
         guard recordingStart == nil else { return }
-        guard Keychain.get(Config.googleAccount) != nil, Keychain.get(Config.anthropicAccount) != nil else {
-            fail(AppError("Salve as chaves do Google e da Anthropic em Configurações > Chaves de API.",
-                          opensSettings: true), title: "Faltam as chaves de API")
+        do {
+            _ = try Providers.transcriber()
+            _ = try Providers.minuter()
+        } catch {
+            fail(AppError.from(error), title: "Falta configurar os provedores de IA")
             return
         }
         Task {
@@ -51,11 +61,11 @@ final class AppModel: ObservableObject {
                                          systemURL: dir.appendingPathComponent("system.m4a"))
                 currentJob = job
                 recordingStart = now
-                let timer = Timer(timeInterval: Config.maxRecordingSeconds, repeats: false) { _ in
-                    Task { @MainActor in self.stopRecording() }
-                }
-                RunLoop.main.add(timer, forMode: .common)
-                limitTimer = timer
+                elapsedBefore = 0
+                runningSince = now
+                pausedAt = nil
+                isPaused = false
+                startTicker()
                 if !recorder.micActive {
                     Notifier.post("Sem microfone", "Nenhum microfone encontrado. Gravando só o áudio do sistema.")
                 }
@@ -66,19 +76,80 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func stopRecording() {
-        guard let start = recordingStart, var job = currentJob else { return }
+    func pauseRecording() {
+        guard recordingStart != nil, !isPaused else { return }
+        let now = Date()
+        elapsedBefore = elapsed(now)
+        runningSince = nil
+        pausedAt = now
+        nextReminder = Config.pauseReminderSeconds
+        recorder.paused = true
+        isPaused = true
+        refreshClock(now)
+    }
+
+    func resumeRecording() {
+        guard isPaused else { return }
+        runningSince = Date()
+        pausedAt = nil
+        recorder.paused = false
+        isPaused = false
+    }
+
+    /// Ends the recording and starts processing it right away.
+    func endRecording() {
+        guard recordingStart != nil, var job = currentJob else { return }
+        let duration = elapsed(Date())
         recordingStart = nil
         currentJob = nil
-        limitTimer?.invalidate()
+        isPaused = false
+        pausedAt = nil
+        runningSince = nil
+        elapsedBefore = 0
+        ticker?.invalidate()
+        ticker = nil
+        elapsedText = nil
         Task {
             let offsets = await recorder.stop()
-            job.durationSeconds = Date().timeIntervalSince(start)
+            job.durationSeconds = duration
             job.micOffset = offsets.mic
             job.systemOffset = offsets.system
             job.stage = .transcribing
             store.save(job)
             run(job)
+        }
+    }
+
+    /// Recorded time so far, pauses excluded.
+    private func elapsed(_ now: Date) -> TimeInterval {
+        elapsedBefore + (runningSince.map { now.timeIntervalSince($0) } ?? 0)
+    }
+
+    private func refreshClock(_ now: Date = Date()) {
+        elapsedText = Fmt.elapsed(elapsed(now))
+    }
+
+    private func startTicker() {
+        refreshClock()
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.tick() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        ticker = timer
+    }
+
+    /// Once a second: updates the clock, enforces the time limit and reminds about a long pause.
+    private func tick() {
+        guard recordingStart != nil else { return }
+        let now = Date()
+        refreshClock(now)
+        if elapsed(now) >= Config.maxRecordingSeconds {
+            Notifier.post("Gravação encerrada", "O limite de \(Int(Config.maxRecordingSeconds / 60)) minutos foi atingido. Gerando a ata.")
+            endRecording()
+        } else if let pausedAt, now.timeIntervalSince(pausedAt) >= nextReminder {
+            nextReminder += Config.pauseReminderSeconds
+            let minutes = Int(now.timeIntervalSince(pausedAt) / 60)
+            Notifier.post("Gravação pausada", "Pausada há \(minutes) minutos. Continue ou encerre pelo menu.")
         }
     }
 
@@ -150,9 +221,15 @@ final class AppModel: ObservableObject {
     }
 
     private func fail(_ error: AppError, title: String) {
-        let buttons = error.opensSettings ? ["OK", "Abrir Configurações"] : ["OK"]
+        let action: String?
+        switch error.fix {
+        case .none: action = nil
+        case .settings: action = "Abrir Configurações"
+        case .keys: action = "Abrir arquivo de chaves"
+        }
+        let buttons = action.map { ["OK", $0] } ?? ["OK"]
         if Alerts.show(title: title, message: error.message, buttons: buttons) == 1 {
-            SettingsOpener.open()
+            if error.fix == .keys { Env.open() } else { SettingsOpener.open() }
         }
     }
 
@@ -164,15 +241,12 @@ final class AppModel: ObservableObject {
 
 enum Pipeline {
     static func transcribe(job: Job, dir: URL) async throws -> Transcript {
-        guard let key = Keychain.get(Config.googleAccount) else {
-            throw AppError("Salve a chave do Google em Configurações > Chaves de API.", opensSettings: true)
-        }
-        let gemini = GeminiTranscriber(apiKey: key)
+        let stt = try Providers.transcriber()
         let micURL = dir.appendingPathComponent("mic.m4a")
         let noMic: (text: String, words: [Word]) = ("", [])
         async let mic = FileManager.default.fileExists(atPath: micURL.path)
-            ? gemini.transcribe(file: micURL, diarize: false) : noMic
-        async let system = gemini.transcribe(file: dir.appendingPathComponent("system.m4a"), diarize: true)
+            ? stt.transcribe(file: micURL, diarize: false) : noMic
+        async let system = stt.transcribe(file: dir.appendingPathComponent("system.m4a"), diarize: true)
         let transcript = TranscriptBuilder.build(
             mic: try await mic, system: try await system,
             micOffset: job.micOffset, systemOffset: job.systemOffset)
@@ -181,10 +255,7 @@ enum Pipeline {
     }
 
     static func minutes(job: Job, transcript: Transcript) async throws -> URL {
-        guard let key = Keychain.get(Config.anthropicAccount) else {
-            throw AppError("Salve a chave da Anthropic em Configurações > Chaves de API.", opensSettings: true)
-        }
-        let data = try await ClaudeMinuter(apiKey: key).minutes(transcript: transcript, job: job)
+        let data = try await Providers.minuter().minutes(transcript: transcript, job: job)
         let markdown = MinutesRenderer.render(data, transcript: transcript, job: job)
         return try MinutesRenderer.write(markdown, job: job)
     }

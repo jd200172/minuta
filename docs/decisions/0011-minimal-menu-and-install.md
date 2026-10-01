@@ -2,7 +2,7 @@
 
 Status: aceita
 Data: 2026-09-30
-Complementa: `docs/decisions/0009-native-swift-stack.md`.
+Complementa: `docs/decisions/0009-native-swift-stack.md`. Parcialmente substituída pelo ADR 0012 (a aba Chaves de API e o botão Verificar saíram).
 
 ## Contexto
 

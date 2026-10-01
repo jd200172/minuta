@@ -6,7 +6,12 @@ struct MenuContent: View {
 
     var body: some View {
         if model.recordingStart != nil {
-            Button("Parar gravação") { model.stopRecording() }
+            if model.isPaused {
+                Button("Continuar gravação") { model.resumeRecording() }
+            } else {
+                Button("Pausar gravação") { model.pauseRecording() }
+            }
+            Button("Encerrar gravação") { model.endRecording() }
         } else {
             Button("Iniciar gravação") { model.startRecording() }
         }

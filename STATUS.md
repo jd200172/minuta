@@ -1,12 +1,15 @@
 # Status
 
-Atualizado em: 2026-09-30
+Atualizado em: 2026-10-01
 
 ## Em andamento
 - Primeira versão do app em Swift (ADR 0009): compila, abre na barra de menus e tem 3 testes passando. O pipeline de transcrição e ata foi exercitado de ponta a ponta com o áudio sintético e as chaves reais (modo `--process`). A captura do áudio do sistema pelo app foi testada pelo usuário e funcionou (teste de 5 s). Falta uma gravação completa pelo menu, até a ata.
-- Decisões em `docs/decisions/` (ADRs 0001 a 0010). O ADR 0010 (limite de 30 minutos) é proposta e aguarda confirmação.
+- Decisões em `docs/decisions/` (ADRs 0001 a 0013). O ADR 0010 (limite de 30 minutos) é proposta e aguarda confirmação.
 - Áudio sintético de teste em `tools/synthetic-meeting/out/` (253 s, 4 vozes: 1 no microfone, 3 no sistema, 3 sobreposições). Gabarito em `tools/synthetic-meeting/expected.md`.
 - Mockups das telas no chat. Não implementados: tela de primeiro uso, teste de captura, "Abrir transcrição" na falha da ata.
+
+- ADR 0012 implementado: chaves e provedores no `.env` (`~/Library/Application Support/Minuta/.env`), `Transcriber` e `Minuter` como protocolos, aba de chaves removida, migração do Keychain na primeira abertura. Compila e os 9 testes passam. Não executado: o app não foi instalado nem aberto depois da mudança (o usuário removeu `/Applications/Minuta.app`), então a migração, o botão que abre o arquivo e o aviso de chave ausente estão sem teste manual.
+- ADR 0013 implementado: pausar, continuar e encerrar a gravação, contador na barra de menus, confirmação ao sair gravando e lembrete de pausa a cada 10 min. Compila e os testes passam. Sem teste manual: o menu nos três estados, a pausa no áudio gravado, o contador e o aviso de saída.
 
 ## Descobertas
 <!-- fato aprendido durante o trabalho que muda o próximo passo -->
@@ -25,6 +28,7 @@ Atualizado em: 2026-09-30
 
 ## Descartado
 <!-- hipótese ou abordagem descartada e o motivo -->
+- Keychain para as chaves: o aviso de autorização volta em qualquer build com assinatura diferente (ADR 0012).
 - Python com `pystray`, `pyobjc` e `customtkinter`: mais dependências e empacotamento frágil com uma só plataforma (ADR 0009).
 - Notion e Supabase como destino do MVP (ADR 0001).
 - LLM multimodal único para transcrição e ata (ADR 0002).

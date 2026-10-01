@@ -1,15 +1,16 @@
 import Foundation
-import Security
 import UserNotifications
 
 struct AppError: LocalizedError {
-    let message: String
-    /// True when the fix is in Settings (missing key, rejected key, missing permission).
-    let opensSettings: Bool
+    /// Where the user can fix the problem: the settings window (permissions) or the keys file.
+    enum Fix { case none, settings, keys }
 
-    init(_ message: String, opensSettings: Bool = false) {
+    let message: String
+    let fix: Fix
+
+    init(_ message: String, fix: Fix = .none) {
         self.message = message
-        self.opensSettings = opensSettings
+        self.fix = fix
     }
 
     var errorDescription: String? { message }
@@ -34,7 +35,7 @@ struct AppError: LocalizedError {
         let name = provider.name
         switch status {
         case 401, 403:
-            return AppError("\(name): a chave foi recusada. Confira em Configurações > Chaves de API.", opensSettings: true)
+            return AppError("\(name): a chave foi recusada. Confira \(provider.keyName) no arquivo de chaves.", fix: .keys)
         case 429:
             return AppError("\(name): limite de pedidos atingido. Aguarde um minuto e tente de novo.")
         case 413:
@@ -58,16 +59,19 @@ struct AppError: LocalizedError {
 enum Provider {
     case google, anthropic
     var name: String { self == .google ? "Google" : "Anthropic" }
+    var keyName: String { self == .google ? "GOOGLE_API_KEY" : "ANTHROPIC_API_KEY" }
 }
 
 enum Config {
+    /// Recorded time, pauses excluded.
     static let maxRecordingSeconds: TimeInterval = 30 * 60
-    static let geminiModel = "gemini-3.5-transcribe"
-    static let claudeModel = "claude-sonnet-5-5"
+    static let pauseReminderSeconds: TimeInterval = 10 * 60
+    static let defaultTranscriber = "gemini"
+    static let defaultTranscriberModel = "gemini-3.5-transcribe"
+    static let defaultMinuter = "claude"
+    static let defaultMinuterModel = "claude-sonnet-5-5"
     static let userNameKey = "userName"
     static let outputDirKey = "outputDir"
-    static let googleAccount = "google-api-key"
-    static let anthropicAccount = "anthropic-api-key"
 
     static var userName: String {
         let name = UserDefaults.standard.string(forKey: userNameKey) ?? ""
@@ -83,51 +87,6 @@ enum Config {
         if !path.isEmpty { return URL(fileURLWithPath: (path as NSString).expandingTildeInPath) }
         return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("Atas")
-    }
-}
-
-enum Keychain {
-    // Service name changed from "app.minuta.Minuta" so items written by earlier, differently
-    // signed builds (which this build cannot modify silently) are left alone.
-    private static let service = "app.minuta.Minuta.keys"
-
-    static func get(_ account: String) -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-        var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
-    }
-
-    /// Saves (or removes, when empty) a value. Returns the Security framework status.
-    static func set(_ value: String, account: String) -> OSStatus {
-        let base: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-        ]
-        if value.isEmpty {
-            let status = SecItemDelete(base as CFDictionary)
-            return status == errSecItemNotFound ? errSecSuccess : status
-        }
-        let data = Data(value.utf8)
-        var add = base
-        add[kSecValueData as String] = data
-        let status = SecItemAdd(add as CFDictionary, nil)
-        if status == errSecDuplicateItem {
-            return SecItemUpdate(base as CFDictionary, [kSecValueData as String: data] as CFDictionary)
-        }
-        return status
-    }
-
-    static func message(_ status: OSStatus) -> String {
-        (SecCopyErrorMessageString(status, nil) as String?) ?? "erro \(status)"
     }
 }
 
@@ -149,6 +108,13 @@ enum Fmt {
     static func clock(_ seconds: Double) -> String {
         let s = Int(seconds)
         return String(format: "%02d:%02d:%02d", s / 3600, (s % 3600) / 60, s % 60)
+    }
+
+    /// Elapsed recording time as mm:ss, or h:mm:ss from one hour.
+    static func elapsed(_ seconds: Double) -> String {
+        let s = Int(seconds)
+        if s >= 3600 { return String(format: "%d:%02d:%02d", s / 3600, (s % 3600) / 60, s % 60) }
+        return String(format: "%02d:%02d", s / 60, s % 60)
     }
 
     static func jobID(_ date: Date) -> String {
