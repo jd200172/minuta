@@ -3,7 +3,7 @@
 Atualizado em: 2026-10-01
 
 ## Em andamento
-- Nada em execução. ADRs 0001 a 0016 em `docs/decisions/`; o 0010 (limite de 30 minutos) é proposta e aguarda confirmação. 31 testes passam. O app está instalado em `/Applications/Minuta.app`.
+- Nada em execução. ADRs 0001 a 0017 em `docs/decisions/` (o 0017, resumo sob demanda com cinco modelos, está decidido e não implementado; mockups aprovados na conversa); o 0010 (limite de 30 minutos) é proposta e aguarda confirmação. 31 testes passam. O app está instalado em `/Applications/Minuta.app`.
 
 Estado atual do app:
 - Barra de menus com `NSStatusItem`: ícone de microfone fixo e estado pelo fundo do botão (verde gravando, vermelho pausado, amarelo processando) (ADRs 0011 e 0014).
@@ -22,6 +22,13 @@ Ainda sem teste manual:
 - Renomear: rolar ou redimensionar com o campo aberto; nomes inferidos pelo modelo no app; atas muito longas.
 - Configurações: Permitir, Testar captura, Escolher… e Abrir ao iniciar o Mac.
 - Barra de menus clara, outros papéis de parede e VoiceOver.
+
+## Decisão pendente de implementação (ADR 0017)
+- Classificação ao fim da transcrição devolve modelo sugerido, justificativa e título; o sugerido é gerado automaticamente. Cinco modelos: Decisão, Acompanhamento, Problemas e ideias, Informativa, Geral.
+- Dois arquivos: principal `AAAA-MM-DD HHmm Título.md` (frontmatter, cópia do resumo escolhido, transcrição) e secundário `AAAA-MM-DD HHmm.resumos.json` (todos os resumos). Chave: `inicio`. Trocar de modelo reaproveita ou gera; nada é descartado; "Refazer este resumo" substitui o do modelo.
+- A implementação muda `MinutesPrompt`, `Minutes`, `AppModel`, `Job`, `AtaLibrary`, `AtaViewer`, `MarkdownHTML` e os testes. O título editável entra no MVP.
+- Em aberto: formato do JSON e da marca de seção gerada, onde guardar a classificação durante a geração, confirmação ao refazer, aviso de secundário ilegível.
+- Fora: envio por e-mail e consultas por conectores (ADR próprio depois).
 
 ## Descobertas
 <!-- fato aprendido durante o trabalho que muda o próximo passo -->
@@ -49,7 +56,7 @@ Ainda sem teste manual:
 - LLM multimodal único para transcrição e ata (ADR 0002).
 - Mixagem em mono (ADR 0004).
 - "Outros" como bloco único (ADR 0006).
-- Tipos de reunião e notas no MVP (ADR 0007).
+- Tipos de reunião e notas no MVP (ADR 0007). Os tipos voltaram ao escopo pelo ADR 0017; notas continuam fora.
 - Dois arquivos por reunião, ata e transcrição (ADR 0005).
 - Gravação de 27 s com microfone conectado: a ata mostrou um "Participante 1" que só disse "É". Uma segunda gravação de 30 s, de fone e com o Mac sem tocar nada, não gerou participante falso. O mais provável é eco (a voz do usuário voltando pelo alto-falante para o canal do sistema); a hipótese de o transcritor inventar fala num canal em silêncio perdeu força. Sem fone, o eco é esperado; cancelamento de eco (processamento de voz do `AVAudioEngine`) não foi adotado.
 - O campo "Seu nome" estava salvo como `.... ` e apareceu como rótulo do usuário na ata. É valor digitado, não falha do app.
@@ -59,6 +66,8 @@ Ainda sem teste manual:
 - Anotações "(canal do microfone)" e "nome informado por você" na lista de participantes: redundantes (ADR 0016).
 
 ## Próximos
+- Implementar o ADR 0017 e criar cinco reuniões sintéticas (uma por modelo) com resultado esperado, para testar os modelos e a acurácia do classificador.
+- Conferir nas fontes primárias as citações de Tropman, Romano e Nunamaker e Monge usadas no ADR 0017.
 - Confirmar o limite de 30 minutos (ADR 0010).
 - Gravar uma reunião real com voz (3 ou mais participantes) e conferir transcrição, diarização e ata (teste 6).
 - Teste de eco sem fone (alto-falante e microfone abertos), para medir o quanto o eco vaza para a ata e decidir se vale o cancelamento de eco.

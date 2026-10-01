@@ -1,6 +1,6 @@
 # 0005. Estrutura da ata e rastreabilidade pela transcrição
 
-Status: aceita
+Status: aceita; estrutura única e prompt único substituídos pelo ADR 0017 (a rastreabilidade continua valendo)
 Data: 2026-09-30
 Substitui: estrutura de ata do exemplo em `docs/project-brief.md` (seção 4) e o formato de saída em `docs/decisions/0001-local-markdown-destination.md` (campos do frontmatter).
 

@@ -1,6 +1,6 @@
 # 0007. Tipos de reunião e notas adiados para a segunda fase
 
-Status: aceita
+Status: aceita; o adiamento dos tipos de reunião foi substituído pelo ADR 0017 (notas continuam adiadas)
 Data: 2026-09-30
 Substitui: categorias de reunião e função "Inserir Nota" (seções 1 e 3 de `docs/project-brief.md`).
 
