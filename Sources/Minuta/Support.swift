@@ -162,6 +162,28 @@ enum Fmt {
         return f.string(from: date)
     }
 
+    /// "Hoje às 15:57", "Ontem às 09:06", or "28 de set. de 2026 às 16:30", like the Finder's date columns.
+    static func finderDate(_ date: Date, now: Date = Date(), calendar: Calendar = .current) -> String {
+        let time = DateFormatter()
+        time.locale = Locale(identifier: "pt_BR")
+        time.calendar = calendar
+        time.timeZone = calendar.timeZone
+        time.dateFormat = "HH:mm"
+        let clock = time.string(from: date)
+        if calendar.isDate(date, inSameDayAs: now) { return "Hoje às \(clock)" }
+        if let yesterday = calendar.date(byAdding: .day, value: -1, to: now),
+            calendar.isDate(date, inSameDayAs: yesterday)
+        {
+            return "Ontem às \(clock)"
+        }
+        let day = DateFormatter()
+        day.locale = Locale(identifier: "pt_BR")
+        day.calendar = calendar
+        day.timeZone = calendar.timeZone
+        day.dateFormat = "d 'de' MMM 'de' yyyy"
+        return "\(day.string(from: date)) às \(clock)"
+    }
+
     /// "13 s" under a minute, "28 min" from there.
     static func shortDuration(_ seconds: Double) -> String {
         seconds < 60 ? "\(Int(seconds)) s" : "\(Int((seconds / 60).rounded())) min"

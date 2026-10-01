@@ -1,8 +1,9 @@
 import AppKit
 import SwiftUI
 
-/// The "Atas…" window: recordings still being processed on top, then a table of the minutes with sortable
-/// columns (data, título, resumo, duração). Double click or Return opens an ata; the pencil renames it in place.
+/// The "Atas…" window, a table in the style of the Finder's list view: sortable columns (data, título,
+/// resumo, duração), no buttons in the rows, every action in the context menu. Recordings still being
+/// processed are rows of the same table. Return renames, ⌘O, ⌘↓ or a double click opens, ⌘⌫ moves to the Trash.
 @MainActor
 final class AtasWindowController {
     static let shared = AtasWindowController()
@@ -30,17 +31,71 @@ final class AtasWindowController {
     }
 }
 
+/// One row of the table: an ata, or a recording still being processed.
+struct ListRow: Identifiable {
+    enum Kind {
+        case ata(Ata)
+        case job(Job, running: Bool)
+    }
+
+    let kind: Kind
+
+    var id: String {
+        switch kind {
+        case .ata(let ata): ata.url.absoluteString
+        case .job(let job, _): "job-" + job.id
+        }
+    }
+
+    var start: Date {
+        switch kind {
+        case .ata(let ata): ata.start
+        case .job(let job, _): job.startedAt
+        }
+    }
+
+    var title: String {
+        switch kind {
+        case .ata(let ata): ata.title
+        case .job(_, let running): running ? "Gravação em processamento" : "Gravação não processada"
+        }
+    }
+
+    var summaryLabel: String {
+        switch kind {
+        case .ata(let ata): ata.summaryLabel
+        case .job(let job, let running):
+            running
+                ? (job.stage == .minuting ? "Classificando a reunião…" : "Transcrevendo…")
+                : (job.lastError.map { "Falhou: \($0)" } ?? "Interrompida")
+        }
+    }
+
+    var durationSeconds: TimeInterval {
+        switch kind {
+        case .ata(let ata): ata.durationSeconds
+        case .job(let job, _): job.durationSeconds
+        }
+    }
+}
+
 struct AtasView: View {
     @ObservedObject private var library = AtaLibrary.shared
     @ObservedObject private var model = AppModel.shared
     @ObservedObject private var summaries = SummaryService.shared
-    @State private var sortOrder = [KeyPathComparator(\Ata.start, order: .reverse)]
-    @State private var selection: Ata.ID?
-    @State private var renamingID: Ata.ID?
+    @State private var sortOrder = [KeyPathComparator(\ListRow.start, order: .reverse)]
+    @State private var selection: ListRow.ID?
+    @State private var renamingID: ListRow.ID?
     @State private var draft = ""
-    @FocusState private var focusedID: Ata.ID?
+    @FocusState private var focusedID: ListRow.ID?
 
-    private var rows: [Ata] { library.atas.sorted(using: sortOrder) }
+    private var rows: [ListRow] {
+        let jobs = library.pending.map { ListRow(kind: .job($0, running: model.runningJobs.contains($0.id))) }
+        let atas = library.atas.map { ListRow(kind: .ata($0)) }
+        return (jobs + atas).sorted(using: sortOrder)
+    }
+
+    private var selected: ListRow? { rows.first { $0.id == selection } }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -52,35 +107,13 @@ struct AtasView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                if !library.pending.isEmpty { pendingBlock }
-                if !library.atas.isEmpty {
-                    if !library.pending.isEmpty {
-                        Text("Atas").font(.subheadline).foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 4)
-                    }
-                    table
-                } else {
-                    Spacer(minLength: 0)
-                }
+                table
             }
         }
         .frame(minWidth: 560, minHeight: 280)
+        .background(shortcuts)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             library.refresh()
-        }
-    }
-
-    // MARK: Pending
-
-    private var pendingBlock: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Em andamento").font(.subheadline).foregroundStyle(.secondary)
-                .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 4)
-            ForEach(library.pending) { job in
-                PendingRow(job: job, running: model.runningJobs.contains(job.id))
-                    .padding(.horizontal, 16)
-            }
         }
     }
 
@@ -88,103 +121,136 @@ struct AtasView: View {
 
     private var table: some View {
         Table(rows, selection: $selection, sortOrder: $sortOrder) {
-            TableColumn("Data", value: \.start) { ata in
-                Text(Fmt.listDate(ata.start)).foregroundStyle(.secondary)
+            TableColumn("Data", value: \.start) { row in
+                Text(Fmt.finderDate(row.start)).foregroundStyle(.secondary)
             }
-            .width(124)
-            TableColumn("Título", value: \.title) { ata in
-                titleCell(ata)
+            .width(min: 150, ideal: 185)
+            TableColumn("Título", value: \.title) { row in
+                titleCell(row)
             }
             .width(min: 140)
-            TableColumn("Resumo", value: \.summaryLabel) { ata in
-                SummaryCell(ata: ata, generating: summaries.running[ata.url])
+            TableColumn("Resumo", value: \.summaryLabel) { row in
+                SummaryCell(row: row, generating: ataURL(row).flatMap { summaries.running[$0] })
             }
-            .width(min: 100, ideal: 130, max: 170)
-            TableColumn("Duração", value: \.durationSeconds) { ata in
-                Text(ata.duration.map(Fmt.shortDuration) ?? "—").foregroundStyle(.secondary)
+            .width(min: 110, ideal: 150, max: 200)
+            TableColumn("Duração", value: \.durationSeconds) { row in
+                if case .ata(let ata) = row.kind, ata.duration == nil {
+                    Text("—").foregroundStyle(.secondary)
+                } else {
+                    Text(Fmt.shortDuration(row.durationSeconds)).foregroundStyle(.secondary)
+                }
             }
-            .width(64)
-            TableColumn("") { ata in
-                actions(ata)
-            }
-            .width(52)
+            .width(70)
         }
         .tableStyle(.inset(alternatesRowBackgrounds: true))
-        .contextMenu(forSelectionType: Ata.ID.self) { ids in
-            if let ata = rows.first(where: { ids.contains($0.id) }) { menu(for: ata) }
+        .contextMenu(forSelectionType: ListRow.ID.self) { ids in
+            if let row = rows.first(where: { ids.contains($0.id) }) { menu(for: row) }
         } primaryAction: { ids in
-            if let ata = rows.first(where: { ids.contains($0.id) }) { open(ata) }
+            if let row = rows.first(where: { ids.contains($0.id) }), case .ata(let ata) = row.kind { open(ata) }
         }
     }
 
-    @ViewBuilder private func titleCell(_ ata: Ata) -> some View {
-        if renamingID == ata.id {
-            TextField("Título da reunião", text: $draft)
-                .textFieldStyle(.roundedBorder)
-                .focused($focusedID, equals: ata.id)
-                .onSubmit { commitRename(ata) }
-                .onExitCommand { renamingID = nil }
-                .onChange(of: focusedID) { focus in
-                    if focus != ata.id, renamingID == ata.id { commitRename(ata) }
-                }
-        } else {
-            HStack(spacing: 6) {
-                if ata.problem != nil {
-                    Image(systemName: "exclamationmark.triangle").foregroundStyle(.red)
-                }
-                Text(ata.title).lineLimit(1).truncationMode(.tail)
+    private func ataURL(_ row: ListRow) -> URL? {
+        if case .ata(let ata) = row.kind { ata.url } else { nil }
+    }
+
+    @ViewBuilder private func titleCell(_ row: ListRow) -> some View {
+        HStack(spacing: 7) {
+            icon(row)
+            if renamingID == row.id {
+                TextField("Título da reunião", text: $draft)
+                    .textFieldStyle(.roundedBorder)
+                    .focused($focusedID, equals: row.id)
+                    .onSubmit { commitRename() }
+                    .onExitCommand { renamingID = nil }
+                    .onChange(of: focusedID) { focus in
+                        if focus != row.id, renamingID == row.id { commitRename() }
+                    }
+            } else {
+                Text(row.title).lineLimit(1).truncationMode(.tail)
+                    .foregroundStyle(isJob(row) || row.title == MinutesRenderer.untitled ? .secondary : .primary)
             }
         }
     }
 
-    @ViewBuilder private func actions(_ ata: Ata) -> some View {
-        if renamingID == ata.id {
-            EmptyView()
+    @ViewBuilder private func icon(_ row: ListRow) -> some View {
+        if case .ata(let ata) = row.kind, ata.problem != nil {
+            Image(systemName: "exclamationmark.triangle").foregroundStyle(.red)
         } else {
-            HStack(spacing: 10) {
-                if ata.problem == nil {
-                    let busy = summaries.running[ata.url] != nil
-                    Button {
-                        beginRename(ata)
-                    } label: {
-                        Image(systemName: "pencil")
-                    }
-                    .buttonStyle(.borderless)
-                    .disabled(busy)
-                    .help(busy ? "Aguarde o resumo terminar" : "Renomear")
-                    .accessibilityLabel("Renomear ata")
-                } else if !(ata.problem?.canOpen ?? true) {
-                    Button {
-                        reveal(ata)
-                    } label: {
-                        Image(systemName: "folder")
-                    }
-                    .buttonStyle(.borderless)
-                    .help("Mostrar no Finder")
-                    .accessibilityLabel("Mostrar no Finder")
-                }
-                Button {
-                    trash(ata)
-                } label: {
-                    Image(systemName: "trash")
-                }
-                .buttonStyle(.borderless)
-                .help("Mover para a Lixeira")
-                .accessibilityLabel("Mover a ata para a Lixeira")
-            }
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            Image(systemName: "doc.text").foregroundStyle(.secondary)
         }
     }
 
-    @ViewBuilder private func menu(for ata: Ata) -> some View {
-        Button("Abrir") { open(ata) }.disabled(!(ata.problem?.canOpen ?? true))
-        Button("Renomear") { beginRename(ata) }
-            .disabled(ata.problem != nil || summaries.running[ata.url] != nil)
-        Divider()
-        Button("Mostrar no Finder") { reveal(ata) }
-        Divider()
-        Button("Mover para a Lixeira") { trash(ata) }
+    private func isJob(_ row: ListRow) -> Bool {
+        if case .job = row.kind { true } else { false }
+    }
+
+    // MARK: Menu
+
+    @ViewBuilder private func menu(for row: ListRow) -> some View {
+        switch row.kind {
+        case .ata(let ata):
+            let busy = summaries.running[ata.url] != nil
+            Button("Abrir") { open(ata) }.disabled(!(ata.problem?.canOpen ?? true))
+            Button("Mostrar no Finder") { reveal(ata) }
+            Divider()
+            if ata.model != nil || ata.noSummary { summaryMenu(ata, busy: busy) }
+            Divider()
+            Button("Mover para a Lixeira") { trash(ata) }
+            Divider()
+            Button("Renomear") { beginRename(row) }.disabled(ata.problem != nil || busy)
+        case .job(let job, let running):
+            Button("Tentar de novo") { AppModel.shared.run(job) }.disabled(running)
+            Divider()
+            Button("Descartar…") { discard(job) }
+        }
+    }
+
+    /// The five models, with a check on the one shown. Choosing one shows it, generating it first if needed.
+    @ViewBuilder private func summaryMenu(_ ata: Ata, busy: Bool) -> some View {
+        let suggestion = suggestion(for: ata)
+        Menu("Resumo") {
+            Picker(
+                "Resumo",
+                selection: Binding<SummaryModel?>(
+                    get: { ata.model },
+                    set: { if let chosen = $0, chosen != ata.model { generate(chosen, for: ata) } })
+            ) {
+                ForEach(SummaryModel.allCases) { model in
+                    Text(model == suggestion ? "\(model.title) (sugerido)" : model.title).tag(Optional(model))
+                }
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+        }
+        .disabled(busy || ata.problem != nil)
+    }
+
+    private func suggestion(for ata: Ata) -> SummaryModel? {
+        guard let text = try? String(contentsOf: ata.url, encoding: .utf8) else { return nil }
+        return AtaStore.sidecar(forMarkdown: text, in: ata.url.deletingLastPathComponent())?.sidecar
+            .classification?.suggestion
+    }
+
+    // MARK: Keyboard
+
+    /// Finder keys, as hidden buttons: Return renames, ⌘O and ⌘↓ open, ⌘⌫ moves to the Trash.
+    private var shortcuts: some View {
+        ZStack {
+            Button("Renomear") { if let row = selected { beginRename(row) } }
+                .keyboardShortcut(.return, modifiers: [])
+                .disabled(renamingID != nil || selected == nil)
+            Button("Abrir") { if case .ata(let ata)? = selected?.kind { open(ata) } }
+                .keyboardShortcut("o", modifiers: .command)
+            Button("Abrir") { if case .ata(let ata)? = selected?.kind { open(ata) } }
+                .keyboardShortcut(.downArrow, modifiers: .command)
+            Button("Mover para a Lixeira") { if case .ata(let ata)? = selected?.kind { trash(ata) } }
+                .keyboardShortcut(.delete, modifiers: .command)
+                .disabled(renamingID != nil)
+        }
+        .opacity(0)
+        .frame(width: 0, height: 0)
+        .accessibilityHidden(true)
     }
 
     // MARK: Actions
@@ -198,16 +264,20 @@ struct AtasView: View {
         NSWorkspace.shared.activateFileViewerSelecting([ata.url])
     }
 
-    private func beginRename(_ ata: Ata) {
-        guard ata.problem == nil, summaries.running[ata.url] == nil else { return }
-        selection = ata.id
+    private func beginRename(_ row: ListRow) {
+        guard case .ata(let ata) = row.kind, ata.problem == nil, summaries.running[ata.url] == nil else { return }
+        selection = row.id
         draft = ata.title == MinutesRenderer.untitled ? "" : ata.title
-        renamingID = ata.id
-        DispatchQueue.main.async { focusedID = ata.id }
+        renamingID = row.id
+        DispatchQueue.main.async { focusedID = row.id }
     }
 
-    private func commitRename(_ ata: Ata) {
-        guard renamingID == ata.id else { return }
+    private func commitRename() {
+        guard let id = renamingID, let row = rows.first(where: { $0.id == id }), case .ata(let ata) = row.kind
+        else {
+            renamingID = nil
+            return
+        }
         renamingID = nil
         let title = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         let current = ata.title == MinutesRenderer.untitled ? "" : ata.title
@@ -226,12 +296,19 @@ struct AtasView: View {
         }
     }
 
+    private func generate(_ model: SummaryModel, for ata: Ata) {
+        Task {
+            do {
+                try await SummaryService.shared.show(model, for: ata.url)
+            } catch {
+                Alerts.show(
+                    title: "Não foi possível gerar o resumo", message: AppError.from(error).message, buttons: ["OK"])
+            }
+        }
+    }
+
+    /// The Trash is reversible, so there is no question, like the Finder.
     private func trash(_ ata: Ata) {
-        let choice = Alerts.show(
-            title: "Mover a ata para a Lixeira?",
-            message: "“\(ata.title)” será movida para a Lixeira. Você pode recuperá-la de lá.",
-            buttons: ["Cancelar", "Mover para a Lixeira"], destructive: 1)
-        guard choice == 1 else { return }
         do {
             try library.trash(ata)
             AtaViewerController.shared.close(ata.url)
@@ -239,6 +316,14 @@ struct AtasView: View {
             Alerts.show(
                 title: "Não foi possível mover a ata", message: AppError.from(error).message, buttons: ["OK"])
         }
+    }
+
+    private func discard(_ job: Job) {
+        let choice = Alerts.show(
+            title: "Descartar a gravação?",
+            message: "A gravação de \(Fmt.listDate(job.startedAt)) será apagada e não poderá ser recuperada.",
+            buttons: ["Cancelar", "Descartar"], destructive: 1)
+        if choice == 1 { library.discard(job) }
     }
 }
 
@@ -274,89 +359,47 @@ private struct FolderBanner: View {
     }
 }
 
-/// The "Resumo" column: the model, "Sem resumo", a generation in progress or what is wrong with the file.
+/// The "Resumo" column: a colored dot and the model, "Sem resumo", a generation in progress, the state of a
+/// recording, or what is wrong with the file. Plain text, like the Finder's Tags column.
 private struct SummaryCell: View {
-    let ata: Ata
+    let row: ListRow
     let generating: SummaryModel?
 
     var body: some View {
-        if generating != nil {
-            HStack(spacing: 5) {
-                ProgressView().controlSize(.small)
-                Text("Gerando resumo…").font(.caption).foregroundStyle(.secondary)
+        switch row.kind {
+        case .ata(let ata):
+            if generating != nil {
+                busy("Gerando resumo…")
+            } else if let problem = ata.problem {
+                Text(problem.label).foregroundStyle(.red)
+            } else if let model = ata.model {
+                labeled(model.title, model.tint)
+            } else if ata.noSummary {
+                labeled("Sem resumo", .orange)
             }
-        } else if let problem = ata.problem {
-            Text(problem.label).font(.caption).foregroundStyle(.red)
-        } else if let model = ata.model {
-            tag(model.title, model.tint)
-        } else if ata.noSummary {
-            tag("Sem resumo", .orange)
+        case .job(let job, let running):
+            if running {
+                busy(row.summaryLabel)
+            } else if let error = job.lastError {
+                Text("Falhou: \(error)").foregroundStyle(.red).lineLimit(1).truncationMode(.tail).help(error)
+            } else {
+                Text("Interrompida").foregroundStyle(.secondary)
+            }
         }
     }
 
-    private func tag(_ text: String, _ color: Color) -> some View {
-        Text(text).font(.caption).padding(.horizontal, 7).padding(.vertical, 2)
-            .background(color.opacity(0.15), in: Capsule())
-            .foregroundStyle(color)
-    }
-}
-
-private struct PendingRow: View {
-    let job: Job
-    let running: Bool
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Text(Fmt.listDate(job.startedAt)).foregroundStyle(.secondary).frame(width: 124, alignment: .leading)
-            status
-            Spacer(minLength: 8)
-            Text(Fmt.shortDuration(job.durationSeconds)).foregroundStyle(.secondary)
-                .frame(width: 64, alignment: .trailing)
-            HStack(spacing: 10) {
-                if !running {
-                    Button {
-                        AppModel.shared.run(job)
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .buttonStyle(.borderless)
-                    .help("Tentar de novo")
-                    .accessibilityLabel("Tentar de novo")
-                    Button {
-                        discard()
-                    } label: {
-                        Image(systemName: "trash")
-                    }
-                    .buttonStyle(.borderless)
-                    .help("Descartar a gravação")
-                    .accessibilityLabel("Descartar a gravação")
-                }
-            }
-            .foregroundStyle(.secondary)
-            .frame(width: 52, alignment: .trailing)
-        }
-        .padding(.vertical, 5)
-    }
-
-    @ViewBuilder private var status: some View {
-        if running {
-            HStack(spacing: 6) {
-                ProgressView().controlSize(.small)
-                Text(job.stage == .minuting ? "Classificando a reunião…" : "Transcrevendo…").foregroundStyle(.secondary)
-            }
-        } else if let error = job.lastError {
-            Text("Falhou: \(error)").foregroundStyle(.red).lineLimit(1).truncationMode(.tail).help(error)
-        } else {
-            Text("Interrompida").foregroundStyle(.secondary)
+    private func busy(_ text: String) -> some View {
+        HStack(spacing: 6) {
+            ProgressView().controlSize(.small)
+            Text(text).foregroundStyle(.secondary).lineLimit(1)
         }
     }
 
-    private func discard() {
-        let choice = Alerts.show(
-            title: "Descartar a gravação?",
-            message: "A gravação de \(Fmt.listDate(job.startedAt)) será apagada e não poderá ser recuperada.",
-            buttons: ["Cancelar", "Descartar"], destructive: 1)
-        if choice == 1 { AtaLibrary.shared.discard(job) }
+    private func labeled(_ text: String, _ color: Color) -> some View {
+        HStack(spacing: 7) {
+            Circle().fill(color).frame(width: 9, height: 9)
+            Text(text).lineLimit(1)
+        }
     }
 }
 

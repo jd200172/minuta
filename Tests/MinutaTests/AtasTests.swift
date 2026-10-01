@@ -195,3 +195,45 @@ final class ModelChipsTests: XCTestCase {
         XCTAssertFalse(html.contains("minuta://title"))
     }
 }
+
+final class FinderDateTests: XCTestCase {
+    private var calendar: Calendar {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "America/Sao_Paulo")!
+        return c
+    }
+
+    private func date(_ s: String) -> Date {
+        let f = ISO8601DateFormatter()
+        f.timeZone = calendar.timeZone
+        return f.date(from: s + "-03:00")!
+    }
+
+    func testTodayYesterdayAndOlderDates() {
+        let now = date("2026-10-01T16:30:00")
+        XCTAssertEqual(Fmt.finderDate(date("2026-10-01T09:06:00"), now: now, calendar: calendar), "Hoje às 09:06")
+        XCTAssertEqual(Fmt.finderDate(date("2026-09-30T21:20:00"), now: now, calendar: calendar), "Ontem às 21:20")
+        XCTAssertEqual(
+            Fmt.finderDate(date("2026-09-28T16:30:00"), now: now, calendar: calendar), "28 de set. de 2026 às 16:30")
+    }
+
+    func testRowsSortByTheirColumns() {
+        let a = Ata(
+            url: URL(fileURLWithPath: "/a.md"), start: Date(timeIntervalSince1970: 100), title: "B", duration: 60,
+            model: .decisao)
+        let b = Ata(
+            url: URL(fileURLWithPath: "/b.md"), start: Date(timeIntervalSince1970: 200), title: "A", duration: 30,
+            noSummary: true)
+        let job = Job(
+            id: "j", startedAt: Date(timeIntervalSince1970: 300), durationSeconds: 10, stage: .transcribing,
+            micOffset: 0, systemOffset: 0, lastError: nil)
+        let rows = [ListRow(kind: .ata(a)), ListRow(kind: .ata(b)), ListRow(kind: .job(job, running: true))]
+        XCTAssertEqual(
+            rows.sorted(using: [KeyPathComparator(\ListRow.start, order: .reverse)]).map(\.id),
+            [rows[2].id, rows[1].id, rows[0].id])
+        XCTAssertEqual(rows.sorted(using: [KeyPathComparator(\ListRow.title)]).first?.title, "A")
+        XCTAssertEqual(rows[2].title, "Gravação em processamento")
+        XCTAssertEqual(rows[2].summaryLabel, "Transcrevendo…")
+        XCTAssertTrue(rows[2].id.hasPrefix("job-"))
+    }
+}
