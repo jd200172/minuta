@@ -200,6 +200,12 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         }
     }
 
+    /// Called by the list when it renamed a file that may be open here.
+    func renamed(from old: URL, to new: URL) {
+        guard windows[old] != nil else { return }
+        moveWindow(from: old, to: new)
+    }
+
     /// Keeps the window of a renamed file.
     private func moveWindow(from old: URL, to new: URL) {
         if old != new {

@@ -168,18 +168,43 @@ enum AtaStore {
     }
 
     /// Changes the title in the `.md` and in its file name. The sidecar keeps its name. Returns the new URL.
+    /// Files without a sidecar (older atas) get the new title in the `# ` line and in the file name only.
     static func rename(_ url: URL, to newTitle: String) throws -> URL {
         let text = try String(contentsOf: url, encoding: .utf8)
-        let (sidecar, _) = try loadSidecar(for: url, text: text)
         let clean = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        let updated = try compose(
-            sidecar, title: clean, model: model(in: text), names: ParticipantEditor.names(in: text))
-        let start = ISO8601DateFormatter().date(from: sidecar.inicio) ?? Date()
+        let updated: String
+        let start: Date
+        if isManaged(text), let (sidecar, _) = sidecar(forMarkdown: text, in: url.deletingLastPathComponent()) {
+            updated = try compose(
+                sidecar, title: clean, model: model(in: text), names: ParticipantEditor.names(in: text))
+            start = ISO8601DateFormatter().date(from: sidecar.inicio) ?? Date()
+        } else if isManaged(text) {
+            throw AppError("Não foi possível ler os resumos guardados desta reunião.")
+        } else {
+            updated = retitled(text, to: clean)
+            start =
+                AtaName.parse(url.deletingPathExtension().lastPathComponent)?.start
+                ?? frontMatter(text)["inicio"].flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
+        }
         let target = uniqueURL(
             dir: url.deletingLastPathComponent(), stem: AtaName.stem(start: start, title: clean), ignoring: url)
         try updated.write(to: url, atomically: true, encoding: .utf8)
         if target.path != url.path { try FileManager.default.moveItem(at: url, to: target) }
         return target
+    }
+
+    /// The text with a new title in the first `# ` line, or one added after the front matter.
+    static func retitled(_ text: String, to title: String) -> String {
+        let heading = "# " + (title.isEmpty ? MinutesRenderer.untitled : title)
+        var lines = text.components(separatedBy: "\n")
+        var body = 0
+        if lines.first == "---", let end = lines.dropFirst().firstIndex(of: "---") { body = end + 1 }
+        if let index = lines[body...].firstIndex(where: { $0.hasPrefix("# ") }) {
+            lines[index] = heading
+        } else {
+            lines.insert(contentsOf: [heading, ""], at: body)
+        }
+        return lines.joined(separator: "\n")
     }
 
     /// Moves the `.md` and its sidecar to the Trash.

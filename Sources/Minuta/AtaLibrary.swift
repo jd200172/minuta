@@ -31,6 +31,15 @@ struct Ata: Identifiable, Equatable {
     var noSummary = false
     var problem: AtaProblem?
     var id: URL { url }
+
+    /// What the "Resumo" column shows and sorts by.
+    var summaryLabel: String {
+        if let problem { return problem.label }
+        if let model { return model.title }
+        return noSummary ? "Sem resumo" : ""
+    }
+
+    var durationSeconds: TimeInterval { duration ?? -1 }
 }
 
 /// File names of the minutes: "yyyy-MM-dd HHmm Título.md" (older files: "yyyy-MM-dd HHmm.md").
@@ -133,6 +142,13 @@ final class AtaLibrary: ObservableObject {
     func trash(_ ata: Ata) throws {
         try AtaStore.trash(ata.url)
         atas.removeAll { $0.url == ata.url }
+        refresh()
+    }
+
+    /// Renames the ata in the file and in its name, and keeps an open reading window with it.
+    func rename(_ ata: Ata, to title: String) throws {
+        let target = try AtaStore.rename(ata.url, to: title)
+        AtaViewerController.shared.renamed(from: ata.url, to: target)
         refresh()
     }
 

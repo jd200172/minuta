@@ -250,3 +250,58 @@ final class AtaHeadModelTests: XCTestCase {
         XCTAssertNil(none.model)
     }
 }
+
+final class LegacyRenameTests: XCTestCase {
+    private var dir: URL!
+
+    override func setUpWithError() throws {
+        dir = FileManager.default.temporaryDirectory.appendingPathComponent("minuta-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    }
+
+    override func tearDownWithError() throws {
+        try? FileManager.default.removeItem(at: dir)
+    }
+
+    func testRetitledReplacesTheHeadingOrAddsOne() {
+        let withHeading = "---\ninicio: 2026-09-30T14:02:00-03:00\n---\n\n# Antigo\n\n## Resumo\nx\n"
+        XCTAssertEqual(
+            AtaStore.retitled(withHeading, to: "Novo"),
+            "---\ninicio: 2026-09-30T14:02:00-03:00\n---\n\n# Novo\n\n## Resumo\nx\n")
+        XCTAssertTrue(AtaStore.retitled(withHeading, to: "").contains("# Sem título"))
+        let none = "---\ninicio: 2026-09-30T14:02:00-03:00\n---\n\n## Resumo\nx\n"
+        XCTAssertTrue(AtaStore.retitled(none, to: "Novo").contains("---\n# Novo\n\n\n## Resumo"))
+        XCTAssertEqual(AtaStore.retitled("texto solto", to: "T"), "# T\n\ntexto solto")
+    }
+
+    func testRenamingAnOlderAtaChangesHeadingAndFileNameOnly() throws {
+        let url = dir.appendingPathComponent("2026-09-30 1402 Antiga.md")
+        try "---\ninicio: 2026-09-30T14:02:00-03:00\nduracao_segundos: 60\n---\n\n# Antiga\n\n## Resumo\nTexto.\n"
+            .write(to: url, atomically: true, encoding: .utf8)
+        let renamed = try AtaStore.rename(url, to: "Reunião: nova")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
+        XCTAssertEqual(renamed.lastPathComponent, "2026-09-30 1402 Reunião - nova.md")
+        let text = try String(contentsOf: renamed, encoding: .utf8)
+        XCTAssertTrue(text.contains("# Reunião: nova"))
+        XCTAssertTrue(text.contains("## Resumo\nTexto."))
+        XCTAssertFalse(AtaStore.isManaged(text))
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: dir.path).count, 1)
+    }
+
+    func testRenamingAManagedAtaWithoutItsSidecarFailsAndKeepsTheFile() throws {
+        let url = dir.appendingPathComponent("2026-09-30 1402 Nova.md")
+        try "---\ninicio: 2026-09-30T14:02:00-03:00\nresumo: nenhum\n---\n\n# Nova\n".write(
+            to: url, atomically: true, encoding: .utf8)
+        XCTAssertThrowsError(try AtaStore.rename(url, to: "Outro"))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+    }
+
+    func testSummaryLabelAndDurationForSorting() {
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+        let a = Ata(url: URL(fileURLWithPath: "/a.md"), start: start, title: "A", duration: 120, model: .decisao)
+        let b = Ata(url: URL(fileURLWithPath: "/b.md"), start: start, title: "B", duration: nil, noSummary: true)
+        let c = Ata(url: URL(fileURLWithPath: "/c.md"), start: start, title: "C", duration: nil, problem: .empty)
+        XCTAssertEqual([a, b, c].map(\.summaryLabel), ["Decisão", "Sem resumo", "Arquivo vazio"])
+        XCTAssertLessThan(b.durationSeconds, a.durationSeconds)
+    }
+}
