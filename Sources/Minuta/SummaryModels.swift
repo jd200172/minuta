@@ -43,6 +43,36 @@ enum SummaryModel: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// The tooltip of the model's chip in the reading window: what it is for, what it shows, when to use it.
+    var tooltip: String {
+        switch self {
+        case .decisao:
+            """
+            Serve para registrar o que o grupo decidiu.
+            Mostra as decisões e as alternativas descartadas, com o motivo.
+            Use quando o grupo avaliou opções e fechou uma escolha.
+            """
+        case .problemas:
+            """
+            Serve para organizar uma discussão sem escolha final.
+            Mostra o problema, as ideias por tema (com quem sugeriu) e o que aprofundar.
+            Use quando a reunião foi um brainstorm ou a discussão de um problema.
+            """
+        case .informativa:
+            """
+            Serve para registrar o conteúdo de uma exposição.
+            Mostra os pontos principais, os dados citados e as perguntas com resposta.
+            Use quando alguém apresentou, treinou ou deu palestra, e o grupo perguntou.
+            """
+        case .geral:
+            """
+            Serve para resumir reuniões sem função dominante.
+            Mostra um resumo por tema (por pessoa, em reunião de status).
+            Use quando a reunião mistura assuntos, é de status ou nenhum outro modelo se aplica.
+            """
+        }
+    }
+
     /// What this model asks the LLM to emphasize, added to the common rules.
     var focus: String {
         switch self {

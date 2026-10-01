@@ -26,6 +26,7 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
     private final class Pane {
         let web: WKWebView
         var managed = false
+        var tips: PageTips?
 
         init(web: WKWebView) { self.web = web }
     }
@@ -63,6 +64,7 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         let web = WKWebView(frame: .zero, configuration: config)
         web.navigationDelegate = self
         let pane = Pane(web: web)
+        pane.tips = PageTips(web: web)
         windows[url] = nil
         panes[url] = pane
         let document = convert(text, url: url, pane: pane)
@@ -76,6 +78,7 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         window.setContentSize(NSSize(width: 720, height: 780))
         window.contentMinSize = NSSize(width: 480, height: 320)
         window.isReleasedWhenClosed = false
+        window.acceptsMouseMovedEvents = true
         window.delegate = self
         window.center()
         if !windows.isEmpty { window.cascadeTopLeft(from: NSPoint(x: 40 * windows.count, y: 0)) }
@@ -143,6 +146,7 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
     /// Reads the file again and shows it, keeping the scroll position.
     private func reload(_ url: URL) {
         guard let pane = panes[url], let text = try? String(contentsOf: url, encoding: .utf8) else { return }
+        pane.tips?.hide()
         let document = convert(text, url: url, pane: pane)
         windows[url]?.title = document.title.isEmpty ? url.deletingPathExtension().lastPathComponent : document.title
         pane.web.evaluateJavaScript("window.scrollY") { [weak self] value, _ in
@@ -272,6 +276,7 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         renamingTitle?.cancel()
         let closed = windows.filter { $0.value === window }.map(\.key)
         for url in closed {
+            panes[url]?.tips?.stop()
             windows[url] = nil
             panes[url] = nil
             texts[url] = nil

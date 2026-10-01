@@ -54,7 +54,7 @@ enum MarkdownHTML {
                 let index = speakers.firstIndex(where: { head == ($0.kind == .unnamed ? $0.label : $0.name) })
             else { return "<li>\(inline(item))</li>\n" }
             return
-                "<li><span id=\"sp-\(index)\">\(inline(item))</span><a class=\"pen\" href=\"minuta://rename/\(index)\" title=\"Renomear\" aria-label=\"Renomear participante\">\(pencil)</a></li>\n"
+                "<li><span id=\"sp-\(index)\">\(inline(item))</span><a class=\"pen\" href=\"minuta://rename/\(index)\" data-tip=\"Renomear\" aria-label=\"Renomear participante\">\(pencil)</a></li>\n"
         }
 
         func flush() {
@@ -83,7 +83,7 @@ enum MarkdownHTML {
                 let heading =
                     controls == nil
                     ? escape(title)
-                    : "<span id=\"ti\">\(escape(title))</span><a class=\"pen\" href=\"minuta://title\" title=\"Renomear\" aria-label=\"Renomear reunião\">\(pencil)</a>"
+                    : "<span id=\"ti\">\(escape(title))</span><a class=\"pen\" href=\"minuta://title\" data-tip=\"Renomear\" aria-label=\"Renomear reunião\">\(pencil)</a>"
                 body += "<h1>\(heading)</h1>\n\(subtitle(meta))\(controls.map(controlsHTML) ?? "")"
             } else if line.hasPrefix("## ") {
                 flush()
@@ -187,21 +187,22 @@ enum MarkdownHTML {
             if chip.selected || busy { css += " on" }
             if controls.generating != nil && !busy { css += " off" }
             var inner = escape(chip.model.title)
+            let tip = escape(chip.model.tooltip).replacingOccurrences(of: "\n", with: "&#10;")
             if busy {
                 inner += "<i class=\"sp\"></i>"
             } else if chip.has {
-                inner += "<i class=\"dt\" title=\"Resumo gerado\"></i>"
+                inner += "<i class=\"dt\" data-tip=\"Resumo gerado\" role=\"img\" aria-label=\"Resumo gerado\"></i>"
             }
             if controls.generating != nil {
-                html += "<span class=\"\(css)\">\(inner)</span>\n"
+                html += "<span class=\"\(css)\" data-tip=\"\(tip)\" aria-description=\"\(tip)\">\(inner)</span>\n"
             } else {
                 html +=
-                    "<a class=\"\(css)\" href=\"minuta://model/\(chip.model.rawValue)\"\(chip.selected ? " aria-current=\"true\"" : "")>\(inner)</a>\n"
+                    "<a class=\"\(css)\" href=\"minuta://model/\(chip.model.rawValue)\" data-tip=\"\(tip)\" aria-description=\"\(tip)\"\(chip.selected ? " aria-current=\"true\"" : "")>\(inner)</a>\n"
             }
         }
         if controls.canRedo {
             html +=
-                "<a class=\"pen redo\" href=\"minuta://redo\" title=\"Refazer este resumo\" aria-label=\"Refazer este resumo\">\(refresh)</a>\n"
+                "<a class=\"pen redo\" href=\"minuta://redo\" data-tip=\"Refazer este resumo\" aria-label=\"Refazer este resumo\">\(refresh)</a>\n"
         }
         html += "</div>\n"
         if !controls.hint.isEmpty { html += "<p class=\"hint\">\(escape(controls.hint))</p>\n" }
@@ -230,8 +231,11 @@ enum MarkdownHTML {
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
         <title>\(escape(title))</title>
         <style>
-        :root { color-scheme: light dark; }
-        body { font: 14px/1.55 -apple-system, sans-serif; margin: 0; padding: 24px 28px 48px; max-width: 760px; color: CanvasText; background: Canvas; }
+        :root { color-scheme: light dark; --page: color-mix(in srgb, CanvasText 5%, Canvas); }
+        @media (prefers-color-scheme: dark) { :root { --page: color-mix(in srgb, black 25%, Canvas); } }
+        html { background: var(--page); }
+        body { font: 14px/1.55 -apple-system, sans-serif; margin: 0; padding: 20px 16px 24px; color: CanvasText; background: var(--page); }
+        .card { box-sizing: border-box; max-width: 760px; margin: 0 auto; padding: 22px 28px; background: Canvas; border: 0.5px solid color-mix(in srgb, CanvasText 20%, transparent); border-radius: 10px; }
         h1 { font-size: 22px; font-weight: 600; margin: 0 0 2px; }
         h1 a.pen { margin-left: 10px; vertical-align: 3px; }
         .sub { color: GrayText; font-size: 13px; margin: 0 0 18px; }
@@ -262,7 +266,8 @@ enum MarkdownHTML {
         p.tl:target { background: color-mix(in srgb, LinkText 16%, transparent); }
         .tm { color: GrayText; font-size: 12px; font-variant-numeric: tabular-nums; }
         </style></head><body>
-        \(body)</body></html>
+        <div class="card">
+        \(body)</div></body></html>
         """
     }
 }

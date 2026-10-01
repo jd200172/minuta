@@ -168,7 +168,8 @@ final class ModelChipsTests: XCTestCase {
     func testChipsLinkToModelsAndMarkTheOnesWithSummary() {
         let html = MarkdownHTML.convert(page, controls: controls()).html
         for model in SummaryModel.allCases { XCTAssertTrue(html.contains("href=\"minuta://model/\(model.rawValue)\"")) }
-        XCTAssertTrue(html.contains("class=\"mc on\" href=\"minuta://model/decisao\" aria-current=\"true\""))
+        XCTAssertTrue(html.contains("class=\"mc on\" href=\"minuta://model/decisao\" data-tip=\""))
+        XCTAssertTrue(html.contains("aria-current=\"true\""))
         XCTAssertEqual(html.components(separatedBy: "class=\"dt\"").count - 1, 2, "um ponto por modelo gerado")
         XCTAssertTrue(html.contains("href=\"minuta://redo\""))
         XCTAssertTrue(html.contains("href=\"minuta://title\""))
@@ -187,6 +188,39 @@ final class ModelChipsTests: XCTestCase {
         XCTAssertFalse(html.contains("minuta://redo"))
         XCTAssertTrue(html.contains("class=\"sp\""))
         XCTAssertTrue(html.contains("mc off"))
+    }
+
+    func testEveryChipHasATooltipWithThreeLines() {
+        for generating in [nil, SummaryModel.geral] {
+            let html = MarkdownHTML.convert(page, controls: controls(generating: generating)).html
+            for model in SummaryModel.allCases {
+                let lines = model.tooltip.components(separatedBy: "\n")
+                XCTAssertEqual(lines.count, 3, model.rawValue)
+                XCTAssertTrue(lines[0].hasPrefix("Serve para"))
+                XCTAssertTrue(lines[1].hasPrefix("Mostra"))
+                XCTAssertTrue(lines[2].hasPrefix("Use quando"))
+                XCTAssertTrue(
+                    html.contains("data-tip=\"" + model.tooltip.replacingOccurrences(of: "\n", with: "&#10;") + "\""))
+            }
+        }
+    }
+
+    func testTooltipsUseDataTipAndNeverTheSystemTitle() {
+        let html = MarkdownHTML.convert(page, renamable: true, controls: controls()).html
+        XCTAssertFalse(html.contains("title=\""), "title mostraria o tooltip do sistema junto com o balão")
+        for tip in ["Renomear", "Refazer este resumo", "Resumo gerado"] {
+            XCTAssertTrue(html.contains("data-tip=\"\(tip)\""), tip)
+        }
+        XCTAssertTrue(html.contains("aria-label=\"Resumo gerado\""), "o ponto continua descrito para o VoiceOver")
+    }
+
+    func testPageIsACenteredCardWithoutWidthLimitOnTheBody() {
+        let html = MarkdownHTML.convert(page).html
+        XCTAssertTrue(html.contains("<div class=\"card\">"))
+        XCTAssertTrue(html.contains(".card {"))
+        XCTAssertTrue(html.contains("max-width: 760px; margin: 0 auto"))
+        let body = html.components(separatedBy: "\n").first { $0.hasPrefix("body {") } ?? ""
+        XCTAssertFalse(body.contains("max-width"))
     }
 
     func testWithoutControlsThereAreNoChipsOrTitlePencil() {
