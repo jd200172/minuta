@@ -175,19 +175,6 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             add(menu, "Iniciar gravação", #selector(start))
         }
         menu.addItem(.separator())
-        let recent = Array(AtaLibrary.shared.atas.filter { $0.problem == nil }.prefix(5))
-        if !recent.isEmpty {
-            let header = NSMenuItem(title: "Atas recentes", action: nil, keyEquivalent: "")
-            header.isEnabled = false
-            menu.addItem(header)
-            for ata in recent {
-                let item = NSMenuItem(title: ata.title, action: #selector(openRecent(_:)), keyEquivalent: "")
-                item.target = self
-                item.representedObject = ata.url
-                item.attributedTitle = recentTitle(ata)
-                menu.addItem(item)
-            }
-        }
         add(menu, "Atas…", #selector(openAtas))
         menu.addItem(.separator())
         add(menu, "Configurações…", #selector(openSettings), key: ",")
@@ -206,30 +193,6 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     @objc private func resume() { model.resumeRecording() }
     @objc private func end() { model.endRecording() }
     @objc private func openAtas() { AtasWindowController.shared.show() }
-    @objc private func openRecent(_ sender: NSMenuItem) {
-        if let url = sender.representedObject as? URL { AtaViewerController.shared.open(url) }
-    }
-
-    /// "Título" on the left and "01/10 11:37" on the right, with a right-aligned tab stop.
-    private func recentTitle(_ ata: Ata) -> NSAttributedString {
-        let style = NSMutableParagraphStyle()
-        style.tabStops = [NSTextTab(textAlignment: .right, location: 300)]
-        style.lineBreakMode = .byTruncatingTail
-        let title = ata.title.count > 30 ? String(ata.title.prefix(29)) + "…" : ata.title
-        let date = DateFormatter()
-        date.locale = Locale(identifier: "pt_BR")
-        date.dateFormat = "dd/MM HH:mm"
-        let text = NSMutableAttributedString(
-            string: title, attributes: [.font: NSFont.menuFont(ofSize: 0), .paragraphStyle: style])
-        text.append(
-            NSAttributedString(
-                string: "\t" + date.string(from: ata.start),
-                attributes: [
-                    .font: NSFont.menuFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor,
-                    .paragraphStyle: style,
-                ]))
-        return text
-    }
     @objc private func openSettings() { SettingsOpener.open() }
     @objc private func quit() { NSApp.terminate(nil) }
 }

@@ -8,11 +8,11 @@ Trabalho não commitado desde `ba93980` (ADRs 0019 e 0021 a 0025, e esta revisã
 
 ### Estado do app por área
 
-- **Barra de menus** (ADRs 0011, 0014 e 0015): ícone de microfone fixo, estado pelo fundo do botão (verde gravando, vermelho pausado, amarelo processando); menu com Iniciar gravação, as 5 atas recentes, Atas…, Configurações… e Sair.
+- **Barra de menus** (ADRs 0011, 0014 e 0015): ícone de microfone fixo, estado pelo fundo do botão (verde gravando, vermelho pausado, amarelo processando); menu com Iniciar gravação, Atas…, Configurações… e Sair.
 - **Gravação** (ADRs 0010 e 0013): pausar, continuar e encerrar, contador, lembrete de pausa, confirmação ao sair gravando, limite de 30 minutos de tempo gravado.
 - **Captura** (ADRs 0023 e 0024): dois canais, o canal define o falante, diarização só no canal do sistema. O microfone passa pelo cancelamento de eco do macOS, ligado por padrão, com opção em Preferências.
 - **Transcrição, classificação e resumo** (ADRs 0002, 0008, 0012, 0017 e 0018): Gemini 3.5 Transcribe; Claude Sonnet 5.5 sugere um de quatro modelos (Decisão, Problemas e ideias, Informativa, Geral) e o título, e gera o resumo sugerido. Todos os resumos ficam no `.resumos.json`; o escolhido é copiado no `.md`.
-- **Áudio** (ADR 0022): depois da ata criada, os dois arquivos vão para a pasta de atas das configurações (antes: Application Support; o que sobrou lá é movido na inicialização) com o radical do secundário e seguem a ata para a Lixeira. "Mostrar áudio no Finder" no menu de contexto. Atas anteriores não têm áudio.
+- **Áudio** (ADR 0022): depois da ata criada, os dois arquivos vão para a pasta de atas das configurações (antes: Application Support; o que sobrou lá é movido na inicialização) com o radical do secundário e seguem a ata para a Lixeira. Atas anteriores não têm áudio.
 - **Janela de atas** (ADR 0015): tabela no estilo do Finder, com menu de contexto, gravações em andamento como linhas e verificação da pasta.
 - **Janela de leitura** (ADRs 0015 a 0019): card centralizado, chips de modelo, lápis no título e nos participantes, transcrição colapsável lembrada por reunião, balão de citação com o trecho e um segmento de cada lado. Todos os balões e dicas usam `BalloonPanel` com a mesma forma das chips.
 - **Janela de correção** (ADR 0025): toca o áudio a partir de cada fala, edita o texto, troca o falante, apaga e restaura; correções marcam os resumos como desatualizados, com aviso nas duas janelas.

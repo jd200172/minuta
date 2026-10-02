@@ -28,9 +28,6 @@ enum BalloonStyle {
     static let rowPaddingV: CGFloat = 4
     /// Space above the first row and below the last of the citation balloon, which holds more than a tooltip does.
     static let balloonPaddingV: CGFloat = 12
-    /// The size of the lines before and after the cited one, against the cited one, and how many lines of them show.
-    static let contextScale: CGFloat = 0.75
-    static let contextLines = 2
 }
 
 // MARK: - Panel

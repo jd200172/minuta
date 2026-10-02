@@ -23,7 +23,7 @@ As atas ficavam numa pasta aberta pelo Finder. O menu tinha "Abrir pasta de atas
 - **Lixeira sem confirmação,** como o Finder: ela é reversível. "Descartar…" de uma gravação continua pedindo confirmação, porque apaga de vez. Isso substitui a confirmação do item "Apagar" descrito acima.
 - Fora do que a `Table` do macOS 13 permite: clicar de novo no nome para renomear, Quick Look e reordenar colunas.
 
-**Menu da barra.** Entre os comandos de gravação e Configurações: "Atas recentes" com as 5 últimas (título e data; clicar abre a ata) e "Atas…".
+**Menu da barra.** Entre os comandos de gravação e Configurações: "Atas…". A seção "Atas recentes" (as 5 últimas) foi retirada em 2026-10-02, a pedido do usuário.
 
 **Leitura.** "Abrir" mostra a ata numa janela própria, como página: título, data e duração, seções, tabela de ações, horários como links para o trecho da transcrição (o trecho fica destacado) e botão "Mostrar no Finder". O Markdown é convertido em HTML por um conversor mínimo, que só entende o formato que o `MinutesRenderer` escreve. Todo texto é escapado, e a `WKWebView` roda sem JavaScript, com política de conteúdo restrita e sem navegação além dos âncoras do próprio documento.
 
@@ -35,7 +35,7 @@ As atas ficavam numa pasta aberta pelo Finder. O menu tinha "Abrir pasta de atas
 - Pasta ausente: faixa no topo da janela com "Escolher outra pasta…" e "Recriar pasta". Só avisa se a pasta já foi vista antes (o app guarda o último caminho visto, em `seenOutputDir`); uma pasta nunca criada, como na primeira execução ou logo após escolher outra, não gera aviso.
 - Pasta ilegível: a mesma faixa, com "Escolher outra pasta…" e "Tentar de novo".
 - Arquivo com nome de ata e problema: marcado na lista, na ordem de data, com o nome do arquivo no lugar do título e o motivo: "Arquivo vazio", "Não foi possível ler" (não abre, ou não é UTF-8) ou "Sem cabeçalho de ata" (sem `inicio` nem título; ainda abre). Os dois primeiros oferecem "Mostrar no Finder", e todos oferecem a Lixeira.
-- Arquivos `.md` sem nome de ata e sem `inicio` no frontmatter continuam ignorados, e os marcados não entram nas "Atas recentes".
+- Arquivos `.md` sem nome de ata e sem `inicio` no frontmatter continuam ignorados.
 - Fora do alcance: uma ata apagada. O app não guarda o que já existiu, então não vê o que sumiu. Uma cópia interna com restauração (nível C da discussão) ficou para depois.
 
 **Sem fala suficiente.** Uma transcrição com menos de 10 palavras não gera ata: o app não chama o Claude, não grava arquivo, descarta a gravação e mostra um aviso.

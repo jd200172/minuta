@@ -31,7 +31,7 @@ Renomear a reunião muda o `.md` e não toca no secundário nem no áudio. O rad
 - Mover a ata para a Lixeira leva o áudio junto. "Descartar" de uma gravação pendente apaga o áudio dela.
 - Gravação com menos de 10 palavras não gera ata e continua sendo descartada com o áudio: sem ata não há nome a que associar.
 - Falha de rede: o áudio continua na pasta do job até a transcrição, como antes.
-- Menu de contexto da lista de atas: "Mostrar áudio no Finder" (desabilitado quando não há áudio).
+- O item "Mostrar áudio no Finder" do menu de contexto da lista de atas foi retirado em 2026-10-02, a pedido do usuário. O áudio fica ao lado da ata na pasta de atas.
 - Atas anteriores a este ADR não têm áudio (foi apagado).
 
 ## Consequências

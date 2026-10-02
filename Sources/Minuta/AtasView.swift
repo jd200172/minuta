@@ -193,9 +193,6 @@ struct AtasView: View {
             Button("Corrigir transcrição…") { TranscriptWindowController.shared.open(ata.url) }
                 .disabled(ata.problem != nil || (ata.model == nil && !ata.noSummary))
             Button("Mostrar no Finder") { reveal(ata) }
-            let audio = AtaStore.audioFiles(forMarkdown: ata.url)
-            Button("Mostrar áudio no Finder") { NSWorkspace.shared.activateFileViewerSelecting(audio) }
-                .disabled(audio.isEmpty)
             Divider()
             if ata.model != nil || ata.noSummary { summaryMenu(ata, busy: busy) }
             Divider()

@@ -21,13 +21,12 @@ struct TranscriptSegment: Equatable {
         return result
     }
 
-    /// The cited segment and the one before and after it, in transcript order. Empty when `id` is not there.
+    /// The cited segment alone. Empty when `id` is not there.
     static func window(around id: String, in segments: [TranscriptSegment]) -> [(
         segment: TranscriptSegment, cited: Bool
     )] {
-        guard let index = segments.firstIndex(where: { $0.id == id }) else { return [] }
-        let range = max(0, index - 1)...min(segments.count - 1, index + 1)
-        return range.map { (segments[$0], $0 == index) }
+        guard let segment = segments.first(where: { $0.id == id }) else { return [] }
+        return [(segment, true)]
     }
 }
 
@@ -65,11 +64,10 @@ private struct CitationRows: View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(rows.indices, id: \.self) { i in
                 let row = rows[i]
-                let scale = row.cited ? 1 : BalloonStyle.contextScale
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Button(action: { goTo(row.segment.id) }) {
                         Text(row.segment.clock)
-                            .font(.system(size: BalloonStyle.chipFontSize * scale).monospacedDigit())
+                            .font(.system(size: BalloonStyle.chipFontSize).monospacedDigit())
                             .foregroundStyle(Color(nsColor: .linkColor))
                             .padding(.horizontal, 6)
                             .background(
@@ -79,24 +77,21 @@ private struct CitationRows: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Ir ao ponto \(row.segment.clock) na transcrição")
                     (Text(row.segment.speaker + ":").fontWeight(.semibold) + Text(" " + row.segment.text))
-                        .font(.system(size: BalloonStyle.fontSize * scale))
-                        .foregroundStyle(row.cited ? .primary : .secondary)
-                        .lineLimit(row.cited ? nil : BalloonStyle.contextLines)
+                        .font(.system(size: BalloonStyle.fontSize))
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .padding(.vertical, BalloonStyle.rowPaddingV)
                 .padding(.horizontal, BalloonStyle.rowPaddingH)
                 .background(
-                    row.cited ? Color(nsColor: .linkColor).opacity(BalloonStyle.rowTint) : .clear,
+                    Color(nsColor: .linkColor).opacity(BalloonStyle.rowTint),
                     in: RoundedRectangle(cornerRadius: BalloonStyle.rowRadius))
             }
         }
     }
 }
 
-/// The balloon a citation chip opens: the cited segment, in full, with the one before and the one after it dimmed,
-/// smaller and cut after two lines. It is a `BalloonPanel` (the corner radius of the page's chips, an arrow on the
+/// The balloon a citation chip opens: the cited segment, in full. It is a `BalloonPanel` (the corner radius of the page's chips, an arrow on the
 /// chip) and never scrolls: it grows taller first, and only when the room above or below the chip runs out does it
 /// grow wider, up to the page card. The time of each line goes to that point of the transcript. It closes on Esc, on
 /// a click outside, on scrolling the page, and on a second click on the chip that opened it.
