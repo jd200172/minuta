@@ -1,96 +1,93 @@
 # Status
 
-Atualizado em: 2026-10-01 (fim do dia)
+Atualizado em: 2026-10-02
 
 ## Em andamento
-- Nada em execução. ADRs 0001 a 0018 em `docs/decisions/`; o 0010 (limite de 30 minutos) é proposta e aguarda confirmação. 61 testes passam. Os quatro modelos de resumo (ADR 0018) estão no código e instalados em `/Applications/Minuta.app`. Falta abrir uma ata antiga com `modelo: acompanhamento` para ver a linha de aviso na janela de leitura (só há teste unitário).
 
-Estado atual do app:
-- Barra de menus com `NSStatusItem`: ícone de microfone fixo e estado pelo fundo do botão (verde gravando, vermelho pausado, amarelo processando); menu com Iniciar gravação, as 5 atas recentes, Atas…, Configurações… e Sair (ADRs 0011, 0014 e 0015).
-- Gravação com pausar, continuar e encerrar, contador, lembrete de pausa, confirmação ao sair gravando e limite de 30 minutos de tempo gravado (ADRs 0010 e 0013).
-- Transcrição pelo Gemini 3.5 Transcribe, classificação e resumo pelo Claude Sonnet 5.5, com provedores e chaves no `.env` (ADRs 0002, 0008, 0012 e 0017).
-- Resumos por tipo de reunião (ADRs 0017 e 0018): ao fim da transcrição, o app classifica a reunião (modelo, confiança, justificativa e título), grava o `.md` e o `.resumos.json` e gera o resumo no modelo sugerido. Quatro modelos: Decisão, Problemas e ideias, Informativa e Geral (ADR 0018; o Acompanhamento saiu, e reunião de status vai para Geral). Todos os resumos gerados ficam guardados no secundário; o escolhido é copiado no `.md`, que é legível sozinho.
-- Janela de leitura: o conteúdo fica num card centralizado de até 760 px sobre o fundo da janela; as chips têm balão de dica nativo (`NSPopover`, `PageTips`) com serve para, mostra e use quando, e os lápis e o refazer usam o mesmo balão (ADR 0017); verificado por captura de tela num teste temporário com mouse sintético, não com o mouse real. Chips de modelo abaixo do título (ponto nos já gerados, linha "Sugerido", indicador ao gerar, ícone de refazer), lápis no título e lápis de cada participante, ambos renomeando no lugar (ADRs 0016 e 0017).
-- Janela "Atas…" no estilo do Finder (ADR 0015): tabela com colunas Data, Título, Resumo e Duração ordenáveis, sem botões nas linhas, gravações em andamento como linhas, datas relativas, ponto colorido na coluna Resumo, menu de contexto (Abrir, Mostrar no Finder, Resumo ▸, Mover para a Lixeira, Renomear; Tentar de novo e Descartar… nas gravações), Return renomeia, duplo clique e ⌘O abrem, ⌘⌫ move para a Lixeira sem pergunta. Verificação da pasta de atas e nome de arquivo por data e hora.
-- Configurações em página única, com a versão no rodapé; regra de seguir as HIG da Apple, com dois desvios registrados (botão da barra de menus, ADR 0014; chips de modelo, ADR 0017).
+Trabalho não commitado desde `ba93980` (ADRs 0019 e 0021 a 0025, e esta revisão dos documentos). 92 testes passam. App instalado em `/Applications/Minuta.app`.
 
-Verificado pelo usuário: captura do áudio do sistema, gravação com microfone, pausa e continuação, gravação de teste de fone, Apagar uma ata, e o desenho das chips e da janela de atas (aprovado em mockups; o usuário testou as janelas e pediu ajustes, já aplicados).
+### Estado do app por área
 
-Verificado por mim no app instalado (capturas de tela e teclas enviadas direto ao processo): todos os estados do botão, a janela de atas, a leitura com os links, a faixa de pasta ausente, o campo de renomear e o desfazer, trocar de modelo (instantâneo para um guardado, geração para um novo), refazer o resumo, renomear o título, ordenar por cabeçalho, menu de contexto com o submenu Resumo, Return, Esc, ⌘O, ⌘W, duplo clique e ⌘⌫.
+- **Barra de menus** (ADRs 0011, 0014 e 0015): ícone de microfone fixo, estado pelo fundo do botão (verde gravando, vermelho pausado, amarelo processando); menu com Iniciar gravação, as 5 atas recentes, Atas…, Configurações… e Sair.
+- **Gravação** (ADRs 0010 e 0013): pausar, continuar e encerrar, contador, lembrete de pausa, confirmação ao sair gravando, limite de 30 minutos de tempo gravado.
+- **Captura** (ADRs 0023 e 0024): dois canais, o canal define o falante, diarização só no canal do sistema. O microfone passa pelo cancelamento de eco do macOS, ligado por padrão, com opção em Preferências.
+- **Transcrição, classificação e resumo** (ADRs 0002, 0008, 0012, 0017 e 0018): Gemini 3.5 Transcribe; Claude Sonnet 5.5 sugere um de quatro modelos (Decisão, Problemas e ideias, Informativa, Geral) e o título, e gera o resumo sugerido. Todos os resumos ficam no `.resumos.json`; o escolhido é copiado no `.md`.
+- **Áudio** (ADR 0022): depois da ata criada, os dois arquivos vão para a pasta de atas das configurações (antes: Application Support; o que sobrou lá é movido na inicialização) com o radical do secundário e seguem a ata para a Lixeira. "Mostrar áudio no Finder" no menu de contexto. Atas anteriores não têm áudio.
+- **Janela de atas** (ADR 0015): tabela no estilo do Finder, com menu de contexto, gravações em andamento como linhas e verificação da pasta.
+- **Janela de leitura** (ADRs 0015 a 0019): card centralizado, chips de modelo, lápis no título e nos participantes, transcrição colapsável lembrada por reunião, balão de citação com o trecho e um segmento de cada lado. Todos os balões e dicas usam `BalloonPanel` com a mesma forma das chips.
+- **Janela de correção** (ADR 0025): toca o áudio a partir de cada fala, edita o texto, troca o falante, apaga e restaura; correções marcam os resumos como desatualizados, com aviso nas duas janelas.
+- **Configurações** (ADRs 0011, 0012 e 0023): página única com chaves e modelos, permissões com teste de captura, preferências e a versão no rodapé.
 
-Verificado com chaves reais: os cenários sintéticos (`tools/synthetic-meeting/scenarios/`) passaram pelo `--process` (sete na primeira rodada, os oito na segunda), e a classificação acertou o modelo esperado em todos (01 Decisão, 02 Acompanhamento (hoje Geral, ADR 0018), 03 Problemas e ideias, 04 Informativa, 05 Geral, 06 Decisão, 07 sem sugestão por confiança baixa, 08 Acompanhamento ou Decisão; Acompanhamento deixou de existir no ADR 0018). O cenário 8 rodou com "Seu nome" vazio (rótulo "Eu"). As atas do cenário foram copiadas para a pasta de atas do usuário e depois apagadas por ele. Plano de validação: teste 8.
+### Verificado
 
-Ainda sem teste manual:
-- Janela de atas: linhas de gravação em andamento (só teste unitário), Tentar de novo, Descartar…, Mostrar no Finder, gerar um modelo novo pelo submenu Resumo, a janela de leitura acompanhando um renomear feito na lista, menu de uma ata com problema e botões da faixa de pasta ausente.
-- Falha de rede na geração automática do resumo; secundário apagado ou ilegível (o `.md` continua legível, mas não dá para trocar de modelo; reconstruir a partir do principal não foi feito).
-- Renomear: rolar ou redimensionar com o campo aberto; nomes inferidos pelo modelo no app; atas muito longas.
+- Pelo usuário: captura do áudio do sistema, gravação com microfone, pausa e continuação, gravação de teste de fone, apagar uma ata, desenho das chips e da janela de atas.
+- No app instalado, por capturas de tela e eventos enviados ao processo: estados do botão, janela de atas (ordenar, menu de contexto, Return, Esc, ⌘O, ⌘W, duplo clique, ⌘⌫), leitura com links, faixa de pasta ausente, renomear e desfazer, trocar e refazer resumo, chips com balão, recolher e expandir a transcrição, balão de citação (dentro do card, sem rolagem, segundo clique fecha, salto ao horário).
+- Janela de correção, com uma ata de teste feita do cenário sintético 8 e com áudio (depois mandada para a Lixeira): reprodução, destaque, espaço, edição por clique real, troca de falante, restaurar e o aviso na página de leitura.
+- Com chaves reais: os oito cenários sintéticos pelo `--process`, com a classificação correta em todos (plano de validação, teste 8).
+- Cancelamento de eco medido com voz tocando no alto-falante: microfone de -33,5 dB para -72,3 dB, correlação com a chamada de 0,95 para 0,29 (ADR 0023).
+
+### Sem teste manual
+
+- Chamada real com alto-falante e cancelamento de eco ligado: a fala do usuário e o efeito com fone Bluetooth (ADR 0023).
+- Gravação real passando pela guarda do áudio, e falha ao mover o áudio.
+- "Refazer resumo" pela janela de correção (usa o mesmo caminho do ícone de refazer, já verificado).
+- Janela de atas: linhas de gravação em andamento (só teste unitário), Tentar de novo, Descartar…, gerar um modelo novo pelo submenu Resumo, a leitura acompanhando um renomear feito na lista, ata com problema, botões da faixa de pasta ausente.
+- Falha de rede na geração automática do resumo; secundário apagado ou ilegível.
+- Renomear com rolagem ou redimensionamento; nomes inferidos no app; atas muito longas; balão de citação ao rolar a página.
 - Configurações: Permitir, Testar captura, Escolher… e Abrir ao iniciar o Mac.
-- Barra de menus clara, outros papéis de parede e VoiceOver (inclusive nas chips de modelo).
+- Barra de menus clara, outros papéis de parede e VoiceOver.
+- Uma ata antiga com `modelo: acompanhamento` (linha de aviso na leitura; só teste unitário).
 
-Limites conhecidos:
-- O cabeçalho da `Table` é o do sistema. Tentei ajustar fonte e cor pelo AppKit (trocando a célula de cabeçalho de cada coluna) e não teve efeito, porque o SwiftUI desenha o cabeçalho por conta própria; o código foi removido. Mudar o estilo exige uma `NSTableView` do AppKit (reescrita da janela). Decisão: manter.
-- A `Table` do macOS 13 não permite clicar de novo no nome para renomear, Quick Look nem reordenar colunas.
-- O `--process` grava `duracao_segundos: 0` porque não conhece a duração.
-- O nome do usuário com espaço no fim ("JULIANO ") aparece com o espaço na lista de participantes.
-- No cenário 6, a diarização juntou a fala da Gabriela à da Roberta (Participante 1) num segmento, e uma ação saiu com a pessoa errada. É limite da transcrição (duas vozes femininas em turnos seguidos), não do resumo.
+### Limites conhecidos
+
+- O cabeçalho da `Table` é desenhado pelo SwiftUI e não aceita ajuste pelo AppKit; mudar exige `NSTableView`. A `Table` do macOS 13 também não oferece clicar de novo para renomear, Quick Look nem reordenar colunas.
+- O `--process` grava `duracao_segundos: 0`.
+- Nome do usuário com espaço no fim aparece com o espaço na lista de participantes.
+- No cenário 6, a diarização juntou duas vozes femininas em turnos seguidos num segmento, e uma ação saiu com a pessoa errada (limite da transcrição).
 - A camada gratuita do Google recusa o terceiro pedido por minuto; cada reunião usa dois.
+- Com o cancelamento de eco, o canal do sistema fica cerca de 7,6 dB mais baixo (o macOS abaixa o som dos outros apps).
 
 ## Descobertas
 <!-- fato aprendido durante o trabalho que muda o próximo passo -->
-- Comparação dos cinco modelos nos cenários 01 a 05 (25 resumos, 2026-10-01): o miolo muda pouco, e o modelo errado impõe estrutura sem evidência (decisão inventada, meta tratada como decisão, bloqueio fabricado). Resultado no ADR 0018. Com a regra de seção vazia e os blocos reforçados, os mesmos cenários melhoraram (seções vazias no modelo errado, classificação correta nos cinco), mas o Decisão do 05 e do 02 ainda preenche "decisões" sem decisão do grupo.
-- Gemini 3.5 Transcribe limita o áudio a 30 minutos por pedido com diarização ou timestamps por palavra (documentação do Google). Uma gravação de 60 minutos exigiria dividir em partes sem garantia de rótulos de falante consistentes (ADR 0010).
-- Gemini 3.5 Transcribe marca como experimental a atribuição com 3 ou mais falantes e não cita português especificamente (fonte secundária).
-- `custom_vocabulary` não combina com diarização nem com timestamps no Gemini 3.5 Transcribe.
-- Claude não aceita áudio na API, então a transcrição exige um provedor de fala separado.
-- Formato dos pedidos ao Gemini e da resposta (`steps[].content[].annotations`, `word_info`) confirmado com chave real: funcionou na primeira chamada.
-- Com áudio sintético: texto com cerca de 1% de diferença, 28 de 28 falas do canal do sistema com o falante correto, horários com diferença máxima de 0,11 s. Resultados em `docs/validation-plan.md`.
-- A ata do Sonnet 5.5 estava citando 4 a 7 trechos por item, listando a antecipação descartada como decisão e gerando pontos em aberto extras. Após o ajuste do prompt (no máximo 3 trechos, proposta descartada fora de decisões), passou nos 5 critérios em 2 execuções.
-- A camada gratuita do Google limita o `gemini-3.5-transcribe` a 3 pedidos por minuto (cada reunião usa 2). A chave atual está na camada gratuita, na qual o Google usa o conteúdo para melhorar produtos e revisores humanos podem lê-lo. Reuniões reais exigem a camada paga.
-- A assinatura ad hoc muda a identidade do binário a cada build e o macOS pedia as permissões de novo. Resolvido com a identidade local "Minuta Dev" (`scripts/setup-signing.sh`): o requisito designado é o mesmo depois de recompilar.
-- O app só aparece na lista de Gravação de Tela depois de pedir acesso. A tela de configurações anterior abria os Ajustes sem pedir, e o botão Salvar não dava retorno nem tratava erro do Keychain. Corrigido; as chaves hoje ficam no `.env` (ADR 0012).
-- Este Mac é um Mac mini sem microfone embutido e sem entrada de áudio conectada. O app travava ao iniciar a gravação (`installTap` sem dispositivo de entrada). Agora grava só o áudio do sistema e avisa quando não há microfone. Para gravar a própria voz, conecte um microfone (fone, webcam ou USB).
+- Reunião real de 2026-10-01 (alto-falante, sem cancelamento de eco): 17 falas da outra pessoa saíram duplicadas no microfone, sempre depois da original (mediana 0,4 s) e atribuídas ao usuário. A ata fica como está, como referência para comparar a qualidade futura.
+- Áudio único com diarização de todas as vozes, nos oito cenários sintéticos: em 3 de 8 a voz do usuário foi juntada à de outra pessoa (75%, 94% e 62% das palavras com o falante certo); só o canal do sistema deu 98% a 100% (ADR 0024).
+- Comparação dos cinco modelos nos cenários 01 a 05: o modelo errado impõe estrutura sem evidência. Com a regra de seção vazia, melhorou, mas o Decisão de 02 e 05 ainda preenche "decisões" sem decisão do grupo (ADR 0018).
+- Gemini 3.5 Transcribe: limite de 30 minutos por pedido com diarização (ADR 0010); atribuição com 3 ou mais falantes marcada como experimental; `custom_vocabulary` não combina com diarização nem com timestamps.
+- A camada gratuita do Google usa o conteúdo para melhorar produtos, e revisores humanos podem lê-lo. Reuniões reais exigem a camada paga.
+- Claude não aceita áudio na API; a transcrição exige provedor separado.
+- O processamento de voz do `AVAudioEngine` pode entregar vários canais; o primeiro é o microfone processado.
+- A identidade de assinatura "Minuta Dev" (`scripts/setup-signing.sh`) mantém as permissões do macOS entre builds; a assinatura ad hoc não.
+- Este Mac é um Mac mini sem microfone embutido; sem entrada de áudio, o app grava só o sistema e avisa.
+- `WKWebView`: campo nativo por cima fica transparente sem uma `NSView` opaca embaixo; com JavaScript da página desligado, `evaluateJavaScript` chamado pelo app ainda funciona e serve para medir a posição de elementos. Com base `about:blank`, o fragmento da URL precisa ser comparado como texto.
+- `AppleScript` `click at` faz um clique de acessibilidade e não põe o foco num campo de texto; para testar edição é preciso evento de mouse real (`CGEvent`).
 - Um app Swift em repouso usa cerca de 79 MB de RSS e 0% de CPU.
-- Um campo de texto nativo sobre uma `WKWebView` fica transparente: é preciso uma `NSView` opaca por baixo. A `WKWebView` com JavaScript da página desligado ainda responde a `evaluateJavaScript` chamado pelo app, o que permite medir a posição de um elemento sem executar nada da página.
-- Com a base `about:blank`, o `URL` do Foundation não extrai o fragmento (`about:blank#id`); a navegação para âncoras precisa comparar a string.
-- Gravações de silêncio geravam atas com títulos como "sem conteúdo identificável"; hoje transcrições com menos de 10 palavras não geram ata (ADR 0015).
 
 ## Descartado
 <!-- hipótese ou abordagem descartada e o motivo -->
-- Modelo Acompanhamento e Informativa ampla: o Geral entrega o mesmo conteúdo e a Informativa se confundia com o status (ADR 0018). Estrutura única adaptativa sem seletor: recomendada pela comparação, mas o usuário manteve três tipos próprios mais o Geral.
-- Keychain para as chaves: o aviso de autorização volta em qualquer build com assinatura diferente (ADR 0012).
-- Python com `pystray`, `pyobjc` e `customtkinter`: mais dependências e empacotamento frágil com uma só plataforma (ADR 0009).
-- Notion e Supabase como destino do MVP (ADR 0001).
-- LLM multimodal único para transcrição e ata (ADR 0002).
-- Mixagem em mono (ADR 0004).
-- "Outros" como bloco único (ADR 0006).
-- Tipos de reunião e notas no MVP (ADR 0007). Os tipos voltaram ao escopo pelo ADR 0017; notas continuam fora.
-- Dois arquivos por reunião, ata e transcrição (ADR 0005).
-- Gravação de 27 s com microfone conectado: a ata mostrou um "Participante 1" que só disse "É". Uma segunda gravação de 30 s, de fone e com o Mac sem tocar nada, não gerou participante falso. O mais provável é eco (a voz do usuário voltando pelo alto-falante para o canal do sistema); a hipótese de o transcritor inventar fala num canal em silêncio perdeu força. Sem fone, o eco é esperado; cancelamento de eco (processamento de voz do `AVAudioEngine`) não foi adotado.
-- O campo "Seu nome" estava salvo como `.... ` e apareceu como rótulo do usuário na ata. É valor digitado, não falha do app.
-- O Gemini trocou palavras em português numa fala do microfone ("participante 1" virou "participantium"). Registrar como dado do teste 6 (voz real).
-- Banco de dados ou pasta interna do app para as atas, e um submenu por ata no menu: ver ADR 0015.
-- Folha única com todos os participantes aberta por um botão da barra de título (ADR 0016): invasiva; trocada pelo lápis individual.
-- Anotações "(canal do microfone)" e "nome informado por você" na lista de participantes: redundantes (ADR 0016).
-- Controle de modelos nativo ou menu pop-up na leitura: o usuário escolheu as chips entre três mockups (ADR 0017).
-- Botões e ícones nas linhas da lista de atas: trocados pelo menu de contexto, como no Finder (ADR 0015). Ícone de documento no título: não informa, todas as linhas são do mesmo tipo.
-- Estilo do cabeçalho da tabela pelo AppKit: sem efeito na `Table` do SwiftUI.
+- Filtro de eco pelo texto (ADR 0021), seção "Eco do microfone" e corte do microfone por detecção de fala: soluções próprias, sem referência de mercado; o filtro erra nos dois sentidos sem que o erro apareça (ADR 0024).
+- Áudio único com diarização: pior atribuição nos cenários sintéticos (ADR 0024).
+- Envio da ata por e-mail (Mail.app por AppleScript): desenhado e implementado, descartado a pedido do usuário.
+- Consulta ao saldo das APIs no app: fora do escopo, a pedido do usuário.
+- Modelo Acompanhamento e Informativa ampla (ADR 0018). Estrutura única adaptativa sem seletor: o usuário manteve três tipos próprios mais o Geral.
+- Keychain para as chaves: aviso de autorização a cada build com assinatura diferente (ADR 0012).
+- Python com `pystray`, `pyobjc` e `customtkinter` (ADR 0009). Notion e Supabase como destino (ADR 0001). LLM multimodal único (ADR 0002). Mixagem em mono (ADR 0004). "Outros" como bloco único (ADR 0006).
+- Banco de dados ou pasta interna para as atas; submenu por ata no menu (ADR 0015). Botões nas linhas da lista de atas e ícone no título.
+- Folha única com todos os participantes; anotações "(canal do microfone)" e "nome informado por você" (ADR 0016).
+- Controle de modelos nativo ou menu pop-up na leitura (ADR 0017). `NSPopover` como balão de dica: trocado pelo `BalloonPanel`, com a forma das chips.
+- Barra de rolagem no balão de citação: o balão cresce em altura antes de largura, e as falas vizinhas são cortadas.
 
 ## Próximos
-- Conferir os `expected.md` dos oito cenários contra os resumos gerados e ajustar os blocos dos modelos onde faltar (acerto de responsáveis, prazos e armadilhas). Rodar os cenários 06 a 08 com os quatro modelos (só 01 a 05 foram refeitos depois do ADR 0018).
-- Avaliar se Decisão em reunião sem decisão deve ser bloqueada ou só avisada (o prompt reduz, não impede; ADR 0018).
-- Reuniões reais: confirmar que quatro modelos bastam e que o Geral de status serve no lugar do Acompanhamento.
-- Testar manualmente o que está em "Ainda sem teste manual", em especial a falha da geração automática e o secundário ilegível.
-- Conferir nas fontes primárias as citações de Tropman, Romano e Nunamaker e Monge usadas no ADR 0017.
-- Confirmar o limite de 30 minutos (ADR 0010).
-- Gravar uma reunião real com voz (3 ou mais participantes) e conferir transcrição, diarização, classificação e resumo (teste 6).
-- Teste de eco sem fone (alto-falante e microfone abertos), para medir o quanto o eco vaza para a ata e decidir se vale o cancelamento de eco.
-- Medir o custo em tokens e o tempo por reunião (classificação mais resumo), e comparar o esforço `medium` com `high`.
-- Migrar a chave do Google para a camada paga antes de gravar reuniões reais.
-- Ler os termos de dados do Google e da Anthropic (teste 7).
-- Pendências da revisão de HIG: reticências em "Abrir arquivo…" e "Gravando 5 s…", um só botão de destaque em Permissões, "Configurações" ou "Ajustes" (a confirmar) e a grafia do nome do app.
-- ADR próprio para o envio da ata por e-mail e a consulta por conectores (exige rever a regra de que nada vai para a nuvem).
-- Opcionais, se o risco ou o uso pedirem: reconstruir o secundário a partir do `.md`, cópia interna das atas com restauração (detecta ata apagada), cancelamento de eco.
-- Confirmar o público do projeto (hoje registrado como uso próprio).
+- Gravar uma chamada real com alto-falante e o cancelamento ligado; conferir duplicatas, a fala do usuário e o nível do canal do sistema. Só um resultado ruim reabre o ADR 0024.
+- Gravar uma reunião real com 3 ou mais participantes e conferir transcrição, diarização, classificação e resumo (teste 6).
+- Comando para refazer a transcrição de uma ata a partir do áudio guardado.
+- Conferir os `expected.md` dos oito cenários contra os resumos e ajustar os blocos dos modelos; rodar 06 a 08 com os quatro modelos.
+- Avaliar se Decisão em reunião sem decisão deve ser bloqueada ou só avisada (ADR 0018).
+- Medir custo em tokens e tempo por reunião; comparar esforço `medium` com `high`.
+- Migrar a chave do Google para a camada paga e ler os termos de dados do Google e da Anthropic (teste 7).
+- Confirmar o limite de 30 minutos (ADR 0010) e o público do projeto.
+- Conferir nas fontes primárias as citações de Tropman, Romano e Nunamaker e Monge (ADR 0017).
+- Pendências da revisão de HIG: reticências em "Abrir arquivo…" e "Gravando 5 s…", um só botão de destaque em Permissões, "Configurações" ou "Ajustes" e a grafia do nome do app.
+- Opcionais, se o uso pedir: reconstruir o secundário a partir do `.md`; cópia interna das atas com restauração (detecta ata apagada); dividir e juntar falas e desfazer na janela de correção (ADR 0025).
 
 ## Bloqueado
 - Nada.

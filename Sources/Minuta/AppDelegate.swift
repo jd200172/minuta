@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard !CLI.requested() else { return }
         MainActor.assumeIsolated {
             statusItem = StatusItemController(model: AppModel.shared)
+            AudioArchive.migrateLegacy(from: Config.legacyAudioDir, to: Config.audioDir)
             AtaLibrary.shared.refresh()
         }
     }

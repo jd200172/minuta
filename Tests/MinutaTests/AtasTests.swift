@@ -216,7 +216,7 @@ final class ModelChipsTests: XCTestCase {
 
     func testPageIsACenteredCardWithoutWidthLimitOnTheBody() {
         let html = MarkdownHTML.convert(page).html
-        XCTAssertTrue(html.contains("<div class=\"card\">"))
+        XCTAssertTrue(html.contains("<div class=\"card\" id=\"card\">"), "o id deixa o app medir o card")
         XCTAssertTrue(html.contains(".card {"))
         XCTAssertTrue(html.contains("max-width: 760px; margin: 0 auto"))
         let body = html.components(separatedBy: "\n").first { $0.hasPrefix("body {") } ?? ""

@@ -175,8 +175,6 @@ final class AppModel: ObservableObject {
                 let dir = store.dir(job.id)
                 let transcript = try await Pipeline.transcribe(job: job, dir: dir)
                 try store.saveTranscript(transcript, job: job)
-                try? FileManager.default.removeItem(at: dir.appendingPathComponent("mic.m4a"))
-                try? FileManager.default.removeItem(at: dir.appendingPathComponent("system.m4a"))
                 job.stage = .minuting
                 store.save(job)
                 AtaLibrary.shared.refresh()
@@ -187,7 +185,19 @@ final class AppModel: ObservableObject {
             let url = try AtaStore.create(
                 meta: MeetingMeta(start: job.startedAt, duration: job.durationSeconds), transcript: transcript,
                 classification: classification, in: Config.outputDir)
-            store.delete(job.id)
+            // The recordings stay (ADR 0022), under the name of the meeting's sidecar. If they cannot be moved, the
+            // job folder keeps them and says so.
+            let dir = store.dir(job.id)
+            let mic = dir.appendingPathComponent("mic.m4a")
+            let system = dir.appendingPathComponent("system.m4a")
+            let expected = [mic, system].filter { FileManager.default.fileExists(atPath: $0.path) }.count
+            let offsets = Sidecar.AudioOffsets(mic: job.micOffset, system: job.systemOffset)
+            if AtaStore.keepAudio(mic: mic, system: system, offsets: offsets, forMarkdown: url) == expected {
+                store.delete(job.id)
+            } else {
+                Notifier.post(
+                    "Áudio não guardado", "A ata foi criada, mas o áudio continua na pasta de gravações pendentes.")
+            }
             AtaLibrary.shared.refresh()
             summarizeSuggested(url, classification: classification)
             return nil

@@ -29,13 +29,14 @@ final class SettingsWindowController {
 }
 
 private let pageWidth: CGFloat = 640
-private let pageHeight: CGFloat = 490
+private let pageHeight: CGFloat = 560
 
 // MARK: - Page
 
 struct SettingsView: View {
     @ObservedObject private var model = AppModel.shared
     @AppStorage(Config.userNameKey) private var userName = ""
+    @AppStorage(Config.echoCancellationKey) private var echoCancellation = true
     @AppStorage(Config.outputDirKey) private var outputDir = ""
     @State private var launchAtLogin = false
     @State private var loginMessage: String?
@@ -95,6 +96,11 @@ struct SettingsView: View {
                             Button("Escolher…") { chooseFolder() }
                         }
                     }
+                    Toggle("Cancelar o eco do microfone", isOn: $echoCancellation)
+                    Text(
+                        "Evita que a voz da chamada, saindo pelo alto-falante, entre no seu microfone. Com fone de ouvido, pode desligar."
+                    )
+                    .font(.callout).foregroundStyle(.secondary)
                     Toggle("Abrir ao iniciar o Mac", isOn: Binding(get: { launchAtLogin }, set: setLaunchAtLogin))
                     if let loginMessage {
                         Text(loginMessage).font(.callout).foregroundStyle(.secondary)

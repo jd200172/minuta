@@ -76,11 +76,31 @@ enum Config {
     static let defaultMinuter = "claude"
     static let defaultMinuterModel = "claude-sonnet-5-5"
     static let userNameKey = "userName"
+    static let echoCancellationKey = "echoCancellation"
     static let outputDirKey = "outputDir"
 
     static var userName: String {
         let name = UserDefaults.standard.string(forKey: userNameKey) ?? ""
         return name.trimmingCharacters(in: .whitespaces).isEmpty ? "Eu" : name
+    }
+
+    /// Where the recordings of the meetings are kept (ADR 0022): the output folder, next to the minutes.
+    static var audioDir: URL { outputDir }
+
+    /// Where the recordings were kept before ADR 0022 was amended; `AudioArchive.migrateLegacy` empties it.
+    static var legacyAudioDir: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Minuta/audio")
+    }
+
+    /// Set by the developer capture test to try the microphone with and without echo cancellation.
+    nonisolated(unsafe) static var echoCancellationOverride: Bool?
+
+    /// Whether the microphone goes through the system's voice processing (echo cancellation), which removes what
+    /// the speakers play from what the microphone hears (ADR 0023).
+    static var echoCancellation: Bool {
+        if let echoCancellationOverride { return echoCancellationOverride }
+        return UserDefaults.standard.object(forKey: echoCancellationKey) as? Bool ?? true
     }
 
     /// The last output folder seen to exist. It tells "the folder is gone" apart from "never created".

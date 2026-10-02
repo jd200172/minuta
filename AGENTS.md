@@ -4,20 +4,18 @@
 
 Agente de sumarização de reuniões (MVP). Aplicação desktop que roda na bandeja do sistema, grava microfone e áudio do sistema, transcreve com STT dedicado e gera uma ata em Markdown no modelo de resumo adequado ao tipo da reunião (decisão, problemas e ideias, informativa ou geral), com participantes, itens de ação e pontos em aberto. A transcrição segmentada fica no mesmo arquivo, e cada item aponta para o trecho de origem. Saída numa pasta local. Uso próprio (público: `TODO` confirmar).
 
-Fonte: `docs/project-brief.md` (documento original, 2026-09-30). As decisões em `docs/decisions/` prevalecem sobre o brief onde divergem.
+Fonte: `docs/project-brief.md` (documento original, 2026-09-30). As decisões em `docs/decisions/` prevalecem sobre o brief onde divergem; o índice com o status de cada uma está em `docs/decisions/README.md`.
 
 ## Escopo
 
 Dentro:
 - macOS 13+. Windows 10/11 em fase posterior (ADR 0003).
-- Interface: menu da bandeja, janela de configurações, janela de atas e janela de leitura da ata (ADR 0015). Sem janela contínua de gravação.
+- Interface: menu da bandeja, janela de configurações, janela de atas, janela de leitura da ata (ADR 0015), com transcrição colapsável e balões de citação (ADR 0019), e janela de correção da transcrição com o áudio (ADR 0025). Sem janela contínua de gravação.
 - Resumo da reunião em quatro modelos: Decisão, Problemas e ideias, Informativa e Geral, com o sugerido gerado automaticamente e os demais sob demanda (ADRs 0017 e 0018, que substituem o prompt único do ADR 0005). Informativa é reunião em que alguém expõe conteúdo e o grupo pergunta; reunião de status é Geral.
 
 Fora do MVP:
-- Interface de janela contínua.
-- Transcrição em tempo real.
+- Interface de janela contínua e transcrição em tempo real.
 - Reunião acima de 60 minutos.
-- Armazenamento de áudio na nuvem.
 - Windows, Notion e Supabase (estes como exportadores opcionais futuros).
 - Inserção de notas: segunda fase (ADR 0007). Modelos de resumo definidos pelo usuário: depois (ADR 0017).
 - Reuniões presenciais e híbridas: o MVP atende só reuniões virtuais (ADR 0006).
@@ -26,61 +24,76 @@ Fora do MVP:
 
 - Consumo baixo de CPU, memória e disco.
 - Gravação limitada a 60 minutos de tempo gravado (pausas não contam). No teto, encerra a captura e dispara o processamento. O código usa 30 minutos, porque o Gemini 3.5 Transcribe limita a 30 minutos por pedido com diarização (ADR 0010, proposta aguardando confirmação). A regra de 60 minutos vale até a confirmação.
-- A transcrição é o artefato que importa. O áudio é descartável: fica em disco até a transcrição ser gravada. Em falha de rede, o áudio fica em disco, e o aviso de falha e o menu de contexto da linha da gravação, na janela de atas, oferecem "Tentar de novo". Em perda de stream (hardware desconectado), fecha o arquivo com cabeçalho válido e encerra a gravação.
-- Áudio sai da máquina só para o STT; texto sai só para o LLM. Nada é armazenado na nuvem pelo app.
+- A transcrição e o áudio são guardados (ADR 0022):
+  - Depois que a ata é criada, o áudio de cada canal vai para a pasta de atas definida nas configurações (`OUTPUT_DIR`), com o radical do arquivo secundário (`AAAA-MM-DD HHmm.mic.m4a` e `.system.m4a`), nunca renomeado com o título, e vai para a Lixeira junto com a ata. Acompanha a sincronização que a pasta tiver. Na inicialização, áudio que esteja na pasta antiga (`~/Library/Application Support/Minuta/audio/`) é movido para a pasta de atas.
+  - Gravação sem fala suficiente não gera ata e é descartada com o áudio.
+  - Em falha de rede, o áudio fica na pasta do job, e o aviso de falha e o menu de contexto da linha da gravação, na janela de atas, oferecem "Tentar de novo".
+  - Em perda de stream (hardware desconectado), fecha o arquivo com cabeçalho válido e encerra a gravação.
+- Áudio sai da máquina só para o STT; texto sai só para o LLM. O app não envia nada para armazenamento na nuvem; o que a pasta de atas sincroniza é escolha do usuário.
 - Credenciais (chaves do STT e do LLM) e a escolha de provedor e modelo ficam em `~/Library/Application Support/Minuta/.env`, permissão `600`, lido a cada uso (ADR 0012). Nunca versionar nem copiar para o repositório. `OUTPUT_DIR` é configuração, não segredo.
 - Provedores atrás dos protocolos `Transcriber` e `Minuter`. As regras do resumo (prompt comum, bloco e schema por modelo) são neutras e ficam em `MinutesPrompt`; a validação de IDs fica no app, nunca no modelo. Provedor novo passa pela reunião sintética antes do uso.
-- Interface (Human Interface Guidelines da Apple para macOS): componentes nativos (SwiftUI e AppKit), SF Symbols, cores e tipografia do sistema, modo escuro e acessibilidade sem trabalho extra, menus, janelas e avisos no padrão do macOS. Antes de criar ou alterar uma tela, conferir a diretriz correspondente. Desvio só com justificativa registrada em ADR (desvios vigentes: fundo colorido do botão da barra de menus, ADR 0014; chips de modelo de resumo e balão de dica próprio na página de leitura, ADR 0017).
+- Captura e atribuição seguem a prática de mercado, sem solução própria (ADR 0024): dois canais, com o canal definindo o falante; diarização só no canal do sistema; cancelamento de eco na captura (ADR 0023); correção humana na janela de correção (ADR 0025).
+- Interface (Human Interface Guidelines da Apple para macOS): componentes nativos (SwiftUI e AppKit), SF Symbols, cores e tipografia do sistema, modo escuro e acessibilidade sem trabalho extra, menus, janelas e avisos no padrão do macOS. Antes de criar ou alterar uma tela, conferir a diretriz correspondente. Desvio só com justificativa registrada em ADR. Desvios vigentes: fundo colorido do botão da barra de menus (ADR 0014); chips de modelo de resumo e balão próprio de dica e de citação, com uma só linguagem visual (ADRs 0017 e 0019).
 - Idiomas: código (identificadores e comentários) em inglês; interface do app e ata em pt-BR.
 - Rastreabilidade (ADRs 0005, 0017 e 0018): decisões, ações e pontos em aberto citam IDs de segmento da transcrição. O LLM devolve JSON com os IDs; o app monta o Markdown e valida que todo ID existe. Campo sem evidência vira "não definido", e seção do modelo sem evidência fica vazia, nunca preenchida para completar a estrutura. Prazo relativo só vira data com a data da reunião no prompt.
-- Participantes (ADR 0006): o canal do microfone usa o nome do campo "Seu nome" (vazio: "Eu"); os demais vêm da diarização do canal do sistema como "Participante N". Nunca agrupar participantes num rótulo coletivo ("Outros" etc.). Nome só substitui o rótulo com evidência citada na transcrição, e a ata marca o nome como inferido. Nome informado pelo usuário no lápis de cada participante da janela de leitura (ADR 0016) vale como evidência só naquela ata, substitui o rótulo em todo o texto, sem marca extra, e não pode repetir o de outra voz da mesma ata. A linha do canal do microfone na lista de participantes é só o nome, sem anotação.
+- Participantes (ADRs 0006 e 0016):
+  - O canal do microfone usa o nome do campo "Seu nome" (vazio: "Eu"); os demais vêm da diarização do canal do sistema como "Participante N". Nunca agrupar participantes num rótulo coletivo ("Outros" etc.).
+  - Nome só substitui o rótulo com evidência citada na transcrição, e a ata marca o nome como inferido.
+  - Nome informado pelo usuário no lápis de cada participante da janela de leitura vale como evidência só naquela ata, substitui o rótulo em todo o texto, sem marca extra, e não pode repetir o de outra voz da mesma ata.
+  - A linha do canal do microfone na lista de participantes é só o nome, sem anotação.
 - Estado do job (início, duração, status) é gravado em disco ao lado do áudio.
 
 ## Stack
 
-(fontes: ADRs 0001 a 0017 e `Package.swift`)
-- App nativo em Swift 6.4, SwiftPM, sem dependências de terceiros, macOS 13+ (ADR 0009). `NSStatusItem` com `NSMenu` para a bandeja (ADR 0014) e uma janela AppKit com conteúdo SwiftUI para as configurações.
-- Captura: ScreenCaptureKit (áudio do sistema) e `AVAudioEngine` (microfone), cada canal em um arquivo mono AAC `.m4a` de 16 kHz (ADRs 0004 e 0009).
-- STT: Gemini 3.5 Transcribe, Files API e Interactions API por `URLSession`, diarização só no canal do sistema (ADR 0008; verificações pendentes: pt-BR, 3 ou mais falantes, termos de dados).
-- LLM do resumo e do classificador de modelo: Claude Sonnet 5.5 pela Messages API, saída estruturada e `fallbacks: "default"` (ADRs 0002 e 0017). O classificador usa o mesmo modelo.
-- Saída: arquivos `.md` em `OUTPUT_DIR` (ADR 0001). Chaves no `.env` (ADR 0012). Jobs pendentes em `~/Library/Application Support/Minuta/pending/`.
+(fontes: ADRs e `Package.swift`)
+- Swift 6.4, SwiftPM, sem dependências de terceiros, macOS 13+ (ADR 0009). Bandeja com `NSStatusItem` e `NSMenu` (ADR 0014); janelas AppKit com conteúdo SwiftUI; página de leitura em `WKWebView` com JavaScript da página desligado (ADR 0015).
+- Captura: ScreenCaptureKit (áudio do sistema) e `AVAudioEngine` com processamento de voz do macOS (microfone, cancelamento de eco); cada canal em um arquivo mono AAC `.m4a` de 16 kHz (ADRs 0004, 0009 e 0023).
+- STT: Gemini 3.5 Transcribe, Files API e Interactions API por `URLSession`, diarização só no canal do sistema (ADR 0008; pendentes: voz real, 3 ou mais falantes, termos de dados).
+- LLM do resumo e do classificador: Claude Sonnet 5.5 pela Messages API, saída estruturada e `fallbacks: "default"` (ADRs 0002 e 0017).
+- Saída: `.md` e `.resumos.json` em `OUTPUT_DIR` (ADRs 0001 e 0017). Em `~/Library/Application Support/Minuta/`: `.env` (ADR 0012), e `pending/` (jobs). O áudio fica na pasta de atas (ADR 0022).
 
 ## Comandos
 
-(fontes: `Package.swift`, `.swift-format`, `scripts/build-app.sh`, `tools/synthetic-meeting/build.py`)
+(fontes: `Package.swift`, `.swift-format`, `scripts/`, `Sources/Minuta/CLI.swift`, `tools/synthetic-meeting/build.py`)
 - `./scripts/setup-signing.sh` (uma vez) cria a identidade de assinatura local "Minuta Dev" num chaveiro separado. Mantém as permissões do macOS entre builds.
-- `./scripts/build-app.sh` compila em release e monta `build/Minuta.app`, assinado com essa identidade. Grava no Info.plist o número de build (contagem de commits) e o hash do commit, com `-dirty` se houver alterações sem commit; a versão aparece no rodapé das configurações.
+- `./scripts/build-app.sh` compila em release e monta `build/Minuta.app` assinado. Grava no Info.plist o número de build (contagem de commits) e o hash do commit, com `-dirty` se houver alterações sem commit; a versão aparece no rodapé das configurações.
 - `./scripts/install.sh` compila, instala em `/Applications/Minuta.app` e abre. É o caminho normal de uso.
 - `swift scripts/make-icon.swift` regenera `Resources/AppIcon.icns`.
-- `build/Minuta.app/Contents/MacOS/Minuta --process <pasta com mic.m4a e system.m4a> --out <pasta> [--date ISO8601] [--model <modelo>|all]` roda transcrição, classificação e resumo sobre áudios existentes, com as chaves do `.env`, e grava `transcript.json`, a ata e o arquivo `.resumos.json` em `--out`. Gera o modelo sugerido (Geral sem sugestão) ou o pedido. Não altera a pasta configurada no app. Serve para os testes 2 a 5 do plano de validação.
-- `swift format --in-place --recursive Sources Tests` formata o código (ver Convenções).
-- `swift test` roda os testes do montador de transcrição, do gerador de Markdown, dos modelos e prompts de resumo, do armazenamento em dois arquivos, do `.env`, das mensagens de erro, dos nomes de arquivo e da leitura da pasta de atas, do conversor de Markdown para a página de leitura e do editor de participantes. Não há teste automatizado de captura, de interface nem das chamadas de rede.
-- `python3 tools/synthetic-meeting/build.py --all` (ou `<cenário>`, ou `--list`) gera em `tools/synthetic-meeting/scenarios/<cenário>/out/` o áudio sintético e o `ground-truth.json` de oito reuniões, uma por cenário. Requer macOS (`say`, `afconvert`) e ffmpeg com libopus. Resultado esperado em `scenarios/<cenário>/expected.md`; índice em `scenarios/README.md`.
+- `build/Minuta.app/Contents/MacOS/Minuta --process <pasta com mic.m4a e system.m4a> --out <pasta> [--date ISO8601] [--model <modelo>|all]` roda transcrição, classificação e resumo com as chaves do `.env` e grava `transcript.json`, a ata e o `.resumos.json` em `--out`. Gera o modelo sugerido (Geral sem sugestão) ou o pedido. Não altera a pasta configurada no app. Gasta chamadas de API.
+- `open -n -a Minuta --args --capture-test <relatório.json> [--aec on|off] [--seconds N]` grava os dois canais e escreve os níveis e o vazamento do sistema no microfone (ADR 0023). Iniciado por `open`, usa as permissões do app.
+- `swift test` roda os testes unitários. Não há teste automatizado de captura, de interface nem das chamadas de rede.
+- `swift format --in-place --recursive Sources Tests` formata; `swift format lint --recursive Sources Tests` só confere.
+- `python3 tools/synthetic-meeting/build.py --all` (ou `<cenário>`, ou `--list`) gera em `tools/synthetic-meeting/scenarios/<cenário>/out/` o áudio sintético e o `ground-truth.json` de oito reuniões. Requer macOS (`say`, `afconvert`) e ffmpeg com libopus. Resultado esperado em `scenarios/<cenário>/expected.md`; índice em `scenarios/README.md`.
 
 ## Convenções de código
 
-- Um arquivo por responsabilidade em `Sources/Minuta/`: `Recorder` (captura), `Providers` (protocolos `Transcriber` e `Minuter` e escolha pelo `.env`), `Env` (leitura do `.env`), `Gemini` (STT e montagem da transcrição), `Claude` (transporte da ata), `MinutesPrompt` (prompt comum, bloco e schema por modelo, classificador, decodificação), `SummaryModels` (os quatro modelos, seções e tipos de dados), `Minutes` (Markdown de uma reunião), `AtaStore` (principal, secundário e título), `SummaryService` (gerar, reaproveitar e trocar o resumo), `Job` (estado em disco), `AppModel` (estados e fluxo), `Alerts` (avisos), `CaptureTest` (teste de captura), `CLI` (modo `--process`), `StatusItemController` (botão e menu da bandeja), `AppDelegate` e `main.swift` (entrada), `AtaLibrary` (lista de atas e nomes de arquivo), `AtasView` (janela de atas: tabela, linhas da lista e menus de contexto), `AtaViewer`, `MarkdownHTML` e `TitleRename` (leitura da ata, chips de modelo e título renomeado no lugar), `ParticipantEditor` e `ParticipantRename` (nomes dos participantes, renomeados no lugar pelo lápis da lista de participantes da janela de leitura), `PageTips` (balão de dica nativo sobre a página de leitura), `ClosableWindow` (⌘W e Esc) e `SettingsView` (janela de configurações em página única: chaves, permissões e preferências).
+- Um arquivo por responsabilidade em `Sources/Minuta/`:
+  - Fluxo e captura: `main`, `AppDelegate`, `AppModel` (estados e fluxo), `Job` (estado em disco), `Recorder` (captura), `CaptureTest`, `CLI` (`--process` e `--capture-test`), `Support` (configuração e caminhos), `Alerts`.
+  - Provedores: `Providers` (protocolos `Transcriber` e `Minuter`), `Env`, `Gemini` (STT e montagem da transcrição), `Claude`, `MinutesPrompt` (prompts, schemas, classificador), `SummaryModels` (os quatro modelos).
+  - Arquivos da reunião: `Minutes` (Markdown), `AtaStore` (principal, secundário, título e correções), `SummaryService` (gerar, reaproveitar e trocar o resumo), `AtaLibrary` (lista e nomes de arquivo), `AudioArchive` (nomes e guarda do áudio).
+  - Interface: `StatusItemController` (bandeja), `SettingsView`, `AtasView` (janela de atas), `AtaViewer`, `MarkdownHTML`, `TitleRename`, `ParticipantEditor` e `ParticipantRename` (janela de leitura), `Citations` (transcrição recolhida e balão de citação), `TranscriptWindow` (janela de correção), `Balloon` (`BalloonStyle` e `BalloonPanel`: a linguagem única dos balões), `PageTips`, `ClosableWindow` (⌘W e Esc).
 - Sem dependências de terceiros. Mudança de modo de linguagem Swift ou nova dependência exige ADR.
-- Formatador: `swift format` (do toolchain), configurado em `.swift-format` (4 espaços, 120 colunas). Rodar `swift format --in-place --recursive Sources Tests` antes de commitar; `swift format lint --recursive Sources Tests` só confere. Linter: nenhum por ora.
+- Formatador: `swift format` do toolchain, configurado em `.swift-format` (4 espaços, 120 colunas); rodar antes de commitar. Linter: nenhum por ora.
+- Testes em `Tests/MinutaTests/`, um arquivo por área.
 
 ## Arquitetura
 
-Gravação (uma por vez) separada da fila de jobs (vários). Estados:
-1. Ocioso: ícone de microfone. Menu: Iniciar gravação, Atas recentes (5), Atas…, Configurações…, Sair (ADRs 0011 e 0015). Sair durante a gravação pede confirmação.
-2. Gravando ou pausada (ADR 0013): menu Pausar/Continuar gravação e Encerrar gravação; contador de tempo gravado ao lado do ícone; dois arquivos mono em streaming para a pasta do job em Application Support.
-3. Job: transcrevendo, classificando, concluído. O estado fica só no ícone. Após a transcrição segmentada gravada, o áudio é apagado; a classificação grava o arquivo da reunião, e o resumo é um passo separado sobre o texto, sem job. Falha: aviso do macOS com a causa e as opções Tentar de novo, Depois e Descartar; o áudio ou a transcrição ficam guardados, e a gravação aparece como linha da janela de atas.
+Detalhe de cada tela e de cada fluxo fica no ADR indicado; aqui, só a estrutura.
 
-Resumos por modelo (ADR 0017): ao fim da transcrição, uma chamada ao LLM devolve o modelo sugerido, uma frase de justificativa e o título. Com sugestão, o app gera o resumo nesse modelo; sem sugestão, não gera. Na janela de leitura, o usuário corrige os nomes dos participantes e troca de modelo: o que já existe é reaproveitado, e o que não existe é gerado ao clicar. Nada é descartado ao trocar; o ícone de atualizar da página de leitura ("Refazer este resumo") substitui o guardado daquele modelo. Dois arquivos por reunião: o principal (`AAAA-MM-DD HHmm Título.md`) tem frontmatter, a cópia renderizada do resumo escolhido e a transcrição, e é legível sozinho; o secundário (`AAAA-MM-DD HHmm.resumos.json`) guarda todos os resumos com os rótulos originais e nunca é renomeado com o título. A chave da reunião é o `inicio` (ISO 8601 com segundos e fuso), gravado nos dois. O título pertence à reunião, vem da classificação, fica no frontmatter (`titulo`), é editável na janela de leitura e não muda ao trocar de modelo. Os modelos são dados em `SummaryModels`; `AtaStore` lê e grava os dois arquivos e `SummaryService` gera, reaproveita e troca. O secundário também guarda a transcrição com os rótulos originais e a classificação, e o principal é renderizado a partir dele, com os nomes dos participantes aplicados. Reunião sem resumo tem `resumo: nenhum` no frontmatter; atas anteriores, sem `modelo` nem `resumo`, abrem como antes, sem as chips de modelo. Núcleo de todos os modelos: resumo, participantes, itens de ação, pontos em aberto e transcrição. Envio por e-mail e consulta por conectores: etapa posterior, com ADR próprio.
-
-Atas (ADR 0015): arquivos `AAAA-MM-DD HHmm Título.md` são a fonte da verdade; a lista é refeita lendo a pasta. Apagar move para a Lixeira. A janela de atas é uma tabela no estilo do Finder (colunas Data, Título, Resumo e Duração ordenáveis, sem botões nas linhas, gravações em andamento como linhas): Return renomeia no lugar, duplo clique ou ⌘O abre, ⌘⌫ move para a Lixeira sem pergunta e o menu de contexto traz Abrir, Mostrar no Finder, Resumo ▸, Mover para a Lixeira e Renomear (ADR 0015). Transcrição com menos de 10 palavras não gera ata. Ao ler a pasta, o app avisa pasta ausente ou ilegível e marca arquivos de ata vazios, ilegíveis ou sem cabeçalho; não detecta ata apagada.
-
-Estrutura da ata (ADRs 0005, 0017 e 0018): Resumo, Participantes, seções do modelo (Decisão: Decisões e Alternativas descartadas; Problemas e ideias: Problema, Ideias por tema e A aprofundar; Informativa: Pontos principais, Dados citados e Perguntas; Geral: Resumo por tema, com um tema por pessoa em reunião de status), Itens de ação, Pontos em aberto e Transcrição com âncoras `t-<segundos>`. Frontmatter: `inicio` (ISO 8601 com segundos e fuso), `duracao_segundos`, `titulo` (quando houver), `modelo` ou `resumo: nenhum` e, quando o usuário nomeou participantes, `participantes` (JSON de rótulo para nome, ADR 0016).
-
-Na inicialização, descarta gravações cortadas no meio (arquivo ilegível) e mostra um aviso por gravação pendente, com Processar, Depois e Descartar. Sinalização de estado (ADR 0014): ícone de microfone fixo; fundo verde ao gravar (relógio correndo), vermelho em pausa (relógio parado e símbolo de pausa), amarelo ao processar (spinner); gravação e processamento juntos mostram a cor da gravação com o spinner. O estado nunca depende só da cor.
+- **Gravação e jobs.** Uma gravação por vez, separada da fila de jobs (vários). Estados: ocioso; gravando ou pausada (ADR 0013), com dois arquivos mono em streaming para a pasta do job; job transcrevendo, classificando ou concluído. O estado aparece só no botão da barra de menus (ADR 0014). Falha vira aviso do macOS com Tentar de novo, Depois e Descartar, e a gravação vira linha da janela de atas (ADR 0011). Na inicialização, gravações cortadas no meio (arquivo ilegível) são descartadas e cada pendente gera um aviso.
+- **Do áudio à ata.** Cada canal é transcrito em separado; o do sistema com diarização (ADR 0024). Uma chamada ao LLM devolve modelo sugerido, justificativa e título (ADR 0017). Com isso a ata é gravada e o áudio passa para a pasta de áudio (ADR 0022). Com sugestão, o resumo é gerado nesse modelo, num passo separado sobre o texto, sem job. Transcrição com menos de 10 palavras não gera ata.
+- **Dois arquivos por reunião (ADR 0017).** O principal (`AAAA-MM-DD HHmm Título.md`) tem frontmatter, a cópia renderizada do resumo escolhido e a transcrição, e é legível sozinho. O secundário (`AAAA-MM-DD HHmm.resumos.json`) guarda a transcrição com os rótulos originais, a classificação, todos os resumos, as correções e os deslocamentos do áudio, e nunca é renomeado; o principal é renderizado a partir dele. A chave da reunião é o `inicio` (ISO 8601 com segundos e fuso), gravado nos dois.
+- **Frontmatter.** `inicio`, `duracao_segundos`, `titulo` (quando houver), `modelo` ou `resumo: nenhum` e, quando o usuário nomeou participantes, `participantes` (JSON de rótulo para nome, ADR 0016). Atas anteriores, sem `modelo` nem `resumo`, abrem sem as chips de modelo.
+- **Estrutura da ata (ADRs 0005, 0017 e 0018).** Resumo, Participantes, seções do modelo, Itens de ação, Pontos em aberto e Transcrição com âncoras `t-<segundos>`. Seções por modelo: Decisão (Decisões, Alternativas descartadas); Problemas e ideias (Problema, Ideias por tema, A aprofundar); Informativa (Pontos principais, Dados citados, Perguntas); Geral (Resumo por tema, um tema por pessoa em reunião de status).
+- **Resumos.** Trocar de modelo reaproveita o que existe e gera o que falta; nada é descartado. "Refazer este resumo" substitui o guardado daquele modelo. O título pertence à reunião, não ao modelo.
+- **Correção (ADR 0025).** Corrigir, trocar falante, apagar ou restaurar uma fala reescreve o secundário e a ata, guarda a versão do modelo em `originals` e marca os resumos já gerados como desatualizados até serem refeitos.
+- **Atas (ADR 0015).** Os arquivos da pasta são a fonte da verdade; a lista é refeita lendo a pasta. Apagar move para a Lixeira, com o áudio. Ao ler a pasta, o app avisa pasta ausente ou ilegível e marca arquivos de ata com problema; não detecta ata apagada.
+- **Telas.** Menu da bandeja (ADRs 0011, 0014 e 0015), janela de atas no estilo do Finder (ADR 0015), janela de leitura (ADRs 0015 a 0019), janela de correção (ADR 0025) e configurações em página única (ADRs 0011, 0012 e 0023).
+- Envio por e-mail e consulta por conectores: etapa posterior, com ADR próprio.
 
 ## Critério de pronto
 
-`TODO`: definir quando houver código.
+`TODO`: definir.
 
 ## Padrão de escrita
 
@@ -94,7 +107,7 @@ Tom de especificação técnica (decisão é fato, sem dramatização) e prosa e
 
 Vale para qualquer ferramenta.
 - **Início de sessão:** ler `STATUS.md`, `git status` e os últimos commits antes de agir.
-- **Fim de etapa de trabalho:** atualizar `STATUS.md` com o que foi feito, o que se descobriu, o que foi descartado e por quê, e o próximo passo. Decisão com alternativa descartada vai para `docs/decisions/`.
+- **Fim de etapa de trabalho:** atualizar `STATUS.md` com o que foi feito, o que se descobriu, o que foi descartado e por quê, e o próximo passo. Decisão com alternativa descartada vai para `docs/decisions/`, com uma linha no índice `docs/decisions/README.md`.
 - **Troca de ferramenta:** só em ponto de parada, com commit feito ou `STATUS.md` descrevendo o trabalho não commitado.
 - **Memória:** conhecimento do projeto é gravado em arquivo versionado, nunca só na memória da ferramenta.
 
@@ -104,29 +117,16 @@ Instrução do usuário no chat > `AGENTS.md` > `.agents/STYLE.md` > skill. Em s
 
 ## Histórico
 
-- 2026-09-30: governança instalada. Contexto, Escopo e Regras definidos a partir do brief e de conversa com o usuário.
-- 2026-09-30: revisão crítica do brief. ADRs 0001 a 0004 (destino Markdown local, STT mais LLM de texto, macOS primeiro, captura em dois canais).
-- 2026-09-30: ADRs 0005 a 0007. Estrutura da ata com rastreabilidade pela transcrição, participantes com diarização e substituição por nome, tipos de reunião e notas adiados para a segunda fase. Escopo, Regras, Stack e Arquitetura atualizados.
-- 2026-09-30: ADR 0006 revisado. Só reuniões virtuais; rótulo do usuário vem do campo "Seu nome" (vazio: "Eu"); proibido agrupar participantes em rótulo coletivo.
-- 2026-09-30: ADR 0008. STT do MVP é o Gemini 3.5 Transcribe, com verificações pendentes. LLM da ata é o Claude Sonnet 5.5 (ADR 0002).
-- 2026-09-30: ADR 0009 (app nativo em Swift, AAC `.m4a` por canal) e primeira versão do código. ADR 0010 propõe limite de 30 minutos por causa do limite do STT; aguarda confirmação.
-- 2026-09-30: ADR 0011 (menu mínimo, erros por aviso, instalação em /Applications, configurações em abas).
-- 2026-09-30: pipeline validado com áudio sintético (transcrição, diarização e ata). Modo `--process` adicionado ao app para testes.
-- 2026-10-01: ADR 0012. Chaves e escolha de provedor/modelo em `.env` (substitui o Keychain); STT e LLM atrás de protocolos. Regra de credenciais alterada com confirmação do usuário.
-- 2026-10-01: ADR 0013. Pausar, continuar e encerrar gravação; contador na barra de menus; confirmação ao sair gravando; lembrete de pausa.
-- 2026-10-01: janela de configurações redesenhada em página única, sem abas (ADR 0011 parcialmente substituído).
-- 2026-10-01: regra de interface: seguir as Human Interface Guidelines da Apple. Pedido do usuário.
-- 2026-10-01: ADR 0014. Estado do app pela cor de fundo do botão na barra de menus, com ícone fixo; desvio das HIG aceito. Pedido e confirmação do usuário.
-- 2026-10-01: ADR 0015. Janela de atas com lista, leitura e Lixeira; nome do arquivo com título; sem ata para transcrição sem fala. Escopo de interface ampliado a pedido do usuário.
-- 2026-10-01: ADR 0016. Nomes de participantes informados pelo usuário, só na própria ata. Regra de Participantes ampliada a pedido do usuário.
-- 2026-10-01: ADR 0016 ajustado. A lista de participantes não leva mais "(canal do microfone)" nem "nome informado por você"; "(sem nome identificado)" e a marca de nome inferido continuam. Pedido do usuário.
-- 2026-10-01: ADR 0015 ampliado com a verificação da pasta de atas (pasta ausente ou ilegível, arquivos de ata com problema). Pedido do usuário.
-- 2026-10-01: ADR 0017. Cinco modelos de resumo por tipo de reunião, classificação automática que sugere modelo e título, geração automática do sugerido, todos os resumos guardados num arquivo secundário e o escolhido copiado no principal, nome por timestamp; substitui o prompt único (ADR 0005) e o adiamento dos tipos (ADR 0007). Escopo e Arquitetura atualizados. Pedido e confirmação do usuário. Implementado em 2026-10-01.
-- 2026-10-01: chips de modelo sob o título na página de leitura e lápis no título (ADR 0017); desvio das HIG aceito, a pedido do usuário, entre três mockups.
-- 2026-10-01: página de leitura em card centralizado de até 760 px, tooltips das chips (serve para, mostra, use quando) e balão de dica nativo (`NSPopover`) em todos os elementos com dica (ADR 0017); desvio das HIG aceito. Pedido e confirmação do usuário, com mockups.
-- 2026-10-01: janela de atas em tabela no estilo do Finder, com menu de contexto, Return que renomeia, Lixeira sem pergunta e gravações em andamento como linhas (ADR 0015). Pedido do usuário.
-- 2026-10-01: documentação atualizada para o estado atual (README, AGENTS.md, STATUS.md, plano de validação e ADRs). Pedido do usuário.
-- 2026-10-01: ADR 0018. Quatro modelos de resumo (Acompanhamento sai; Informativa passa a ser só apresentação com perguntas; reunião de status vai para Geral) e regra de seção sem evidência ficar vazia. Escopo, Regras e Arquitetura atualizados. Pedido e confirmação do usuário, a partir da comparação dos cinco modelos nos cenários 01 a 05.
+- 2026-09-30: governança instalada; Contexto, Escopo e Regras definidos a partir do brief e de conversa com o usuário. ADRs 0001 a 0009: Markdown local, STT mais LLM de texto, macOS primeiro, dois canais, ata rastreável, participantes (só reuniões virtuais, rótulo do usuário pelo campo "Seu nome", sem rótulo coletivo), tipos e notas adiados, Gemini 3.5 Transcribe e Claude Sonnet 5.5, app nativo em Swift. ADR 0010 propõe o limite de 30 minutos; aguarda confirmação. ADR 0011 (menu mínimo, erros por aviso, instalação). Pipeline validado com áudio sintético.
+- 2026-10-01: ADR 0012 (chaves e provedor no `.env`, no lugar do Keychain; regra de credenciais alterada com confirmação do usuário). ADR 0013 (pausar, continuar e encerrar). Configurações em página única. Regra de seguir as HIG da Apple, a pedido do usuário. ADR 0014 (estado pela cor do botão; desvio aceito).
+- 2026-10-01: ADR 0015 (janela de atas, leitura e Lixeira, nome do arquivo com título, verificação da pasta; depois, tabela no estilo do Finder) e ADR 0016 (nomes de participantes informados pelo usuário, só na própria ata; sem anotações na lista). Escopo de interface e regra de Participantes ampliados a pedido do usuário.
+- 2026-10-01: ADR 0017 (modelos de resumo por tipo de reunião, classificação que sugere modelo e título, dois arquivos por reunião; substitui o prompt único do 0005 e o adiamento dos tipos do 0007), com chips de modelo, card centralizado e balão de dica próprios (desvios das HIG aceitos a partir de mockups). ADR 0018 (quatro modelos e seção sem evidência vazia). Pedido e confirmação do usuário.
+- 2026-10-01: ADR 0019 (transcrição colapsável e balão de citação). O envio por e-mail, desenhado e implementado na mesma conversa, foi descartado a pedido do usuário.
+- 2026-10-02: ADR 0021 (filtro de eco pelo texto) adotado e depois substituído pelo ADR 0024. ADR 0022: o áudio de toda reunião passa a ser guardado ("vamos guardar os áudios sempre, é uma nova regra do projeto"); Regras e Arquitetura alteradas com confirmação do usuário. ADR 0023: cancelamento de eco na captura, ligado por padrão.
+- 2026-10-02: ADR 0024. Captura e atribuição pelo padrão de mercado (dois canais, diarização só no sistema, cancelamento de eco, correção humana); áudio único com diarização testado e descartado. Pedido do usuário ("implementar o que o mercado já faz"). Regra correspondente acrescentada na refatoração abaixo.
+- 2026-10-02: ADR 0025. Janela de correção da transcrição; correções marcam os resumos como desatualizados. Escopo de interface ampliado a pedido do usuário.
+- 2026-10-02: ADR 0022 alterado a pedido do usuário: some a regra de não armazenar áudio na nuvem; o áudio passa a ficar na pasta de atas das configurações, e o áudio da pasta antiga é movido para ela.
+- 2026-10-02: refatoração dos documentos, aprovada pelo usuário. `AGENTS.md` reorganizado sem mudar o sentido das regras (Arquitetura resumida com os detalhes nos ADRs, arquivos agrupados por camada, Histórico condensado); regra da prática de mercado (ADR 0024) e desvio do balão de citação (ADR 0019) explicitados; índice de ADRs criado em `docs/decisions/README.md`.
 
 ## Sincronização
 

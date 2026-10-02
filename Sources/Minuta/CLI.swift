@@ -8,7 +8,7 @@ import Foundation
 /// generates the summary in the suggested model (Geral without a suggestion), or in the model(s) asked for.
 enum CLI {
     static func requested() -> Bool {
-        CommandLine.arguments.contains("--process")
+        CommandLine.arguments.contains("--process") || CommandLine.arguments.contains("--capture-test")
     }
 
     private static func value(after flag: String) -> String? {
@@ -17,7 +17,32 @@ enum CLI {
         return args[index + 1]
     }
 
+    /// Minuta --capture-test <report.json> [--aec on|off] [--seconds 10]
+    /// Records both channels for a few seconds, with echo cancellation on or off, and writes the levels and the bleed
+    /// of the call into the microphone to the report (ADR 0023). Start it with `open -a Minuta --args ...` so it runs
+    /// with the app's microphone and screen permissions.
+    private static func captureTest(report: String) async -> Int32 {
+        if let aec = value(after: "--aec") { Config.echoCancellationOverride = aec != "off" }
+        let seconds = value(after: "--seconds").flatMap(Double.init) ?? 10
+        do {
+            let result = try await CaptureTest.run(seconds: seconds)
+            let body: [String: Any] = [
+                "echoCancelled": result.echoCancelled, "hasMicrophone": result.hasMicrophone,
+                "micLevelDB": Double(result.micLevel), "systemLevelDB": Double(result.systemLevel),
+                "micPeak": Double(result.micPeak), "systemPeak": Double(result.systemPeak),
+                "bleed": Double(result.bleed), "seconds": seconds,
+            ]
+            try JSONSerialization.data(withJSONObject: body, options: [.prettyPrinted, .sortedKeys])
+                .write(to: URL(fileURLWithPath: report))
+            return 0
+        } catch {
+            try? Data("{\"error\": \"\(error.localizedDescription)\"}".utf8).write(to: URL(fileURLWithPath: report))
+            return 1
+        }
+    }
+
     static func run() async -> Int32 {
+        if let report = value(after: "--capture-test") { return await captureTest(report: report) }
         guard let input = value(after: "--process"), let out = value(after: "--out") else {
             print("Uso: Minuta --process <pasta> --out <pasta> [--date ISO8601] [--model <modelo>|all]")
             return 2

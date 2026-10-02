@@ -33,6 +33,9 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
         }
     }
 
+    /// True when the microphone of this recording goes through echo cancellation.
+    private(set) var echoCancelled = false
+
     /// True when this recording has a microphone track. A Mac without an input device records the system audio only.
     private(set) var micActive = false
 
@@ -81,11 +84,31 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
 
         if Recorder.hasMicrophone {
             let input = engine.inputNode
+            echoCancelled = false
+            if !Config.echoCancellation { try? input.setVoiceProcessingEnabled(false) }
+            if Config.echoCancellation {
+                // The system's voice processing knows what the speakers play and subtracts it from the microphone.
+                // If it cannot be turned on, the microphone records as before.
+                do {
+                    try input.setVoiceProcessingEnabled(true)
+                    if #available(macOS 14.0, *) {
+                        // Keep the call at the level the user hears, since the system channel is recorded from it.
+                        input.voiceProcessingOtherAudioDuckingConfiguration =
+                            AVAudioVoiceProcessingOtherAudioDuckingConfiguration(
+                                enableAdvancedDucking: false, duckingLevel: .min)
+                    }
+                    echoCancelled = true
+                } catch {
+                    echoCancelled = false
+                }
+            }
             let inputFormat = input.outputFormat(forBus: 0)
             if inputFormat.sampleRate > 0, inputFormat.channelCount > 0 {
                 let file = try makeFile(micURL)
                 micFile = file
                 micConverter = AVAudioConverter(from: inputFormat, to: file.processingFormat)
+                // Voice processing can hand over several channels; the first one is the processed microphone.
+                if inputFormat.channelCount > 1 { micConverter?.channelMap = [0] }
                 input.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, time in
                     self?.handleMic(buffer, time)
                 }
@@ -107,6 +130,8 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
             NotificationCenter.default.removeObserver(self, name: .AVAudioEngineConfigurationChange, object: engine)
             engine.inputNode.removeTap(onBus: 0)
             engine.stop()
+            // Voice processing lowers the other audio of the Mac while it is on; give it back.
+            if echoCancelled { try? engine.inputNode.setVoiceProcessingEnabled(false) }
         }
         try? await stream?.stopCapture()
         stream = nil

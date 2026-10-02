@@ -1,6 +1,6 @@
 # 0011. Menu mínimo, erros por aviso e instalação em /Applications
 
-Status: aceita
+Status: aceita; parcialmente substituída pelos ADRs 0012 e 0015 e pela configuração em página única (ver abaixo)
 Data: 2026-09-30
 Complementa: `docs/decisions/0009-native-swift-stack.md`. Parcialmente substituída pelo ADR 0012 (a aba Chaves de API e o botão Verificar saíram). O item "Abrir pasta de atas" foi substituído pelo ADR 0015. A janela de configurações deixou de ter abas em 2026-10-01: página única com os blocos Chaves e modelos de IA, Permissões (com o teste de captura) e Preferências, sem verde, 640 pt de largura e a versão no rodapé.
 

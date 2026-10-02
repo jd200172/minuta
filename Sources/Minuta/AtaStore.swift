@@ -9,13 +9,38 @@ struct Sidecar: Codable, Equatable {
     var segments: [Segment]
     var classification: Classification?
     var summaries: [String: SummaryData]
+    /// The model's version of each segment the user corrected or deleted, by segment id (ADR 0025). Absent until
+    /// the first correction.
+    var originals: [String: Segment]?
+    /// The summaries generated before the latest correction of the transcript, by model id (ADR 0025).
+    var outdated: [String]?
+    /// Where each channel starts in the meeting's clock, so a segment's time maps to its recording (ADR 0025).
+    var audioOffsets: AudioOffsets?
+
+    struct AudioOffsets: Codable, Equatable {
+        var mic: Double
+        var system: Double
+    }
 
     enum CodingKeys: String, CodingKey {
-        case inicio, segments, classification, summaries
+        case inicio, segments, classification, summaries, originals, outdated
         case duracaoSegundos = "duracao_segundos"
+        case audioOffsets = "audio_offsets"
     }
 
     func has(_ model: SummaryModel) -> Bool { summaries[model.rawValue] != nil }
+
+    /// The summary of `model` was generated before the transcript was last corrected.
+    func isOutdated(_ model: SummaryModel) -> Bool { outdated?.contains(model.rawValue) == true }
+
+    /// The segment as the model wrote it, before any correction.
+    func original(_ id: String) -> Segment? { originals?[id] }
+
+    /// Whether a segment came from the system channel (the other participants) rather than the microphone. Decided
+    /// by its original label, so changing the speaker of a segment does not change the recording it plays from.
+    func isSystem(_ segment: Segment) -> Bool {
+        (original(segment.id)?.speaker ?? segment.speaker).hasPrefix("Participante ")
+    }
 }
 
 /// Reads and writes the two files of a meeting. The key of a meeting is `inicio` (ISO 8601, with seconds
@@ -51,6 +76,8 @@ enum AtaStore {
 
     // MARK: Sidecar location
 
+    /// The sidecar names a new meeting may take, in order. A name whose audio files already exist in `audioDir` is
+    /// skipped, so a new meeting never takes the name of a recording that is still kept.
     private static func candidates(in dir: URL, start: Date) -> [URL] {
         let base = Fmt.fileStem(start)
         return (1...9).map {
@@ -104,7 +131,8 @@ enum AtaStore {
         let data = model.flatMap { sidecar.summaries[$0.rawValue] }
         var text = MinutesRenderer.render(
             meta: MeetingMeta(start: start, duration: sidecar.duracaoSegundos), title: title,
-            model: data == nil ? nil : model, data: data, transcript: Transcript(segments: sidecar.segments))
+            model: data == nil ? nil : model, data: data,
+            transcript: Transcript(segments: sidecar.segments))
         if !names.isEmpty { text = try ParticipantEditor.apply(names, to: text) }
         return text
     }
@@ -122,14 +150,19 @@ enum AtaStore {
     /// Writes the sidecar and the `.md` of a new meeting, with no summary yet. The title comes from the
     /// classification when there is one.
     static func create(
-        meta: MeetingMeta, transcript: Transcript, classification: Classification?, in dir: URL
+        meta: MeetingMeta, transcript: Transcript, classification: Classification?, in dir: URL,
+        audioDir: URL = Config.audioDir
     ) throws -> URL {
         let fm = FileManager.default
         try fm.createDirectory(at: dir, withIntermediateDirectories: true)
         let sidecar = Sidecar(
             inicio: Fmt.iso(meta.start), duracaoSegundos: meta.duration, segments: transcript.segments,
             classification: classification, summaries: [:])
-        guard let sidecarURL = candidates(in: dir, start: meta.start).first(where: { !fm.fileExists(atPath: $0.path) })
+        guard
+            let sidecarURL = candidates(in: dir, start: meta.start).first(where: {
+                !fm.fileExists(atPath: $0.path)
+                    && AudioArchive.existing(stem: AudioArchive.stem(ofSidecar: $0), in: audioDir).isEmpty
+            })
         else { throw AppError("Há reuniões demais começando no mesmo minuto na pasta de atas.") }
         let title = classification?.title
         let url = uniqueURL(dir: dir, stem: AtaName.stem(start: meta.start, title: title ?? ""))
@@ -149,6 +182,8 @@ enum AtaStore {
         let text = try String(contentsOf: url, encoding: .utf8)
         var (sidecar, sidecarURL) = try loadSidecar(for: url, text: text)
         sidecar.summaries[model.rawValue] = data
+        sidecar.outdated?.removeAll { $0 == model.rawValue }
+        if sidecar.outdated?.isEmpty == true { sidecar.outdated = nil }
         try save(sidecar, to: sidecarURL)
         try write(model: model, sidecar: sidecar, current: text, to: url)
     }
@@ -207,12 +242,115 @@ enum AtaStore {
         return lines.joined(separator: "\n")
     }
 
-    /// Moves the `.md` and its sidecar to the Trash.
-    static func trash(_ url: URL) throws {
+    // MARK: Audio (ADR 0022)
+
+    /// The recordings of the meeting of `url` that are kept, named after its sidecar.
+    static func audioFiles(forMarkdown url: URL, audioDir: URL = Config.audioDir) -> [URL] {
+        let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+        guard let sidecar = sidecarURL(forMarkdown: text, in: url.deletingLastPathComponent()) else { return [] }
+        return AudioArchive.existing(stem: AudioArchive.stem(ofSidecar: sidecar), in: audioDir)
+    }
+
+    /// Keeps the recordings of a meeting just created, under the name of its sidecar. Returns how many were kept.
+    @discardableResult
+    static func keepAudio(
+        mic: URL?, system: URL?, offsets: Sidecar.AudioOffsets? = nil, forMarkdown url: URL,
+        audioDir: URL = Config.audioDir
+    ) -> Int {
+        let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+        guard let (sidecar, sidecarURL) = sidecar(forMarkdown: text, in: url.deletingLastPathComponent()) else {
+            return 0
+        }
+        if let offsets {
+            var updated = sidecar
+            updated.audioOffsets = offsets
+            try? save(updated, to: sidecarURL)
+        }
+        return AudioArchive.keep(mic: mic, system: system, stem: AudioArchive.stem(ofSidecar: sidecarURL), in: audioDir)
+    }
+
+    // MARK: Transcript corrections (ADR 0025)
+
+    /// The `.md` of the meeting whose sidecar has `inicio`, found in `dir` by its front matter. The file name changes
+    /// with the title, so a window that edits the transcript finds the file again before each write.
+    static func markdown(inicio: String, in dir: URL) -> URL? {
+        let urls = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
+        return urls.first { url in
+            guard url.pathExtension == "md", let text = try? String(contentsOf: url, encoding: .utf8) else {
+                return false
+            }
+            return frontMatter(text)["inicio"] == inicio
+        }
+    }
+
+    /// Changes the transcript of the meeting at `url` and renders the `.md` again with the same title, summary model
+    /// and names. The first change to a segment keeps the model's version in `originals`, and every summary that
+    /// exists becomes outdated.
+    private static func correct(_ url: URL, _ change: (inout Sidecar) throws -> Void) throws {
+        let text = try String(contentsOf: url, encoding: .utf8)
+        var (sidecar, sidecarURL) = try loadSidecar(for: url, text: text)
+        try change(&sidecar)
+        let existing = Set(sidecar.summaries.keys)
+        sidecar.outdated = existing.isEmpty ? nil : existing.sorted()
+        try save(sidecar, to: sidecarURL)
+        let model = isManaged(text) ? model(in: text) : nil
+        try compose(sidecar, title: title(in: text), model: model, names: ParticipantEditor.names(in: text))
+            .write(to: url, atomically: true, encoding: .utf8)
+    }
+
+    private static func keepOriginal(_ segment: Segment, in sidecar: inout Sidecar) {
+        if sidecar.originals?[segment.id] == nil {
+            sidecar.originals = (sidecar.originals ?? [:]).merging([segment.id: segment]) { a, _ in a }
+        }
+    }
+
+    /// Changes the text and the speaker label of a segment. Nothing changes when both are the same as now.
+    static func updateSegment(_ id: String, text newText: String, speaker: String, in url: URL) throws {
+        let clean = newText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else { throw AppError("Uma fala não pode ficar vazia. Para tirá-la, use Apagar fala.") }
+        let text = try String(contentsOf: url, encoding: .utf8)
+        let (current, _) = try loadSidecar(for: url, text: text)
+        guard let segment = current.segments.first(where: { $0.id == id }) else {
+            throw AppError("Esta fala não existe mais na reunião.")
+        }
+        if segment.text == clean && segment.speaker == speaker { return }
+        try correct(url) { sidecar in
+            guard let index = sidecar.segments.firstIndex(where: { $0.id == id }) else { return }
+            keepOriginal(sidecar.segments[index], in: &sidecar)
+            sidecar.segments[index].text = clean
+            sidecar.segments[index].speaker = speaker
+        }
+    }
+
+    /// Takes a segment out of the transcript. Its original stays in `originals`.
+    static func deleteSegment(_ id: String, in url: URL) throws {
+        try correct(url) { sidecar in
+            guard let index = sidecar.segments.firstIndex(where: { $0.id == id }) else { return }
+            keepOriginal(sidecar.segments[index], in: &sidecar)
+            sidecar.segments.remove(at: index)
+        }
+    }
+
+    /// Puts a segment back as the model wrote it, in its place in time.
+    static func restoreSegment(_ id: String, in url: URL) throws {
+        try correct(url) { sidecar in
+            guard let original = sidecar.originals?[id] else { return }
+            sidecar.segments.removeAll { $0.id == id }
+            let index = sidecar.segments.firstIndex { $0.start > original.start } ?? sidecar.segments.count
+            sidecar.segments.insert(original, at: index)
+            sidecar.originals?[id] = nil
+            if sidecar.originals?.isEmpty == true { sidecar.originals = nil }
+        }
+    }
+
+    /// Moves the `.md`, its sidecar and its recordings to the Trash.
+    static func trash(_ url: URL, audioDir: URL = Config.audioDir) throws {
         let fm = FileManager.default
         let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
         let companion = sidecarURL(forMarkdown: text, in: url.deletingLastPathComponent())
+        let audio = audioFiles(forMarkdown: url, audioDir: audioDir)
         try fm.trashItem(at: url, resultingItemURL: nil)
         if let companion { try? fm.trashItem(at: companion, resultingItemURL: nil) }
+        for file in audio { try? fm.trashItem(at: file, resultingItemURL: nil) }
     }
 }

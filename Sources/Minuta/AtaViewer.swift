@@ -7,7 +7,9 @@ import WebKit
 /// starts an in-place rename (`ParticipantRename`), and so does the pencil next to the title (`TitleRename`).
 /// Meetings written by the model flow of ADR 0017 also show the five summary models as chips under the title:
 /// a click shows the summary of that model, generating it first when it does not exist yet. Chips and pencils
-/// are `minuta://` links that this controller intercepts.
+/// are `minuta://` links that this controller intercepts. So are the transcript heading (`minuta://transcript`,
+/// collapses and expands the transcript, remembered per meeting) and the citation chips (`minuta://cite/...`,
+/// a balloon with the cited text; its times jump to the transcript).
 @MainActor
 final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegate {
     static let shared = AtaViewerController()
@@ -21,12 +23,15 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
     private var renaming: ParticipantRename?
     private var renamingTitle: TitleRename?
     private var scrollToRestore: Double?
+    /// A transcript line to scroll to once the page that is loading is shown.
+    private var anchorToShow: String?
 
     /// The parts of one window besides the window itself.
-    private final class Pane {
+    @MainActor private final class Pane {
         let web: WKWebView
         var managed = false
         var tips: PageTips?
+        let balloon = CitationBalloon()
 
         init(web: WKWebView) { self.web = web }
     }
@@ -65,6 +70,7 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         web.navigationDelegate = self
         let pane = Pane(web: web)
         pane.tips = PageTips(web: web)
+        pane.balloon.onVisibilityChange = { [weak pane] shown in pane?.tips?.suppressed = shown }
         windows[url] = nil
         panes[url] = pane
         let document = convert(text, url: url, pane: pane)
@@ -87,10 +93,21 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
             image: NSImage(systemSymbolName: "folder", accessibilityDescription: "Mostrar no Finder")!,
             target: self, action: #selector(reveal(_:)))
         reveal.bezelStyle = .texturedRounded
-        reveal.toolTip = "Mostrar no Finder"
+        reveal.setAccessibilityLabel("Mostrar no Finder")
+        TipHost.attach("Mostrar no Finder", to: reveal)
+        let transcript = NSButton(
+            image: NSImage(systemSymbolName: "text.bubble", accessibilityDescription: "Corrigir a transcrição")!,
+            target: self, action: #selector(openTranscript(_:)))
+        transcript.bezelStyle = .texturedRounded
+        transcript.setAccessibilityLabel("Corrigir a transcrição")
+        TipHost.attach("Corrigir a transcrição", to: transcript)
+        transcript.isEnabled = AtaStore.isManaged(text)
+        let buttons = NSStackView(views: [transcript, reveal])
+        buttons.spacing = 8
+        buttons.frame = NSRect(origin: .zero, size: buttons.fittingSize)
         let accessory = NSTitlebarAccessoryViewController()
         accessory.layoutAttribute = .trailing
-        accessory.view = reveal
+        accessory.view = buttons
         window.addTitlebarAccessoryViewController(accessory)
 
         windows[url] = window
@@ -100,6 +117,11 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
 
     func close(_ url: URL) {
         windows[url]?.close()
+    }
+
+    @objc private func openTranscript(_ sender: NSButton) {
+        guard let url = windows.first(where: { $0.value === sender.window })?.key else { return }
+        TranscriptWindowController.shared.open(url)
     }
 
     @objc private func reveal(_ sender: NSButton) {
@@ -113,7 +135,9 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         texts[url] = text
         pane.managed = AtaStore.isManaged(text)
         shownRunning[url] = SummaryService.shared.running[url]
-        return MarkdownHTML.convert(text, renamable: true, controls: controls(for: url, text: text))
+        return MarkdownHTML.convert(
+            text, renamable: true, controls: controls(for: url, text: text), citations: true,
+            transcriptCollapsed: TranscriptState.isCollapsed(text))
     }
 
     /// The chips under the title: which model is shown, which already have a summary, and the line below.
@@ -128,7 +152,9 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
             MarkdownHTML.Controls.Chip(model: $0, selected: $0 == shown, has: sidecar?.has($0) == true)
         }
         let hint: String
-        if let running {
+        if running == nil, let chosen, sidecar?.isOutdated(chosen) == true {
+            hint = "A transcrição foi corrigida depois deste resumo. Use o ícone de refazer para atualizá-lo."
+        } else if let running {
             hint = "Gerando o resumo no modelo \(running.title)…"
         } else if let suggestion = sidecar?.classification?.suggestion, let reason = sidecar?.classification?.reason {
             hint = "Sugerido: \(suggestion.title). \(reason)"
@@ -147,6 +173,7 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
     private func reload(_ url: URL) {
         guard let pane = panes[url], let text = try? String(contentsOf: url, encoding: .utf8) else { return }
         pane.tips?.hide()
+        pane.balloon.close()
         let document = convert(text, url: url, pane: pane)
         windows[url]?.title = document.title.isEmpty ? url.deletingPathExtension().lastPathComponent : document.title
         pane.web.evaluateJavaScript("window.scrollY") { [weak self] value, _ in
@@ -176,6 +203,53 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
 
     private func url(of web: WKWebView) -> URL? {
         panes.first { $0.value.web === web }?.key
+    }
+
+    // MARK: Transcript and citations
+
+    private func toggleTranscript(_ url: URL) {
+        guard let text = texts[url] else { return }
+        TranscriptState.set(collapsed: !TranscriptState.isCollapsed(text), for: text)
+        reload(url)
+    }
+
+    /// Opens the balloon of the chip `ref`, which cites segment `id`.
+    private func showCitation(_ web: WKWebView, segment id: String, ref: Int) {
+        guard let url = url(of: web), let pane = panes[url], let text = texts[url] else { return }
+        let rows = TranscriptSegment.window(around: id, in: TranscriptSegment.parse(text))
+        guard !rows.isEmpty else { return }
+        // A second click on the chip that has its balloon open closes it.
+        if pane.balloon.openRef == ref {
+            pane.balloon.close()
+            return
+        }
+        if pane.balloon.justClosed(ref) { return }
+        pane.tips?.hide()
+        measure(web, id: "rf-\(ref)") { [weak self, weak pane] chip in
+            self?.measure(web, id: "card") { card in
+                pane?.balloon.show(rows: rows, ref: ref, near: chip, within: card, in: web) { [weak self] id in
+                    self?.goTo(id, url: url)
+                }
+            }
+        }
+    }
+
+    /// Scrolls to a transcript line, expanding the transcript first when it is collapsed.
+    private func goTo(_ id: String, url: URL) {
+        guard let pane = panes[url], let text = texts[url], id.allSatisfy({ $0.isLetter || $0.isNumber || $0 == "-" })
+        else { return }
+        if TranscriptState.isCollapsed(text) {
+            TranscriptState.set(collapsed: false, for: text)
+            anchorToShow = id
+            reload(url)
+        } else {
+            showAnchor(id, in: pane.web)
+        }
+    }
+
+    /// Setting the hash scrolls to the line and applies its `:target` highlight; the page runs no script of its own.
+    private func showAnchor(_ id: String, in web: WKWebView) {
+        web.evaluateJavaScript("location.hash='';location.hash='\(id)';")
     }
 
     // MARK: Title
@@ -276,6 +350,7 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         renamingTitle?.cancel()
         let closed = windows.filter { $0.value === window }.map(\.key)
         for url in closed {
+            panes[url]?.balloon.close()
             panes[url]?.tips?.stop()
             windows[url] = nil
             panes[url] = nil
@@ -296,6 +371,13 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
                 if let index = Int(url?.lastPathComponent ?? "") { beginRename(webView, index: index) }
             case "title":
                 beginTitleRename(webView)
+            case "transcript":
+                if let file = self.url(of: webView) { toggleTranscript(file) }
+            case "cite":
+                let parts = url?.pathComponents.dropFirst() ?? []
+                if parts.count == 2, let ref = Int(parts[parts.startIndex + 1]) {
+                    showCitation(webView, segment: parts[parts.startIndex], ref: ref)
+                }
             case "model":
                 if let model = SummaryModel(rawValue: url?.lastPathComponent ?? ""), let file = self.url(of: webView) {
                     generate(model, url: file, force: false)
@@ -315,8 +397,13 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        guard let y = scrollToRestore else { return }
-        scrollToRestore = nil
-        webView.evaluateJavaScript("window.scrollTo(0, \(y))")
+        if let y = scrollToRestore {
+            scrollToRestore = nil
+            webView.evaluateJavaScript("window.scrollTo(0, \(y))")
+        }
+        if let id = anchorToShow {
+            anchorToShow = nil
+            showAnchor(id, in: webView)
+        }
     }
 }

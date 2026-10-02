@@ -190,7 +190,12 @@ struct AtasView: View {
         case .ata(let ata):
             let busy = summaries.running[ata.url] != nil
             Button("Abrir") { open(ata) }.disabled(!(ata.problem?.canOpen ?? true))
+            Button("Corrigir transcrição…") { TranscriptWindowController.shared.open(ata.url) }
+                .disabled(ata.problem != nil || (ata.model == nil && !ata.noSummary))
             Button("Mostrar no Finder") { reveal(ata) }
+            let audio = AtaStore.audioFiles(forMarkdown: ata.url)
+            Button("Mostrar áudio no Finder") { NSWorkspace.shared.activateFileViewerSelecting(audio) }
+                .disabled(audio.isEmpty)
             Divider()
             if ata.model != nil || ata.noSummary { summaryMenu(ata, busy: busy) }
             Divider()
@@ -376,7 +381,7 @@ private struct SummaryCell: View {
             if running {
                 busy(row.summaryLabel)
             } else if let error = job.lastError {
-                Text("Falhou: \(error)").foregroundStyle(.red).lineLimit(1).truncationMode(.tail).help(error)
+                Text("Falhou: \(error)").foregroundStyle(.red).lineLimit(1).truncationMode(.tail).balloonTip(error)
             } else {
                 Text("Interrompida").foregroundStyle(.secondary)
             }

@@ -1,9 +1,9 @@
 # Plano de validação
 
 Data: 2026-09-30
-Status: testes 2, 3 e 5 executados com o áudio sintético em 2026-09-30; teste 4 parcial. Teste 1 parcial (captura do sistema funciona). Testes 6 e 7 pendentes.
+Status: testes 2, 3, 5 e 8 executados com o áudio sintético; testes 1, 4 e 6 parciais; teste 7 pendente. Última atualização: 2026-10-02.
 
-Sete testes que respondem as dúvidas técnicas das decisões antes de escrever o app. A ordem segue o risco: o que mais pode inviabilizar o projeto vem primeiro. Cada teste tem critério de aprovação e registra o resultado neste arquivo. Resultado negativo reabre o ADR indicado.
+Oito testes que respondem as dúvidas técnicas das decisões antes de escrever o app. A ordem segue o risco: o que mais pode inviabilizar o projeto vem primeiro. Cada teste tem critério de aprovação e registra o resultado neste arquivo. Resultado negativo reabre o ADR indicado.
 
 Critérios marcados como "proposta" são valores sugeridos sem base medida. O primeiro resultado real os confirma ou os ajusta.
 
@@ -53,6 +53,8 @@ Os testes 1 e 7 podem começar agora.
 - Este Mac é um Mac mini sem dispositivo de entrada de áudio. O microfone não foi testado, e o app grava só o áudio do sistema nesse caso.
 - Não testado: gravação de 60 minutos (e de 30, o limite atual), consumo de CPU e memória durante a gravação, desconexão de fone no meio da gravação, eco do microfone.
 - Decisão confirmada: ScreenCaptureKit serve como caminho de captura no macOS, sem driver virtual.
+
+**Eco do microfone (2026-10-02, `--capture-test`, 12 s por rodada, voz em português tocada no alto-falante).** Sem cancelamento de eco, o microfone repete a chamada: -33,5 dB e correlação de 0,95 com o canal do sistema. Com o processamento de voz do macOS, cai para -72,3 dB e 0,29; o canal do sistema fica 7,6 dB mais baixo. Tabela completa no ADR 0023. Não testado: a fala do usuário com o cancelamento ligado, numa chamada real, e fone Bluetooth.
 
 ---
 
@@ -108,6 +110,8 @@ Os testes 1 e 7 podem começar agora.
 - As três sobreposições foram transcritas sem perder nenhuma das falas.
 - Não repeti com a ordem de entrada alterada.
 - Limite: são 3 vozes sintéticas bem distintas (2 femininas e 1 masculina no sistema). O modelo marca como experimental a atribuição com 3 ou mais falantes. O teste 6 (voz real) continua necessário.
+
+**Comparação com áudio único (2026-10-02, oito cenários).** Os dois canais foram somados num áudio só, transcrito com diarização de todas as vozes, e o usuário foi identificado pelo rótulo com mais atividade no microfone. Palavras com o falante certo: 100, 75, 100, 94, 99, 97, 62 e 100% (cenários 01 a 08). Em 02, 04 e 07 a voz do usuário foi juntada à de outra pessoa; no 07 o usuário não foi encontrado. Só com o canal do sistema, os mesmos cenários ficaram entre 98% e 100%. Resultado: dois canais mantidos (ADR 0024).
 
 ---
 
@@ -196,7 +200,7 @@ Os testes 1 e 7 podem começar agora.
 
 **Se falhar.** Medir a taxa de troca e fusão de falantes. Decidir com o usuário se o erro é aceitável para uso próprio.
 
-**Resultado.** Pendente.
+**Resultado parcial (2026-10-01, chamada real com 2 pessoas, alto-falante ligado, sem cancelamento de eco).** Sem referência por participante. A voz da outra pessoa entrou no microfone: 17 falas saíram duplicadas, a cópia sempre depois da original (mediana 0,4 s) e atribuída ao usuário. Levou ao cancelamento de eco na captura (ADR 0023) e à decisão pela prática de mercado (ADR 0024). A ata foi mantida como referência para comparar a qualidade futura. Falta repetir com o cancelamento ligado e com 3 ou mais participantes.
 
 ---
 

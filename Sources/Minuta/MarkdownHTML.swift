@@ -25,11 +25,26 @@ enum MarkdownHTML {
         var canRedo: Bool
     }
 
+    /// Counts the citation chips of one page, so each one gets its own element id (`rf-N`) for the viewer to measure.
+    final class Refs {
+        var next = 0
+    }
+
+    /// With `citations`, a transcript chip (`[00:00:10](#t-000010)`) is a `minuta://cite/<segment>/<N>` link that
+    /// the viewer turns into a balloon with the cited text, and the element carries the id `rf-N`. Without it, the
+    /// chip is a plain anchor to the transcript line, which also works in a browser.
+    /// With `transcriptCollapsed`, the "Transcrição" heading is a `minuta://transcript` toggle, and the lines
+    /// below it are hidden when collapsed. Without it the section is plain, as in the file.
     /// With `renamable`, each participant in the "Participantes" list gets an id on its text (`sp-N`, for the
     /// viewer to measure) and a pencil link (`minuta://rename/N`) that the viewer turns into an in-place rename.
     /// With `controls`, the title gets a pencil (`minuta://title`, text in `#ti`) and the model chips follow the
     /// date line; chips and the redo icon are `minuta://model/<id>` and `minuta://redo` links.
-    static func convert(_ markdown: String, renamable: Bool = false, controls: Controls? = nil) -> Document {
+    static func convert(
+        _ markdown: String, renamable: Bool = false, controls: Controls? = nil, citations: Bool = false,
+        transcriptCollapsed: Bool? = nil
+    ) -> Document {
+        let refs: Refs? = citations ? Refs() : nil
+        var inTranscript = false
         let speakers = renamable ? ParticipantEditor.speakers(in: markdown) : []
         var section = ""
         var lines = markdown.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
@@ -43,6 +58,7 @@ enum MarkdownHTML {
             lines = Array(lines[(end + 1)...])
         }
 
+        let segmentCount = markdown.components(separatedBy: "<a id=\"t-").count - 1
         var title = ""
         var body = ""
         var paragraph: [String] = []
@@ -52,16 +68,16 @@ enum MarkdownHTML {
         func listItem(_ item: String) -> String {
             guard section == "Participantes", let head = ParticipantEditor.listHead("- " + item),
                 let index = speakers.firstIndex(where: { head == ($0.kind == .unnamed ? $0.label : $0.name) })
-            else { return "<li>\(inline(item))</li>\n" }
+            else { return "<li>\(inline(item, refs: refs))</li>\n" }
             return
-                "<li><span id=\"sp-\(index)\">\(inline(item))</span><a class=\"pen\" href=\"minuta://rename/\(index)\" data-tip=\"Renomear\" aria-label=\"Renomear participante\">\(pencil)</a></li>\n"
+                "<li><span id=\"sp-\(index)\">\(inline(item, refs: refs))</span><a class=\"pen\" href=\"minuta://rename/\(index)\" data-tip=\"Renomear\" aria-label=\"Renomear participante\">\(pencil)</a></li>\n"
         }
 
         func flush() {
             if !paragraph.isEmpty {
                 body +=
                     transcriptLine(paragraph.joined(separator: " "))
-                    ?? "<p>\(inline(paragraph.joined(separator: " ")))</p>\n"
+                    ?? "<p>\(inline(paragraph.joined(separator: " "), refs: refs))</p>\n"
                 paragraph = []
             }
             if !list.isEmpty {
@@ -69,7 +85,7 @@ enum MarkdownHTML {
                 list = []
             }
             if !table.isEmpty {
-                body += tableHTML(table)
+                body += tableHTML(table, refs: refs)
                 table = []
             }
         }
@@ -88,7 +104,16 @@ enum MarkdownHTML {
             } else if line.hasPrefix("## ") {
                 flush()
                 section = String(line.dropFirst(3))
-                body += "<h2>\(escape(section))</h2>\n"
+                if inTranscript {
+                    body += "</div>\n"
+                    inTranscript = false
+                }
+                if section == "Transcrição", let collapsed = transcriptCollapsed {
+                    body += transcriptHeading(count: segmentCount, collapsed: collapsed)
+                    inTranscript = true
+                } else {
+                    body += "<h2>\(escape(section))</h2>\n"
+                }
             } else if line.hasPrefix("### ") {
                 flush()
                 body += "<h3>\(escape(String(line.dropFirst(4))))</h3>\n"
@@ -104,6 +129,7 @@ enum MarkdownHTML {
             }
         }
         flush()
+        if inTranscript { body += "</div>\n" }
         return Document(title: title, html: page(title: title.isEmpty ? "Ata" : title, body: body))
     }
 
@@ -120,17 +146,59 @@ enum MarkdownHTML {
             .replacingOccurrences(of: ">", with: "&gt;").replacingOccurrences(of: "\"", with: "&quot;")
     }
 
+    private static let bubble =
+        #"<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>"#
+
+    private static let chevron =
+        #"<svg class="cv" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>"#
+
     /// Escapes, then turns `[00:00:10](#t-000010)` into a chip, other `[x](#id)` into links and `**x**` into bold.
-    static func inline(_ text: String) -> String {
+    /// With `refs`, the chip opens a citation balloon instead of jumping to the transcript.
+    static func inline(_ text: String, refs: Refs? = nil) -> String {
         var out = escape(text)
-        out = out.replacingOccurrences(
-            of: #"\[(\d{2}:\d{2}:\d{2})\]\((#[A-Za-z0-9_-]+)\)"#, with: #"<a class="chip" href="$2">$1</a>"#,
-            options: .regularExpression)
+        if let refs {
+            out = citationChips(out, refs)
+        } else {
+            out = out.replacingOccurrences(
+                of: #"\[(\d{2}:\d{2}:\d{2})\]\((#[A-Za-z0-9_-]+)\)"#, with: #"<a class="chip" href="$2">$1</a>"#,
+                options: .regularExpression)
+        }
         out = out.replacingOccurrences(
             of: #"\[([^\]]+)\]\((#[A-Za-z0-9_-]+)\)"#, with: #"<a href="$2">$1</a>"#, options: .regularExpression)
         out = out.replacingOccurrences(
             of: #"\*\*(.+?)\*\*"#, with: "<strong>$1</strong>", options: .regularExpression)
         return out
+    }
+
+    /// Each transcript chip becomes `<a id="rf-N" href="minuta://cite/<segment>/N">`.
+    private static func citationChips(_ text: String, _ refs: Refs) -> String {
+        guard let regex = try? NSRegularExpression(pattern: #"\[(\d{2}:\d{2}:\d{2})\]\(#([A-Za-z0-9_-]+)\)"#)
+        else { return text }
+        let source = text as NSString
+        var out = text as NSString
+        let matches = regex.matches(in: text, range: NSRange(location: 0, length: source.length))
+        var replacements: [String] = []
+        for m in matches {
+            let clock = source.substring(with: m.range(at: 1))
+            let id = source.substring(with: m.range(at: 2))
+            let n = refs.next
+            refs.next += 1
+            replacements.append(
+                "<a class=\"chip\" id=\"rf-\(n)\" href=\"minuta://cite/\(id)/\(n)\" data-tip=\"Ver o trecho da conversa\" aria-label=\"Ver o trecho da conversa em \(clock)\">\(bubble)\(clock)</a>"
+            )
+        }
+        for (m, replacement) in zip(matches, replacements).reversed() {
+            out = out.replacingCharacters(in: m.range, with: replacement) as NSString
+        }
+        return out as String
+    }
+
+    /// The "Transcrição" heading as a toggle, and the opening of the block that holds the transcript lines.
+    private static func transcriptHeading(count: Int, collapsed: Bool) -> String {
+        let label = collapsed ? "Expandir a transcrição" : "Recolher a transcrição"
+        let amount = count == 1 ? "1 segmento" : "\(count) segmentos"
+        return
+            "<h2 class=\"disc\(collapsed ? "" : " open")\"><a href=\"minuta://transcript\" data-tip=\"\(label)\" aria-label=\"\(label)\" aria-expanded=\"\(collapsed ? "false" : "true")\">\(chevron)Transcrição<span class=\"ct\">\(amount)</span></a></h2>\n<div class=\"tr\(collapsed ? " hide" : "")\">\n"
     }
 
     /// `<a id="t-000010"></a>**[00:00:10] Participante 1:** texto`
@@ -146,7 +214,7 @@ enum MarkdownHTML {
             """
     }
 
-    private static func tableHTML(_ rows: [String]) -> String {
+    private static func tableHTML(_ rows: [String], refs: Refs? = nil) -> String {
         func cells(_ row: String) -> [String] {
             var result: [String] = []
             var current = ""
@@ -172,9 +240,9 @@ enum MarkdownHTML {
             return result
         }
         guard let header = rows.first else { return "" }
-        var html = "<table>\n<tr>" + cells(header).map { "<th>\(inline($0))</th>" }.joined() + "</tr>\n"
+        var html = "<table>\n<tr>" + cells(header).map { "<th>\(inline($0, refs: refs))</th>" }.joined() + "</tr>\n"
         for row in rows.dropFirst() where !row.contains("---") {
-            html += "<tr>" + cells(row).map { "<td>\(inline($0))</td>" }.joined() + "</tr>\n"
+            html += "<tr>" + cells(row).map { "<td>\(inline($0, refs: refs))</td>" }.joined() + "</tr>\n"
         }
         return html + "</table>\n"
     }
@@ -264,9 +332,18 @@ enum MarkdownHTML {
         a.chip { font-size: 11px; padding: 0 6px; border-radius: 5px; background: color-mix(in srgb, LinkText 14%, transparent); margin-left: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
         p.tl { display: grid; grid-template-columns: 64px 1fr; gap: 8px; padding: 3px 8px; margin: 0 -8px; border-radius: 6px; }
         p.tl:target { background: color-mix(in srgb, LinkText 16%, transparent); }
+        a.chip svg { vertical-align: -1px; margin-right: 3px; }
+        h2.disc { margin: 30px 0 6px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
+        h2.disc a { display: inline-flex; align-items: center; gap: 6px; color: GrayText; }
+        h2.disc a:hover { color: CanvasText; }
+        h2.disc .cv { transition: transform 0.12s; }
+        h2.disc.open .cv { transform: rotate(90deg); }
+        h2.disc .ct { font-weight: 400; font-size: 12px; color: GrayText; }
+        h2.disc .ct::before { content: "· "; }
+        .tr.hide { display: none; }
         .tm { color: GrayText; font-size: 12px; font-variant-numeric: tabular-nums; }
         </style></head><body>
-        <div class="card">
+        <div class="card" id="card">
         \(body)</div></body></html>
         """
     }
