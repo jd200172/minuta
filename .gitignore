@@ -20,3 +20,6 @@ __pycache__/
 .build/
 build/
 tools/synthetic-meeting/scenarios/*/out/
+
+# macOS
+.DS_Store
