@@ -53,6 +53,31 @@ final class TranscriptCorrectionTests: XCTestCase {
         XCTAssertTrue(md.contains("titulo: Reunião de teste"), "o título continua")
     }
 
+    func testReplacingTheTranscriptDropsCorrectionsAndNamesAndOutdatesSummaries() throws {
+        let url = try newAta()
+        try AtaStore.commit(summary(), model: .geral, to: url)
+        try AtaStore.updateSegment("t-000020", text: "Combinado.", speaker: "Participante 1", in: url)
+        let text = try String(contentsOf: url, encoding: .utf8)
+        let named = try ParticipantEditor.apply(["Participante 1": "Ana"], to: text)
+        try named.write(to: url, atomically: true, encoding: .utf8)
+
+        let fresh = Transcript(segments: [
+            Segment(id: "t-000003", speaker: "Juliano", start: 3, text: "Adiamos o lançamento."),
+            Segment(id: "t-000012", speaker: "Participante 1", start: 12, text: "Envio o relatório."),
+        ])
+        try AtaStore.replaceTranscript(fresh, in: url)
+
+        let s = try sidecar(url)
+        XCTAssertEqual(s.segments, fresh.segments)
+        XCTAssertNil(s.originals)
+        XCTAssertEqual(s.outdated, ["geral"])
+        let md = try String(contentsOf: url, encoding: .utf8)
+        XCTAssertTrue(md.contains("**[00:00:12] Participante 1:** Envio o relatório."))
+        XCTAssertFalse(md.contains("Ana"))
+        XCTAssertTrue(md.contains("modelo: geral"), "o modelo escolhido continua")
+        XCTAssertTrue(md.contains("titulo: Reunião de teste"))
+    }
+
     func testTheFirstOriginalIsKeptThroughSeveralCorrections() throws {
         let url = try newAta()
         try AtaStore.updateSegment("t-000020", text: "Combinado.", speaker: "Participante 1", in: url)

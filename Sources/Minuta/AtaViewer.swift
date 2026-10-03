@@ -7,8 +7,8 @@ import WebKit
 /// starts an in-place rename (`ParticipantRename`), and so does the pencil next to the title (`TitleRename`).
 /// Meetings written by the model flow of ADR 0017 also show the five summary models as chips under the title:
 /// a click shows the summary of that model, generating it first when it does not exist yet. Chips and pencils
-/// are `minuta://` links that this controller intercepts. So are the transcript heading (`minuta://transcript`,
-/// collapses and expands the transcript, remembered per meeting) and the citation chips (`minuta://cite/...`,
+/// are `minuta://` links that this controller intercepts. So are the section headings (`minuta://section/<title>`,
+/// collapse and expand the section, remembered per meeting) and the citation chips (`minuta://cite/...`,
 /// a balloon with the cited text; its times jump to the transcript).
 @MainActor
 final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegate {
@@ -31,6 +31,7 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         let web: WKWebView
         var managed = false
         var tips: PageTips?
+        var redo: NSButton?
         let balloon = CitationBalloon()
 
         init(web: WKWebView) { self.web = web }
@@ -40,6 +41,9 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         super.init()
         SummaryService.shared.$running.receive(on: DispatchQueue.main).sink { [weak self] _ in
             self?.runningChanged()
+        }.store(in: &subscriptions)
+        Retranscriber.shared.$running.receive(on: DispatchQueue.main).sink { [weak self] _ in
+            self?.updateRedoButtons()
         }.store(in: &subscriptions)
         NotificationCenter.default.addObserver(
             forName: .ataChanged, object: nil, queue: .main
@@ -102,7 +106,16 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         transcript.setAccessibilityLabel("Corrigir a transcrição")
         TipHost.attach("Corrigir a transcrição", to: transcript)
         transcript.isEnabled = AtaStore.isManaged(text)
-        let buttons = NSStackView(views: [transcript, reveal])
+        let redo = NSButton(
+            image: NSImage(
+                systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: "Refazer a transcrição")!,
+            target: self, action: #selector(redoTranscription(_:)))
+        redo.bezelStyle = .texturedRounded
+        redo.setAccessibilityLabel("Refazer a transcrição")
+        TipHost.attach("Refazer a transcrição a partir do áudio", to: redo)
+        pane.redo = redo
+        updateRedoButton(url)
+        let buttons = NSStackView(views: [redo, transcript, reveal])
         buttons.spacing = 8
         buttons.frame = NSRect(origin: .zero, size: buttons.fittingSize)
         let accessory = NSTitlebarAccessoryViewController()
@@ -124,6 +137,37 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         TranscriptWindowController.shared.open(url)
     }
 
+    @objc private func redoTranscription(_ sender: NSButton) {
+        guard let url = windows.first(where: { $0.value === sender.window })?.key else { return }
+        let choice = Alerts.show(
+            title: "Refazer a transcrição?",
+            message:
+                "O áudio será transcrito de novo e a transcrição atual será substituída. As correções e os nomes dos participantes desta reunião serão perdidos, e os resumos existentes ficarão desatualizados até serem refeitos. A transcrição usa o serviço de STT e gera custo.",
+            buttons: ["Refazer", "Cancelar"], destructive: 0, escape: 1)
+        guard choice == 0 else { return }
+        Task {
+            do {
+                try await Retranscriber.shared.redo(url)
+            } catch {
+                Alerts.show(
+                    title: "Não foi possível refazer a transcrição", message: AppError.from(error).message,
+                    buttons: ["OK"])
+            }
+        }
+    }
+
+    /// The redo button works only with a recording to transcribe, and not while the ata is being processed.
+    private func updateRedoButton(_ url: URL) {
+        guard let button = panes[url]?.redo else { return }
+        let busy = Retranscriber.shared.running.contains(url) || SummaryService.shared.running[url] != nil
+        let text = texts[url] ?? ""
+        button.isEnabled = !busy && Retranscriber.canRedo(url, text: text)
+    }
+
+    private func updateRedoButtons() {
+        for url in panes.keys { updateRedoButton(url) }
+    }
+
     @objc private func reveal(_ sender: NSButton) {
         guard let url = windows.first(where: { $0.value === sender.window })?.key else { return }
         NSWorkspace.shared.activateFileViewerSelecting([url])
@@ -135,9 +179,10 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         texts[url] = text
         pane.managed = AtaStore.isManaged(text)
         shownRunning[url] = SummaryService.shared.running[url]
+        defer { updateRedoButton(url) }
         return MarkdownHTML.convert(
             text, renamable: true, controls: controls(for: url, text: text), citations: true,
-            transcriptCollapsed: TranscriptState.isCollapsed(text))
+            collapsed: SectionState.collapsed(in: text))
     }
 
     /// The chips under the title: which model is shown, which already have a summary, and the line below.
@@ -207,9 +252,9 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
 
     // MARK: Transcript and citations
 
-    private func toggleTranscript(_ url: URL) {
+    private func toggleSection(_ title: String, url: URL) {
         guard let text = texts[url] else { return }
-        TranscriptState.set(collapsed: !TranscriptState.isCollapsed(text), for: text)
+        SectionState.set(collapsed: !SectionState.isCollapsed(title, in: text), title, for: text)
         reload(url)
     }
 
@@ -238,8 +283,8 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
     private func goTo(_ id: String, url: URL) {
         guard let pane = panes[url], let text = texts[url], id.allSatisfy({ $0.isLetter || $0.isNumber || $0 == "-" })
         else { return }
-        if TranscriptState.isCollapsed(text) {
-            TranscriptState.set(collapsed: false, for: text)
+        if SectionState.isCollapsed(SectionState.transcript, in: text) {
+            SectionState.set(collapsed: false, SectionState.transcript, for: text)
             anchorToShow = id
             reload(url)
         } else {
@@ -270,6 +315,7 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
 
     private func saveTitle(_ title: String, url: URL) -> String? {
         if SummaryService.shared.running[url] != nil { return "Aguarde o resumo terminar." }
+        if Retranscriber.shared.running.contains(url) { return "Aguarde a transcrição terminar." }
         do {
             let target = try AtaStore.rename(url, to: title)
             moveWindow(from: url, to: target)
@@ -371,8 +417,10 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
                 if let index = Int(url?.lastPathComponent ?? "") { beginRename(webView, index: index) }
             case "title":
                 beginTitleRename(webView)
-            case "transcript":
-                if let file = self.url(of: webView) { toggleTranscript(file) }
+            case "section":
+                if let file = self.url(of: webView), let title = url?.lastPathComponent, !title.isEmpty {
+                    toggleSection(title, url: file)
+                }
             case "cite":
                 let parts = url?.pathComponents.dropFirst() ?? []
                 if parts.count == 2, let ref = Int(parts[parts.startIndex + 1]) {

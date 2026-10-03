@@ -286,7 +286,7 @@ enum AtaStore {
     /// Changes the transcript of the meeting at `url` and renders the `.md` again with the same title, summary model
     /// and names. The first change to a segment keeps the model's version in `originals`, and every summary that
     /// exists becomes outdated.
-    private static func correct(_ url: URL, _ change: (inout Sidecar) throws -> Void) throws {
+    private static func correct(_ url: URL, keepNames: Bool = true, _ change: (inout Sidecar) throws -> Void) throws {
         let text = try String(contentsOf: url, encoding: .utf8)
         var (sidecar, sidecarURL) = try loadSidecar(for: url, text: text)
         try change(&sidecar)
@@ -294,8 +294,19 @@ enum AtaStore {
         sidecar.outdated = existing.isEmpty ? nil : existing.sorted()
         try save(sidecar, to: sidecarURL)
         let model = isManaged(text) ? model(in: text) : nil
-        try compose(sidecar, title: title(in: text), model: model, names: ParticipantEditor.names(in: text))
-            .write(to: url, atomically: true, encoding: .utf8)
+        try compose(
+            sidecar, title: title(in: text), model: model, names: keepNames ? ParticipantEditor.names(in: text) : [:]
+        ).write(to: url, atomically: true, encoding: .utf8)
+    }
+
+    /// Replaces the whole transcript with one made again from the recordings. The corrections and the names the user
+    /// gave are dropped, because the segments and the speaker labels may not match the old ones; the summaries that
+    /// exist become outdated, as after a correction.
+    static func replaceTranscript(_ transcript: Transcript, in url: URL) throws {
+        try correct(url, keepNames: false) { sidecar in
+            sidecar.segments = transcript.segments
+            sidecar.originals = nil
+        }
     }
 
     private static func keepOriginal(_ segment: Segment, in sidecar: inout Sidecar) {

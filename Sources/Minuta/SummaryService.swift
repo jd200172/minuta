@@ -17,6 +17,9 @@ final class SummaryService: ObservableObject {
     /// Makes `model` the summary of the ata at `url`. With `force`, generates it again even if it exists.
     func show(_ model: SummaryModel, for url: URL, force: Bool = false) async throws {
         guard running[url] == nil else { throw AppError("Já há um resumo sendo gerado para esta reunião.") }
+        guard !Retranscriber.shared.running.contains(url) else {
+            throw AppError("A transcrição desta reunião está sendo refeita. Aguarde.")
+        }
         let text = try String(contentsOf: url, encoding: .utf8)
         let (sidecar, _) = try AtaStore.loadSidecar(for: url, text: text)
         if sidecar.has(model), !force {

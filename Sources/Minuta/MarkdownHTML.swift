@@ -33,18 +33,18 @@ enum MarkdownHTML {
     /// With `citations`, a transcript chip (`[00:00:10](#t-000010)`) is a `minuta://cite/<segment>/<N>` link that
     /// the viewer turns into a balloon with the cited text, and the element carries the id `rf-N`. Without it, the
     /// chip is a plain anchor to the transcript line, which also works in a browser.
-    /// With `transcriptCollapsed`, the "Transcrição" heading is a `minuta://transcript` toggle, and the lines
-    /// below it are hidden when collapsed. Without it the section is plain, as in the file.
+    /// With `collapsed`, every "##" section heading is a `minuta://section/<title>` toggle, and what is below it is
+    /// hidden when its title is in the set. Without it the sections are plain, as in the file.
     /// With `renamable`, each participant in the "Participantes" list gets an id on its text (`sp-N`, for the
     /// viewer to measure) and a pencil link (`minuta://rename/N`) that the viewer turns into an in-place rename.
     /// With `controls`, the title gets a pencil (`minuta://title`, text in `#ti`) and the model chips follow the
     /// date line; chips and the redo icon are `minuta://model/<id>` and `minuta://redo` links.
     static func convert(
         _ markdown: String, renamable: Bool = false, controls: Controls? = nil, citations: Bool = false,
-        transcriptCollapsed: Bool? = nil
+        collapsed: Set<String>? = nil
     ) -> Document {
         let refs: Refs? = citations ? Refs() : nil
-        var inTranscript = false
+        var inSection = false
         let speakers = renamable ? ParticipantEditor.speakers(in: markdown) : []
         var section = ""
         var lines = markdown.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
@@ -104,13 +104,15 @@ enum MarkdownHTML {
             } else if line.hasPrefix("## ") {
                 flush()
                 section = String(line.dropFirst(3))
-                if inTranscript {
+                if inSection {
                     body += "</div>\n"
-                    inTranscript = false
+                    inSection = false
                 }
-                if section == "Transcrição", let collapsed = transcriptCollapsed {
-                    body += transcriptHeading(count: segmentCount, collapsed: collapsed)
-                    inTranscript = true
+                if let collapsed {
+                    body += sectionHeading(
+                        section, collapsed: collapsed.contains(section),
+                        count: section == SectionState.transcript ? segmentCount : nil)
+                    inSection = true
                 } else {
                     body += "<h2>\(escape(section))</h2>\n"
                 }
@@ -129,7 +131,7 @@ enum MarkdownHTML {
             }
         }
         flush()
-        if inTranscript { body += "</div>\n" }
+        if inSection { body += "</div>\n" }
         return Document(title: title, html: page(title: title.isEmpty ? "Ata" : title, body: body))
     }
 
@@ -193,12 +195,17 @@ enum MarkdownHTML {
         return out as String
     }
 
-    /// The "Transcrição" heading as a toggle, and the opening of the block that holds the transcript lines.
-    private static func transcriptHeading(count: Int, collapsed: Bool) -> String {
-        let label = collapsed ? "Expandir a transcrição" : "Recolher a transcrição"
-        let amount = count == 1 ? "1 segmento" : "\(count) segmentos"
+    /// A section heading as a toggle, and the opening of the block that holds the section. The transcript also
+    /// says how many segments it has.
+    private static func sectionHeading(_ title: String, collapsed: Bool, count: Int?) -> String {
+        let label =
+            (collapsed ? "Expandir " : "Recolher ")
+            + (title == SectionState.transcript ? "a transcrição" : "a seção \(title)")
+        let amount = count.map { $0 == 1 ? "1 segmento" : "\($0) segmentos" }
+        let encoded = title.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? ""
+        let tip = escape(label)
         return
-            "<h2 class=\"disc\(collapsed ? "" : " open")\"><a href=\"minuta://transcript\" data-tip=\"\(label)\" aria-label=\"\(label)\" aria-expanded=\"\(collapsed ? "false" : "true")\">\(chevron)Transcrição<span class=\"ct\">\(amount)</span></a></h2>\n<div class=\"tr\(collapsed ? " hide" : "")\">\n"
+            "<h2 class=\"disc\(collapsed ? "" : " open")\"><a href=\"minuta://section/\(encoded)\" data-tip=\"\(tip)\" aria-label=\"\(tip)\" aria-expanded=\"\(collapsed ? "false" : "true")\">\(chevron)\(escape(title))\(amount.map { "<span class=\"ct\">\($0)</span>" } ?? "")</a></h2>\n<div class=\"sec\(collapsed ? " hide" : "")\">\n"
     }
 
     /// `<a id="t-000010"></a>**[00:00:10] Participante 1:** texto`
@@ -317,7 +324,7 @@ enum MarkdownHTML {
         @keyframes spin { to { transform: rotate(360deg); } }
         a.redo { margin-left: 6px; padding: 6px; }
         .hint { color: GrayText; font-size: 12px; line-height: 1.5; margin: 14px 0 0; }
-        .hint + h2, .models + h2 { margin-top: 30px; }
+        .hint + h2, .models + h2, .sub + h2 { margin-top: 30px; }
         h2 { font-size: 13px; font-weight: 600; color: GrayText; margin: 24px 0 6px; }
         h3 { font-size: 14px; font-weight: 600; margin: 14px 0 2px; }
         p { margin: 6px 0; }
@@ -333,14 +340,15 @@ enum MarkdownHTML {
         p.tl { display: grid; grid-template-columns: 64px 1fr; gap: 8px; padding: 3px 8px; margin: 0 -8px; border-radius: 6px; }
         p.tl:target { background: color-mix(in srgb, LinkText 16%, transparent); }
         a.chip svg { vertical-align: -1px; margin-right: 3px; }
-        h2.disc { margin: 30px 0 6px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
+        h2.disc { margin: 22px 0 6px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
+        .hint + h2.disc, .models + h2.disc, .sub + h2.disc { margin-top: 26px; }
         h2.disc a { display: inline-flex; align-items: center; gap: 6px; color: GrayText; }
         h2.disc a:hover { color: CanvasText; }
         h2.disc .cv { transition: transform 0.12s; }
         h2.disc.open .cv { transform: rotate(90deg); }
         h2.disc .ct { font-weight: 400; font-size: 12px; color: GrayText; }
         h2.disc .ct::before { content: "· "; }
-        .tr.hide { display: none; }
+        .sec.hide { display: none; }
         .tm { color: GrayText; font-size: 12px; font-variant-numeric: tabular-nums; }
         </style></head><body>
         <div class="card" id="card">

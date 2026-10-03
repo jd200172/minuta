@@ -54,6 +54,47 @@ enum TranscriptState {
     }
 }
 
+/// Which sections of the minutes are collapsed on the reading page, remembered per meeting (by `inicio`). Every
+/// section starts expanded except the transcript, which keeps its own state in `TranscriptState`.
+enum SectionState {
+    static let transcript = "Transcrição"
+    private static let key = "collapsedSections"
+
+    private static func id(_ markdown: String) -> String? {
+        AtaStore.frontMatter(markdown)["inicio"]
+    }
+
+    private static func saved(_ defaults: UserDefaults) -> [String: [String]] {
+        (defaults.dictionary(forKey: key) as? [String: [String]]) ?? [:]
+    }
+
+    static func isCollapsed(_ title: String, in markdown: String, defaults: UserDefaults = .standard) -> Bool {
+        if title == transcript { return TranscriptState.isCollapsed(markdown, defaults: defaults) }
+        guard let id = id(markdown) else { return false }
+        return saved(defaults)[id]?.contains(title) == true
+    }
+
+    /// The titles of the collapsed sections of the meeting, the transcript included.
+    static func collapsed(in markdown: String, defaults: UserDefaults = .standard) -> Set<String> {
+        var titles = Set(id(markdown).flatMap { saved(defaults)[$0] } ?? [])
+        if TranscriptState.isCollapsed(markdown, defaults: defaults) { titles.insert(transcript) }
+        return titles
+    }
+
+    static func set(collapsed: Bool, _ title: String, for markdown: String, defaults: UserDefaults = .standard) {
+        if title == transcript {
+            TranscriptState.set(collapsed: collapsed, for: markdown, defaults: defaults)
+            return
+        }
+        guard let id = id(markdown) else { return }
+        var all = saved(defaults)
+        var titles = Set(all[id] ?? [])
+        if collapsed { titles.insert(title) } else { titles.remove(title) }
+        all[id] = titles.isEmpty ? nil : titles.sorted()
+        defaults.set(all, forKey: key)
+    }
+}
+
 // MARK: - Balloon
 
 private struct CitationRows: View {

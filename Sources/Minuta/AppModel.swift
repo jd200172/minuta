@@ -285,21 +285,27 @@ final class AppModel: ObservableObject {
 
 enum Pipeline {
     static func transcribe(job: Job, dir: URL) async throws -> Transcript {
-        let stt = try Providers.transcriber()
-        let micURL = dir.appendingPathComponent("mic.m4a")
-        let noMic: (text: String, words: [Word]) = ("", [])
-        async let mic =
-            FileManager.default.fileExists(atPath: micURL.path)
-            ? stt.transcribe(file: micURL, diarize: false) : noMic
-        async let system = stt.transcribe(file: dir.appendingPathComponent("system.m4a"), diarize: true)
-        let transcript = TranscriptBuilder.build(
-            mic: try await mic, system: try await system,
+        try await transcribe(
+            mic: dir.appendingPathComponent("mic.m4a"), system: dir.appendingPathComponent("system.m4a"),
             micOffset: job.micOffset, systemOffset: job.systemOffset)
+    }
+
+    /// A channel whose file does not exist is left out (a Mac with no microphone records only the system).
+    static func transcribe(mic micURL: URL, system systemURL: URL, micOffset: Double, systemOffset: Double)
+        async throws -> Transcript
+    {
+        let stt = try Providers.transcriber()
+        let none: (text: String, words: [Word]) = ("", [])
+        let fm = FileManager.default
+        async let mic = fm.fileExists(atPath: micURL.path) ? stt.transcribe(file: micURL, diarize: false) : none
+        async let system =
+            fm.fileExists(atPath: systemURL.path) ? stt.transcribe(file: systemURL, diarize: true) : none
+        let transcript = TranscriptBuilder.build(
+            mic: try await mic, system: try await system, micOffset: micOffset, systemOffset: systemOffset)
         let words = transcript.segments.reduce(0) { $0 + $1.text.split(whereSeparator: \.isWhitespace).count }
         guard words >= Config.minWords else { throw NoSpeechError() }
         return transcript
     }
-
 }
 
 /// The recording has too little speech to be worth minutes.
