@@ -1,10 +1,10 @@
 # Status
 
-Atualizado em: 2026-10-02
+Atualizado em: 2026-10-03
 
 ## Em andamento
 
-Trabalho não commitado desde `ba93980` (ADRs 0019 e 0021 a 0025, e esta revisão dos documentos). 88 testes passam. App instalado em `/Applications/Minuta.app`.
+Árvore de trabalho limpa no commit `d266e74`. 88 testes passam. O app instalado em `/Applications/Minuta.app` pode estar sem o ADR 0026; `./scripts/install.sh` instala a versão atual.
 
 ### Estado do app por área
 
@@ -17,6 +17,7 @@ Trabalho não commitado desde `ba93980` (ADRs 0019 e 0021 a 0025, e esta revisã
 - **Janela de leitura** (ADRs 0015 a 0019 e 0026): todas as seções colapsáveis (estado por reunião); botão "Refazer a transcrição", ativo só com áudio guardado; card centralizado, chips de modelo, lápis no título e nos participantes, transcrição colapsável lembrada por reunião, balão de citação com o trecho e um segmento de cada lado. Todos os balões e dicas usam `BalloonPanel` com a mesma forma das chips.
 - **Janela de correção** (ADR 0025): toca o áudio a partir de cada fala, edita o texto, troca o falante, apaga e restaura; correções marcam os resumos como desatualizados, com aviso nas duas janelas.
 - **Configurações** (ADRs 0011, 0012 e 0023): página única com chaves e modelos, permissões com teste de captura, preferências e a versão no rodapé.
+- **Padrão de escrita** (`.agents/STYLE.md`, `.agents/GLOSSARY.md`): em "Ajustes deste projeto", frase de procedimento até 20 palavras, descritiva até 25, parágrafo até 6 frases, formato "Decisão: X. Motivo: Y." e lista de palavras vagas. O glossário tem 16 termos, confirmados pelo usuário. O `AGENTS.md` foi revisado contra as regras; ADRs 0001 a 0025 ficam como estão, e as regras valem para ADRs novos.
 
 ### Verificado
 
@@ -63,6 +64,7 @@ Trabalho não commitado desde `ba93980` (ADRs 0019 e 0021 a 0025, e esta revisã
 - `WKWebView`: campo nativo por cima fica transparente sem uma `NSView` opaca embaixo; com JavaScript da página desligado, `evaluateJavaScript` chamado pelo app ainda funciona e serve para medir a posição de elementos. Com base `about:blank`, o fragmento da URL precisa ser comparado como texto.
 - `AppleScript` `click at` faz um clique de acessibilidade e não põe o foco num campo de texto; para testar edição é preciso evento de mouse real (`CGEvent`).
 - Um app Swift em repouso usa cerca de 79 MB de RSS e 0% de CPU.
+- Revisão do `AGENTS.md` e dos ADRs contra as regras novas (2026-10-03): 34 de 193 frases do `AGENTS.md` e cerca de 135 de 800 dos ADRs passavam de 25 palavras. O script de contagem junta frases separadas por título em negrito e por item de lista; os números são limite superior.
 
 ## Descartado
 <!-- hipótese ou abordagem descartada e o motivo -->
@@ -77,11 +79,12 @@ Trabalho não commitado desde `ba93980` (ADRs 0019 e 0021 a 0025, e esta revisã
 - Folha única com todos os participantes; anotações "(canal do microfone)" e "nome informado por você" (ADR 0016).
 - Controle de modelos nativo ou menu pop-up na leitura (ADR 0017). `NSPopover` como balão de dica: trocado pelo `BalloonPanel`, com a forma das chips.
 - Barra de rolagem no balão de citação: o balão cresce em altura antes de largura, e as falas vizinhas são cortadas.
+- Reescrever os ADRs 0001 a 0025 pelas regras novas: são registro de decisão já aprovado, e a reescrita pode mudar o sentido. Decisão do usuário (2026-10-03).
+- Levar limites de frase e palavras vagas para a skill `project-governance` e para a fonte global agora: sem validação fora do Minuta. Só o procedimento do glossário entrou na skill (versão 3.4.0).
 
 ## Próximos
 - Gravar uma chamada real com alto-falante e o cancelamento ligado; conferir duplicatas, a fala do usuário e o nível do canal do sistema. Só um resultado ruim reabre o ADR 0024.
 - Gravar uma reunião real com 3 ou mais participantes e conferir transcrição, diarização, classificação e resumo (teste 6).
-- Comando para refazer a transcrição de uma ata a partir do áudio guardado.
 - Conferir os `expected.md` dos oito cenários contra os resumos e ajustar os blocos dos modelos; rodar 06 a 08 com os quatro modelos.
 - Avaliar se Decisão em reunião sem decisão deve ser bloqueada ou só avisada (ADR 0018).
 - Medir custo em tokens e tempo por reunião; comparar esforço `medium` com `high`.
@@ -89,6 +92,9 @@ Trabalho não commitado desde `ba93980` (ADRs 0019 e 0021 a 0025, e esta revisã
 - Confirmar o limite de 30 minutos (ADR 0010) e o público do projeto.
 - Conferir nas fontes primárias as citações de Tropman, Romano e Nunamaker e Monge (ADR 0017).
 - Pendências da revisão de HIG: reticências em "Abrir arquivo…" e "Gravando 5 s…", um só botão de destaque em Permissões, "Configurações" ou "Ajustes" e a grafia do nome do app.
+- Usar o padrão de escrita e o glossário em outro projeto. Se as regras de limites e palavras vagas se mostrarem úteis, promovê-las para `~/.agents/AGENTS.md` (exige autorização explícita).
+- Decidir se a diretriz de sincronização da skill `project-governance` (Etapa 6) trata o glossário como o `STYLE.md`: entrada nova como rascunho até a confirmação.
+- Incluir `.agents/GLOSSARY.md` na linha de governança de projetos de `~/.agents/AGENTS.md`.
 - Opcionais, se o uso pedir: reconstruir o secundário a partir do `.md`; cópia interna das atas com restauração (detecta ata apagada); dividir e juntar falas e desfazer na janela de correção (ADR 0025).
 
 ## Bloqueado
