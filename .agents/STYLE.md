@@ -32,4 +32,28 @@ Decisões e consequências são fato, não conquista.
 
 ## Ajustes deste projeto
 
-Nenhum.
+Regras inspiradas no ASD-STE100, adotadas para tornar o padrão verificável.
+
+### Limites
+
+- Frase de procedimento (passos, comandos, instruções): até 20 palavras.
+- Frase descritiva: até 25 palavras.
+- Parágrafo: um tópico, até 6 frases.
+- Exceção: a frase de decisão. O porquê vai em frase própria, no formato "Decisão: X. Motivo: Y.", cada uma dentro do limite. Frase acima do limite só quando carrega uma relação causal que não se separa sem perder o sentido.
+
+### Um conceito, uma palavra
+
+- Cada termo do projeto tem um só sentido, e cada conceito tem um só termo. Sem sinônimo para variar o texto.
+- Os termos e seus sentidos ficam em `.agents/GLOSSARY.md`. Termo novo entra no glossário antes de aparecer em documento.
+- Termo de domínio técnico (STT, diarização, ScreenCaptureKit) é livre, mas mantém uma só grafia.
+
+### Palavras a evitar
+
+Palavra vaga ou de reforço, que não carrega dado:
+
+- "adequado", "apropriado", "robusto", "eficiente", "simples", "fácil", "melhor" (sem comparação medida);
+- "geralmente", "normalmente", "eventualmente", "em geral", "basicamente", "praticamente";
+- "etc.", "entre outros", "e assim por diante";
+- "significativamente", "muito", "bastante", "diversos" (sem número).
+
+Em vez da palavra vaga, o dado: número, nome, condição ou lista completa.

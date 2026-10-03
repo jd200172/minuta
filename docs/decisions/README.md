@@ -29,5 +29,6 @@ Um arquivo por decisão, numerado na ordem em que foi tomada. Decisão substitu�
 | [0023](0023-echo-cancellation-at-capture.md) | Cancelamento de eco na captura | Em vigor; falta chamada real |
 | [0024](0024-follow-market-practice-for-capture.md) | Captura e atribuição pelo padrão de mercado | Em vigor |
 | [0025](0025-transcript-correction-window.md) | Janela de correção da transcrição | Em vigor |
+| [0026](0026-collapsible-sections-and-retranscribe.md) | Seções colapsáveis e refazer a transcrição | Em vigor |
 
 Formato de cada arquivo: título com número, `Status`, `Data`, relação com outras decisões (`Substitui`, `Complementa`, `Confirma`), Contexto, Decisão, Alternativas descartadas e Consequências. Decisão nova recebe o próximo número e uma linha nesta tabela; a substituída tem a linha `Status` atualizada.

@@ -4,7 +4,7 @@ Atualizado em: 2026-10-02
 
 ## Em andamento
 
-Trabalho não commitado desde `ba93980` (ADRs 0019 e 0021 a 0025, e esta revisão dos documentos). 92 testes passam. App instalado em `/Applications/Minuta.app`.
+Trabalho não commitado desde `ba93980` (ADRs 0019 e 0021 a 0025, e esta revisão dos documentos). 88 testes passam. App instalado em `/Applications/Minuta.app`.
 
 ### Estado do app por área
 
@@ -14,7 +14,7 @@ Trabalho não commitado desde `ba93980` (ADRs 0019 e 0021 a 0025, e esta revisã
 - **Transcrição, classificação e resumo** (ADRs 0002, 0008, 0012, 0017 e 0018): Gemini 3.5 Transcribe; Claude Sonnet 5.5 sugere um de quatro modelos (Decisão, Problemas e ideias, Informativa, Geral) e o título, e gera o resumo sugerido. Todos os resumos ficam no `.resumos.json`; o escolhido é copiado no `.md`.
 - **Áudio** (ADR 0022): depois da ata criada, os dois arquivos vão para a pasta de atas das configurações (antes: Application Support; o que sobrou lá é movido na inicialização) com o radical do secundário e seguem a ata para a Lixeira. Atas anteriores não têm áudio.
 - **Janela de atas** (ADR 0015): tabela no estilo do Finder, com menu de contexto, gravações em andamento como linhas e verificação da pasta.
-- **Janela de leitura** (ADRs 0015 a 0019): card centralizado, chips de modelo, lápis no título e nos participantes, transcrição colapsável lembrada por reunião, balão de citação com o trecho e um segmento de cada lado. Todos os balões e dicas usam `BalloonPanel` com a mesma forma das chips.
+- **Janela de leitura** (ADRs 0015 a 0019 e 0026): todas as seções colapsáveis (estado por reunião); botão "Refazer a transcrição", ativo só com áudio guardado; card centralizado, chips de modelo, lápis no título e nos participantes, transcrição colapsável lembrada por reunião, balão de citação com o trecho e um segmento de cada lado. Todos os balões e dicas usam `BalloonPanel` com a mesma forma das chips.
 - **Janela de correção** (ADR 0025): toca o áudio a partir de cada fala, edita o texto, troca o falante, apaga e restaura; correções marcam os resumos como desatualizados, com aviso nas duas janelas.
 - **Configurações** (ADRs 0011, 0012 e 0023): página única com chaves e modelos, permissões com teste de captura, preferências e a versão no rodapé.
 
@@ -27,6 +27,8 @@ Trabalho não commitado desde `ba93980` (ADRs 0019 e 0021 a 0025, e esta revisã
 - Cancelamento de eco medido com voz tocando no alto-falante: microfone de -33,5 dB para -72,3 dB, correlação com a chamada de 0,95 para 0,29 (ADR 0023).
 
 ### Sem teste manual
+
+- Seções colapsáveis e "Refazer a transcrição" (ADR 0026): só testes unitários (substituição do secundário, estado das seções, HTML); falta ver no app e chamar o STT de verdade.
 
 - Chamada real com alto-falante e cancelamento de eco ligado: a fala do usuário e o efeito com fone Bluetooth (ADR 0023).
 - Gravação real passando pela guarda do áudio, e falha ao mover o áudio.
