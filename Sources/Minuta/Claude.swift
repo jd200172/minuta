@@ -23,6 +23,14 @@ struct ClaudeMinuter: Minuter {
         return try MinutesPrompt.decodeSummary(text, model: summaryModel)
     }
 
+    func clean(segments: [Segment]) async throws -> [String: String] {
+        let text = try await complete(
+            system: MinutesPrompt.cleanerSystem, schema: MinutesPrompt.cleanerSchema,
+            user: MinutesPrompt.cleanerUser(segments: segments), effort: "low", maxTokens: 16000,
+            what: "limpeza da transcrição")
+        return try MinutesPrompt.decodeCleaning(text)
+    }
+
     private func complete(
         system: String, schema: [String: Any], user: String, effort: String, maxTokens: Int, what: String
     ) async throws -> String {

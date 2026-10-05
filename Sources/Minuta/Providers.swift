@@ -16,6 +16,9 @@ protocol Minuter: Sendable {
     func summarize(
         model: SummaryModel, transcript: Transcript, start: Date, names: [String: String]
     ) async throws -> SummaryData
+    /// Removes speech noise (fillers, stutters, false starts) from the text of each segment (ADR 0031).
+    /// Returns the new text by segment ID; `TranscriptCleaner.apply` checks it before use.
+    func clean(segments: [Segment]) async throws -> [String: String]
 }
 
 enum Providers {

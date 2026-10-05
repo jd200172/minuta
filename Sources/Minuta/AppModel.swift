@@ -300,8 +300,9 @@ enum Pipeline {
         async let mic = fm.fileExists(atPath: micURL.path) ? stt.transcribe(file: micURL, diarize: false) : none
         async let system =
             fm.fileExists(atPath: systemURL.path) ? stt.transcribe(file: systemURL, diarize: true) : none
-        let transcript = TranscriptBuilder.build(
+        let built = TranscriptBuilder.build(
             mic: try await mic, system: try await system, micOffset: micOffset, systemOffset: systemOffset)
+        let transcript = await TranscriptCleaner.clean(built)
         let words = transcript.segments.reduce(0) { $0 + $1.text.split(whereSeparator: \.isWhitespace).count }
         guard words >= Config.minWords else { throw NoSpeechError() }
         return transcript

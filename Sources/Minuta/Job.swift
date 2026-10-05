@@ -16,6 +16,8 @@ struct Segment: Codable, Equatable {
     var speaker: String
     var start: Double
     var text: String
+    /// What the speech-to-text returned, when the cleaning step (ADR 0031) changed `text`.
+    var raw: String?
 }
 
 struct Transcript: Codable {

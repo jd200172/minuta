@@ -51,6 +51,28 @@ enum MinutesPrompt {
         assunto não é identificável, escreva um título genérico que não invente assunto.
         """
 
+    static let cleanerSystem = """
+        Você limpa a transcrição literal de uma reunião em português do Brasil para a leitura. \
+        Cada linha tem o formato "[ID] Falante: texto". Devolva o texto de cada segmento sem o ruído da fala.
+
+        Remova:
+        - preenchimentos sem conteúdo ("ãh", "eh", "hum", "hã");
+        - repetições gaguejadas ("tu tem tu tem aí um um um" vira "tu tem aí um");
+        - falsos começos abandonados, quando a frase é retomada em seguida.
+
+        Mantenha:
+        - toda palavra de conteúdo, número, nome e negação;
+        - respostas curtas ("Tá.", "Sim.", "Não.", "Isso.");
+        - repetição que dá ênfase ("muito muito grande");
+        - o registro oral do falante e a ordem das palavras.
+
+        Regras:
+        - Não reescreva, não troque palavras, não corrija gramática e não acrescente palavra que não esteja \
+        no texto. Pontuação e maiúsculas podem mudar.
+        - Não junte nem divida segmentos. Devolva todos os IDs recebidos, cada um com o seu texto.
+        - Se o segmento é só ruído, sem conteúdo, devolva o texto vazio.
+        """
+
     // MARK: Schemas
 
     static func object(_ properties: [String: Any]) -> [String: Any] {
@@ -85,6 +107,10 @@ enum MinutesPrompt {
         ])
     }
 
+    static var cleanerSchema: [String: Any] {
+        object(["segments": list(object(["id": string, "text": string]))])
+    }
+
     static var classifierSchema: [String: Any] {
         object([
             "model": ["type": "string", "enum": SummaryModel.allCases.map(\.rawValue)],
@@ -114,7 +140,27 @@ enum MinutesPrompt {
         "Transcrição:\n" + lines(transcript)
     }
 
+    static func cleanerUser(segments: [Segment]) -> String {
+        "Transcrição:\n" + segments.map { "[\($0.id)] \($0.speaker): \($0.text)" }.joined(separator: "\n")
+    }
+
     // MARK: Decoding
+
+    static func decodeCleaning(_ text: String) throws -> [String: String] {
+        struct Raw: Decodable {
+            struct Item: Decodable {
+                var id: String
+                var text: String
+            }
+            var segments: [Item]
+        }
+        do {
+            let raw = try JSONDecoder().decode(Raw.self, from: Data(text.utf8))
+            return Dictionary(raw.segments.map { ($0.id, $0.text) }) { first, _ in first }
+        } catch {
+            throw AppError("A limpeza da transcrição veio fora do formato esperado.")
+        }
+    }
 
     static func decodeSummary(_ text: String, model: SummaryModel) throws -> SummaryData {
         do {
