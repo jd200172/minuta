@@ -401,7 +401,7 @@ struct TranscriptView: View {
 
     private func banner(_ outdated: SummaryModel) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: "exclamationmark.triangle").foregroundStyle(.orange)
+            Image(systemName: "exclamationmark.triangle").foregroundStyle(.secondary)
             Text("A transcrição mudou depois do resumo \(outdated.title). O resumo ainda reflete a versão anterior.")
                 .font(.callout)
             Spacer()
@@ -410,7 +410,7 @@ struct TranscriptView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(Color.orange.opacity(0.12))
+        .background(Color.primary.opacity(0.06))
     }
 }
 
@@ -430,10 +430,10 @@ struct TranscriptRow: View {
             } label: {
                 Text(Fmt.clock(row.segment.start))
                     .font(.system(size: BalloonStyle.chipFontSize).monospacedDigit())
-                    .foregroundStyle(Color(nsColor: .linkColor))
+                    .foregroundStyle(Color.primary)
                     .padding(.horizontal, 6)
                     .background(
-                        Color(nsColor: .linkColor).opacity(BalloonStyle.chipTint),
+                        Color.primary.opacity(BalloonStyle.chipTint),
                         in: RoundedRectangle(cornerRadius: BalloonStyle.chipRadius))
             }
             .buttonStyle(.plain)
@@ -460,7 +460,7 @@ struct TranscriptRow: View {
                         .help(row.system ? "Gravado pelo áudio do sistema" : "Gravado pelo microfone")
                         .accessibilityLabel(row.system ? "Áudio do sistema" : "Microfone")
                     if row.corrected {
-                        Text("Corrigida").font(.caption).foregroundStyle(.green)
+                        Text("Corrigida").font(.caption).foregroundStyle(.secondary)
                     }
                 }
                 TextField("Texto da fala", text: $draft, axis: .vertical)
@@ -492,7 +492,7 @@ struct TranscriptRow: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 16)
-        .background(playing ? Color(nsColor: .linkColor).opacity(BalloonStyle.rowTint) : Color.clear)
+        .background(playing ? Color.primary.opacity(BalloonStyle.rowTint) : Color.clear)
         .onAppear { draft = row.segment.text }
         .onChange(of: row.segment.text) { draft = $0 }
         .onChange(of: editing) { focused in

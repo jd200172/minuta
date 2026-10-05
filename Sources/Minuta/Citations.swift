@@ -44,10 +44,10 @@ private struct CitationRows: View {
                     Button(action: { goTo(row.segment.id) }) {
                         Text(row.segment.clock)
                             .font(.system(size: BalloonStyle.chipFontSize).monospacedDigit())
-                            .foregroundStyle(Color(nsColor: .linkColor))
+                            .foregroundStyle(Color.primary)
                             .padding(.horizontal, 6)
                             .background(
-                                Color(nsColor: .linkColor).opacity(BalloonStyle.chipTint),
+                                Color.primary.opacity(BalloonStyle.chipTint),
                                 in: RoundedRectangle(cornerRadius: BalloonStyle.chipRadius))
                     }
                     .buttonStyle(.plain)
@@ -60,7 +60,7 @@ private struct CitationRows: View {
                 .padding(.vertical, BalloonStyle.rowPaddingV)
                 .padding(.horizontal, BalloonStyle.rowPaddingH)
                 .background(
-                    Color(nsColor: .linkColor).opacity(BalloonStyle.rowTint),
+                    Color.primary.opacity(BalloonStyle.rowTint),
                     in: RoundedRectangle(cornerRadius: BalloonStyle.rowRadius))
             }
         }

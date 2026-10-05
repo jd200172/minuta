@@ -29,6 +29,8 @@ ADR 0027 implementado (menu de modelo, chips de seção, exportação em HTML e 
 
 ### Sem teste manual
 
+- Tipografia e cor da leitura (ADR 0029, revisado): título 28 px, chips e títulos de seção em 15 px, app monocromático (cor só em erro e no botão da barra de menus); falta ver no app a altura do cabeçalho e a quebra das chips em janela estreita.
+
 - Aparência (ADR 0028): compila; falta ver no app o seletor, as janelas, a leitura e o ícone da barra de menus nos três modos.
 
 - Menu de modelo, chips de seção e exportação (ADR 0027): testes unitários do HTML; página renderizada pela WebKit fora do app nos modos claro e escuro; PDF de uma ata real gerado por script com o mesmo caminho do `PDFExport` (14 páginas A4 com texto). Falta no app: posição do menu, troca e refazer pelo menu, salto com seção recolhida, painel de salvar e o PDF pelo próprio app.

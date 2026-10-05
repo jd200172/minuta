@@ -32,5 +32,6 @@ Um arquivo por decisão, numerado na ordem em que foi tomada. Decisão substitu�
 | [0026](0026-collapsible-sections-and-retranscribe.md) | Seções colapsáveis e refazer a transcrição | Refazer em vigor; seções colapsáveis substituídas pelo 0027 |
 | [0027](0027-model-menu-section-chips-and-export.md) | Menu de modelo, chips de seção e exportação da ata | Em vigor (desvio das HIG no botão de modelo e nas chips de seção) |
 | [0028](0028-appearance-setting.md) | Aparência: sistema, claro ou escuro | Em vigor; falta ver no app |
+| [0029](0029-reading-typography-hierarchy.md) | Hierarquia tipográfica e cor da leitura (título 28 px, chips e seções 15 px, chips monocromáticas) | Em vigor; falta ver no app |
 
 Formato de cada arquivo: título com número, `Status`, `Data`, relação com outras decisões (`Substitui`, `Complementa`, `Confirma`), Contexto, Decisão, Alternativas descartadas e Consequências. Decisão nova recebe o próximo número e uma linha nesta tabela; a substituída tem a linha `Status` atualizada.
