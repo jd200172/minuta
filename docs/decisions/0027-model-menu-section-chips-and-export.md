@@ -34,7 +34,7 @@ Todas as chips têm o mesmo estilo (tinta azul), na ordem das seções da ata, s
 - entre chips: 6 para 8 px;
 - entre seções: 22 para 30 px, com 18 px acima do filete; título da seção para o texto: 6 para 10 px;
 - entre itens de lista: 3 para 5 px; entre parágrafos: 6 para 8 px.
-**Tamanho da janela.** Os 720 px de largura da abertura eram menores que o máximo do card (760 px), então o card nunca chegava a esse máximo. A janela passa a abrir com 900 × 780 px e a lembrar o tamanho em que o usuário a deixou (`readingWindowSize` em `UserDefaults`, um valor para todas as janelas de leitura, gravado ao fim de um redimensionamento). O máximo do card continua em 760 px, pelo comprimento da linha de texto.
+**Tamanho da janela.** Os 720 px de largura da abertura eram menores que o máximo do card (760 px), então o card nunca chegava a esse máximo. A janela passa a abrir com 964 × 780 px e a lembrar o tamanho em que o usuário a deixou (`readingWindowSize` em `UserDefaults`, um valor para todas as janelas de leitura, gravado ao fim de um redimensionamento). O máximo do card continua em 760 px, pelo comprimento da linha de texto.
 O custo do respiro é cerca de 15% a mais de altura por ata. O HTML exportado usa o mesmo CSS.
 
 **Cabeçalho fixo e texto contínuo no painel.** A página da janela de leitura tem duas partes: o cabeçalho (título, data com ícones, botão de modelo, linha de estado e chips), que não rola, e um painel abaixo, com todas as seções em sequência, que rola sozinho. Os chips ficam sempre à vista. O clique num chip rola o painel até o título da seção, a 12 px do topo, e preenche o chip. Enquanto o usuário rola, o chip da seção que está no topo do painel fica preenchido: é a última seção cujo título está no topo ou acima dele, e a última seção quando o painel chega ao fim. Ao abrir, o chip do Resumo está preenchido. Um horário de citação, no balão, rola o painel até a fala na Transcrição.
@@ -43,9 +43,11 @@ Decisão: o app acompanha a rolagem e preenche o chip. Motivo: a página roda se
 
 Esta decisão substitui as seções colapsáveis (ADR 0026) e a transcrição colapsável (ADR 0019) na janela de leitura. O estado de recolhimento por reunião (`collapsedSections` e `transcriptCollapsed` em `UserDefaults`) deixa de ser usado. O HTML exportado mantém as seções colapsáveis.
 
-**Cabeçalho.** Quatro blocos, em linhas separadas: título; data com os botões de exportação (grupo do título, unidos à data por um traço fino e alinhados à esquerda; podem quebrar para a linha de baixo em janela estreita); botão de modelo, 24 px abaixo; linha de estado, quando houver; chips de seção, 20 px abaixo. Os botões ficam no bloco do título por pertencerem à ata inteira, e não ao modelo.
+**Janela sem moldura.** Na janela de leitura, a página não tem card, borda nem fundo de página: o cabeçalho e o painel ocupam a janela inteira, com o fundo da janela. O filete sob o cabeçalho vai de borda a borda, e a barra de rolagem fica na borda da janela. As margens laterais são de 32 px (antes, 20 px de fundo mais 36 px do card). O cabeçalho e o painel dividem a mesma coluna, de até 900 px (primeiro 820 px, depois 900 px a pedido do usuário), sempre centralizada: em janela larga, a sobra se divide igualmente nos dois lados, e o texto e o cabeçalho continuam alinhados entre si. Abaixo de 964 px de janela, as margens são de 32 px e a coluna ocupa o resto. O HTML exportado mantém o card centralizado de 760 px, porque abre num navegador.
 
-**Botões de exportação.** Na linha da data, três botões só com ícone e dica:
+**Cabeçalho.** Quatro blocos, em linhas separadas: título; data, e logo abaixo dela, em linha própria, os botões de exportação (grupo do título, alinhados à esquerda; versão anterior: na mesma linha da data, unidos por um traço); botão de modelo, 24 px abaixo; linha de estado, quando houver; chips de seção, 20 px abaixo. Os botões ficam no bloco do título por pertencerem à ata inteira, e não ao modelo.
+
+**Botões de exportação.** Logo abaixo da data, três botões só com ícone e dica:
 - "Enviar por e-mail (em breve)": visível e inativo. O envio é da próxima etapa e terá ADR próprio.
 - "Salvar como HTML": um arquivo autônomo, com o CSS embutido.
 - "Salvar como PDF": em páginas do tamanho de papel do sistema, com margem de 40 pt.
@@ -72,6 +74,7 @@ O conteúdo exportado é a ata do arquivo `.md`, com o modelo de resumo atual e 
 - As chips de seção usam a mesma tinta das chips de citação. As de citação têm ícone de balão e horário, e as de seção, texto.
 - A chip não indica quais seções mudam com o modelo. O menu Modelo e o texto de cada seção dão essa informação.
 - Em janela estreita, as chips de seção quebram em duas linhas.
+- A moldura (20 px, borda e 36 px de padding) comia cerca de 56 px de largura útil por lado e dava à janela o aspecto de uma janela dentro de outra.
 - O cabeçalho fixo ocupa cerca de 250 px da janela de 780, o que reduz a área de leitura. O texto rola dentro do painel.
 - A seção final precisa de texto abaixo para chegar ao topo do painel. A Transcrição é longa, então só Itens de ação e Pontos em aberto, nas atas com transcrição curta, podem não chegar ao topo; nesse caso o chip clicado fica preenchido até a próxima rolagem.
 - O preenchimento do chip depende de um atraso de 0,1 s depois da rolagem.

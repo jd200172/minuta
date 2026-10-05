@@ -184,8 +184,11 @@ final class ReadingBarTests: XCTestCase {
         ]
         XCTAssertEqual(order, order.sorted(), "título, data e ícones, modelo, aviso, chips, seções")
         let bar = html.components(separatedBy: "class=\"bar\"")[1].components(separatedBy: "</div>")[0]
-        XCTAssertTrue(bar.contains("class=\"sub\""), "a data fica na linha dos ícones")
-        XCTAssertTrue(bar.contains("class=\"dv\""), "um traço liga a data aos ícones")
+        XCTAssertTrue(bar.contains("class=\"sub\""), "a data e os ícones são o mesmo bloco")
+        XCTAssertFalse(bar.contains("class=\"dv\""), "sem traço entre a data e os ícones")
+        XCTAssertLessThan(
+            bar.range(of: "class=\"sub\"")!.lowerBound, bar.range(of: "class=\"acts\"")!.lowerBound,
+            "os ícones ficam logo abaixo da data")
         XCTAssertTrue(bar.contains("minuta://export/pdf"), "os ícones são subordinados ao título")
         XCTAssertFalse(bar.contains("id=\"mdl\""), "o botão de modelo fica fora desse bloco")
     }

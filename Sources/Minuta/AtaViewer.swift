@@ -134,9 +134,9 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
     }
 
     /// The size the user left a reading window at, shared by every reading window; the first one opens wide enough
-    /// for the card to reach its 760 px with a margin on each side.
+    /// for the column of text to reach its 900 px with a margin of 32 px on each side.
     private static let sizeKey = "readingWindowSize"
-    private static let defaultSize = NSSize(width: 900, height: 780)
+    private static let defaultSize = NSSize(width: 964, height: 780)
 
     private static func savedSize() -> NSSize {
         guard let values = UserDefaults.standard.array(forKey: sizeKey) as? [Double], values.count == 2,

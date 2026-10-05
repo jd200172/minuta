@@ -280,13 +280,13 @@ enum MarkdownHTML {
             .filter { $0.hasPrefix("## ") }.map { String($0.dropFirst(3)) }
     }
 
-    /// Four blocks: the date line with the export buttons (they belong to the title above it), the model menu button,
+    /// Four blocks: the date with the export buttons right under it (they belong to the title above them), the model menu button,
     /// the line of state, and the section chips.
     private static func controlsHTML(_ controls: Controls, meta: [String: String], sections: [String]) -> String {
         var html = "<div class=\"bar\">\n"
         let date = subtitleText(meta)
         if !date.isEmpty {
-            html += "<span class=\"sub\">\(escape(date))</span>\n<span class=\"dv\" aria-hidden=\"true\"></span>\n"
+            html += "<p class=\"sub\">\(escape(date))</p>\n"
         }
         html += "<span class=\"acts\" role=\"group\" aria-label=\"Exportar a ata\">"
         html +=
@@ -353,9 +353,8 @@ enum MarkdownHTML {
         h1 { font-size: 22px; line-height: 1.3; font-weight: 600; margin: 0 0 6px; }
         h1 a.pen { margin-left: 10px; vertical-align: 3px; }
         .sub { color: GrayText; font-size: 13px; margin: 0 0 18px; }
-        .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0; }
+        .bar { margin: 0; }
         .bar .sub { margin: 0; }
-        .bar .dv { width: 1px; height: 14px; background: color-mix(in srgb, CanvasText 22%, transparent); }
         .mdlrow { margin: 24px 0 0; }
         .mdl { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; line-height: 1; padding: 5px 8px 5px 10px; border-radius: 6px; border: 0.5px solid color-mix(in srgb, CanvasText 28%, transparent); color: CanvasText; background: Canvas; white-space: nowrap; }
         a.mdl:hover { background: color-mix(in srgb, CanvasText 6%, Canvas); }
@@ -363,7 +362,7 @@ enum MarkdownHTML {
         .mdl svg { color: GrayText; }
         .mdl .sp { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid currentColor; border-top-color: transparent; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .acts { display: inline-flex; gap: 0; margin-left: -6px; }
+        .acts { display: flex; gap: 0; margin: 4px 0 0 -6px; }
         .act { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; color: GrayText; }
         a.act:hover { background: color-mix(in srgb, CanvasText 7%, transparent); color: CanvasText; }
         .act.off { opacity: 0.4; }
@@ -372,10 +371,11 @@ enum MarkdownHTML {
         .toc a { font-size: 12px; line-height: 1.3; padding: 3px 10px; border-radius: 5px; background: color-mix(in srgb, LinkText 14%, transparent); white-space: nowrap; }
         .toc a:hover { background: color-mix(in srgb, LinkText 22%, transparent); }
         .toc a.on, .toc a.on:hover { background: LinkText; color: Canvas; }
-        body.app { overflow: hidden; }
-        .card.app { display: flex; flex-direction: column; height: calc(100vh - 52px); min-height: 240px; padding: 0; overflow: hidden; }
-        .head { flex: none; padding: 28px 36px 20px; border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
-        .pane { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 4px 36px 32px; }
+        html:has(body.app) { background: Canvas; }
+        body.app { overflow: hidden; padding: 0; background: Canvas; }
+        .card.app { display: flex; flex-direction: column; height: 100vh; min-height: 240px; max-width: none; margin: 0; padding: 0; overflow: hidden; border: none; border-radius: 0; background: transparent; }
+        .head { flex: none; padding: 28px max(32px, calc((100% - 900px) / 2)) 20px; border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
+        .pane { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 4px max(32px, calc((100% - 900px) / 2)) 32px; }
         .pane > h2 { margin: 30px 0 10px; padding-top: 18px; border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
         .pane > h2:first-child { margin-top: 24px; padding-top: 0; border-top: none; }
         h2 .ct { font-weight: 400; font-size: 12px; margin-left: 6px; }
