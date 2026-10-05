@@ -10,7 +10,7 @@ Fonte: `docs/project-brief.md` (documento original, 2026-09-30). As decisões em
 
 Dentro:
 - macOS 13+. Windows 10/11 em fase posterior (ADR 0003).
-- Interface: menu da bandeja e quatro janelas: configurações, atas, leitura da ata (ADR 0015) e correção da transcrição com o áudio (ADR 0025). A leitura tem transcrição colapsável e balões de citação (ADR 0019). Sem janela contínua de gravação.
+- Interface: menu da bandeja e quatro janelas: configurações, atas, leitura da ata (ADR 0015) e correção da transcrição com o áudio (ADR 0025). A leitura tem transcrição colapsável e balões de citação (ADR 0019). Também tem menu de modelo, chips de seção e exportação em HTML e PDF (ADR 0027). Sem janela contínua de gravação.
 - Resumo da reunião em quatro modelos: Decisão, Problemas e ideias, Informativa e Geral. O sugerido é gerado automaticamente e os demais, sob demanda (ADRs 0017 e 0018, que substituem o prompt único do ADR 0005). Informativa é reunião em que alguém expõe conteúdo e o grupo pergunta; reunião de status é Geral.
 
 Fora do MVP:
@@ -37,7 +37,7 @@ Fora do MVP:
   - diarização só no canal do sistema;
   - cancelamento de eco na captura (ADR 0023);
   - correção humana na janela de correção (ADR 0025).
-- Interface (Human Interface Guidelines da Apple para macOS): componentes nativos (SwiftUI e AppKit), SF Symbols, cores e tipografia do sistema. Menus, janelas e avisos seguem o padrão do macOS. Modo escuro e acessibilidade vêm sem trabalho extra. Antes de criar ou alterar uma tela, conferir a diretriz correspondente. Desvio só com justificativa registrada em ADR. Desvios vigentes: fundo colorido do botão da barra de menus (ADR 0014); chips de modelo de resumo; balão próprio de dica e de citação (ADRs 0017 e 0019). Os balões têm uma só linguagem visual.
+- Interface (Human Interface Guidelines da Apple para macOS): componentes nativos (SwiftUI e AppKit), SF Symbols, cores e tipografia do sistema. Menus, janelas e avisos seguem o padrão do macOS. Modo escuro e acessibilidade vêm sem trabalho extra. Antes de criar ou alterar uma tela, conferir a diretriz correspondente. Desvio só com justificativa registrada em ADR. Desvios vigentes: fundo colorido do botão da barra de menus (ADR 0014); botão de modelo e chips de seção na leitura (ADR 0027); balão próprio de dica e de citação (ADRs 0017 e 0019). Os balões têm uma só linguagem visual.
 - Idiomas: código (identificadores e comentários) em inglês; interface do app e ata em pt-BR.
 - Rastreabilidade (ADRs 0005, 0017 e 0018): decisões, ações e pontos em aberto citam IDs de segmento da transcrição. O LLM devolve JSON com os IDs; o app monta o Markdown e valida que todo ID existe. Campo sem evidência vira "não definido", e seção do modelo sem evidência fica vazia, nunca preenchida para completar a estrutura. Prazo relativo só vira data com a data da reunião no prompt.
 - Participantes (ADRs 0006 e 0016):
@@ -74,7 +74,7 @@ Fora do MVP:
 - Um arquivo por responsabilidade em `Sources/Minuta/`:
   - Fluxo e captura: `main`, `AppDelegate`, `AppModel` (estados e fluxo), `Job` (estado em disco), `Recorder` (captura), `CaptureTest`, `CLI` (`--process` e `--capture-test`), `Support` (configuração e caminhos), `Alerts`.
   - Provedores: `Providers` (protocolos `Transcriber` e `Minuter`), `Env`, `Gemini` (STT e montagem da transcrição), `Claude`, `MinutesPrompt` (prompts, schemas, classificador), `SummaryModels` (os quatro modelos).
-  - Arquivos da reunião: `Minutes` (Markdown), `AtaStore` (principal, secundário, título e correções), `SummaryService` (gerar, reaproveitar e trocar o resumo), `AtaLibrary` (lista e nomes de arquivo), `AudioArchive` (nomes e guarda do áudio).
+  - Arquivos da reunião: `Minutes` (Markdown), `AtaStore` (principal, secundário, título e correções), `SummaryService` (gerar, reaproveitar e trocar o resumo), `AtaLibrary` (lista e nomes de arquivo), `AudioArchive` (nomes e guarda do áudio), `Export` (HTML e PDF).
   - Interface, bandeja e atas: `StatusItemController` (bandeja), `SettingsView`, `AtasView` (janela de atas), `ClosableWindow` (⌘W e Esc).
   - Interface, leitura e correção: `AtaViewer`, `MarkdownHTML`, `TitleRename`, `ParticipantEditor` e `ParticipantRename` (janela de leitura), `Citations` (transcrição recolhida e balão de citação), `TranscriptWindow` (janela de correção), `Retranscriber` (refazer a transcrição), `PageTips`.
   - Interface, balões: `Balloon` (`BalloonStyle` e `BalloonPanel`: a linguagem única dos balões).
@@ -95,17 +95,17 @@ Detalhe de cada tela e de cada fluxo fica no ADR indicado; aqui, só a estrutura
   - Problemas e ideias: Problema, Ideias por tema, A aprofundar.
   - Informativa: Pontos principais, Dados citados, Perguntas.
   - Geral: Resumo por tema, com um tema por pessoa em reunião de status.
-- **Resumos.** Trocar de modelo reaproveita o que existe e gera o que falta; nada é descartado. "Refazer este resumo" substitui o guardado daquele modelo. O título pertence à reunião, não ao modelo.
+- **Resumos.** O modelo é escolhido no menu Modelo da leitura (ADR 0027). Trocar de modelo reaproveita o que existe e gera o que falta; nada é descartado. "Refazer este resumo" substitui o guardado daquele modelo. O título pertence à reunião, não ao modelo.
 - **Correção (ADR 0025).** Corrigir, trocar falante, apagar ou restaurar uma fala reescreve o secundário e a ata. A versão do modelo fica em `originals`. Os resumos já gerados ficam marcados como desatualizados até serem refeitos.
 - **Refazer a transcrição (ADR 0026).** Botão da janela de leitura, ativo só com áudio guardado. Transcreve de novo e substitui `segments`. Descarta correções e nomes. Marca os resumos como desatualizados. Toda seção `##` da leitura é colapsável, com o estado lembrado por reunião.
 - **Atas (ADR 0015).** Os arquivos da pasta são a fonte da verdade, e a lista é refeita lendo a pasta. Apagar move para a Lixeira, com o áudio. Ao ler a pasta, o app avisa pasta ausente ou ilegível e marca arquivos de ata com problema. Não detecta ata apagada.
 - **Telas:**
   - menu da bandeja (ADRs 0011, 0014 e 0015);
   - janela de atas no estilo do Finder (ADR 0015);
-  - janela de leitura (ADRs 0015 a 0019);
+  - janela de leitura (ADRs 0015 a 0019, 0026 e 0027);
   - janela de correção (ADR 0025);
   - configurações em página única (ADRs 0011, 0012 e 0023).
-- Envio por e-mail e consulta por conectores: etapa posterior, com ADR próprio.
+- Envio por e-mail e consulta por conectores: etapa posterior, com ADR próprio. O botão de e-mail da leitura já aparece, inativo (ADR 0027).
 
 ## Critério de pronto
 
@@ -146,6 +146,7 @@ Instrução do usuário no chat > `AGENTS.md` > `.agents/STYLE.md` > skill. Em s
 - 2026-10-02: refatoração dos documentos, aprovada pelo usuário. `AGENTS.md` reorganizado sem mudar o sentido das regras (Arquitetura resumida com os detalhes nos ADRs, arquivos agrupados por camada, Histórico condensado); regra da prática de mercado (ADR 0024) e desvio do balão de citação (ADR 0019) explicitados; índice de ADRs criado em `docs/decisions/README.md`.
 - 2026-10-03: `.agents/STYLE.md` ampliado a pedido do usuário (limites de frase e parágrafo, formato "Decisão: X. Motivo: Y.", palavras a evitar). `.agents/GLOSSARY.md` criado e confirmado pelo usuário, e incluído na leitura obrigatória do Padrão de escrita.
 - 2026-10-03: revisão do `AGENTS.md` contra as regras novas, a pedido do usuário: frases longas quebradas, "adequado" removido, sem mudar o sentido das regras. Entradas anteriores do Histórico e ADRs 0001 a 0025 ficam como estão; as regras valem para ADRs novos.
+- 2026-10-05: ADR 0027, a pedido do usuário, depois de mockups aprovados. As chips de modelo saem, porque o usuário as lia como assuntos da ata. No lugar, menu "Modelo", chips de seção e botões de exportação (HTML e PDF; e-mail visível e inativo). Escopo de interface e desvios das HIG atualizados com confirmação do usuário.
 
 ## Sincronização
 

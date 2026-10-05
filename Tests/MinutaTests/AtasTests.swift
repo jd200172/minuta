@@ -153,65 +153,83 @@ final class MarkdownHTMLTests: XCTestCase {
     }
 }
 
-final class ModelChipsTests: XCTestCase {
+final class ReadingBarTests: XCTestCase {
     private let page =
-        "---\ninicio: 2026-09-30T14:02:00-03:00\nduracao_segundos: 60\nmodelo: decisao\n---\n\n# Título & <b>\n\n## Resumo\nTexto.\n"
+        "---\ninicio: 2026-09-30T14:02:00-03:00\nduracao_segundos: 60\nmodelo: decisao\n---\n\n# Título & <b>\n\n"
+        + "## Resumo\nTexto.\n\n## Participantes\n- Eu\n\n## Decisões\n- D.\n\n## Alternativas descartadas\nNenhuma.\n\n"
+        + "## Itens de ação\nNenhuma.\n\n## Pontos em aberto\nNenhum.\n\n## Transcrição\n"
+        + "<a id=\"t-000001\"></a>**[00:00:01] Eu:** Oi.\n"
 
-    private func controls(generating: SummaryModel? = nil, redo: Bool = true) -> MarkdownHTML.Controls {
-        MarkdownHTML.Controls(
-            chips: SummaryModel.allCases.map {
-                .init(model: $0, selected: $0 == .decisao, has: $0 == .decisao || $0 == .geral)
-            },
-            generating: generating, hint: "Sugerido: Decisão. <motivo>", canRedo: redo)
+    private func controls(generating: SummaryModel? = nil) -> MarkdownHTML.Controls {
+        MarkdownHTML.Controls(shown: .decisao, generating: generating, hint: "Sugerido: Decisão. <motivo>")
     }
 
-    func testChipsLinkToModelsAndMarkTheOnesWithSummary() {
+    func testBarHasTheFormatButtonAndTheExportButtons() {
         let html = MarkdownHTML.convert(page, controls: controls()).html
-        for model in SummaryModel.allCases { XCTAssertTrue(html.contains("href=\"minuta://model/\(model.rawValue)\"")) }
-        XCTAssertTrue(html.contains("class=\"mc on\" href=\"minuta://model/decisao\" data-tip=\""))
-        XCTAssertTrue(html.contains("aria-current=\"true\""))
-        XCTAssertEqual(html.components(separatedBy: "class=\"dt\"").count - 1, 2, "um ponto por modelo gerado")
-        XCTAssertTrue(html.contains("href=\"minuta://redo\""))
+        XCTAssertTrue(html.contains("id=\"mdl\" href=\"minuta://models\""))
+        XCTAssertTrue(html.contains("<span class=\"lb\">Modelo</span>Decisão"))
+        XCTAssertTrue(html.contains("href=\"minuta://export/html\""))
+        XCTAssertTrue(html.contains("href=\"minuta://export/pdf\""))
+        XCTAssertFalse(html.contains("minuta://export/mail"), "o e-mail aparece, mas não é link")
+        XCTAssertTrue(html.contains("class=\"act off\" data-tip=\"Enviar por e-mail (em breve)\""))
+        XCTAssertTrue(html.contains("aria-disabled=\"true\""))
+        XCTAssertFalse(html.contains("minuta://model/"), "o modelo é escolhido no menu nativo")
         XCTAssertTrue(html.contains("href=\"minuta://title\""))
         XCTAssertTrue(html.contains("<span id=\"ti\">Título &amp; &lt;b&gt;</span>"))
         XCTAssertTrue(html.contains("Sugerido: Decisão. &lt;motivo&gt;"), "o texto da linha é escapado")
         let order = [
-            html.range(of: "<h1>")!.lowerBound, html.range(of: "class=\"models\"")!.lowerBound,
-            html.range(of: "<h2>Resumo</h2>")!.lowerBound,
+            html.range(of: "<h1>")!.lowerBound, html.range(of: "class=\"bar\"")!.lowerBound,
+            html.range(of: "class=\"hint\"")!.lowerBound, html.range(of: "class=\"toc\"")!.lowerBound,
+            html.range(of: ">Resumo</h2>")!.lowerBound,
         ]
-        XCTAssertEqual(order, order.sorted(), "os chips ficam entre o título e o resumo")
+        XCTAssertEqual(order, order.sorted(), "barra, linha de dica e chips ficam entre o título e o resumo")
+        let bar = html.components(separatedBy: "class=\"bar\"")[1].components(separatedBy: "</div>")[0]
+        XCTAssertTrue(bar.contains("class=\"sub\""), "a data fica na mesma linha do menu")
     }
 
-    func testWhileGeneratingChipsAreNotLinks() {
-        let html = MarkdownHTML.convert(page, controls: controls(generating: .geral, redo: false)).html
-        XCTAssertFalse(html.contains("minuta://model/"))
-        XCTAssertFalse(html.contains("minuta://redo"))
+    func testWhileGeneratingTheFormatButtonIsNotALink() {
+        let html = MarkdownHTML.convert(page, controls: controls(generating: .geral)).html
+        XCTAssertFalse(html.contains("minuta://models"))
+        XCTAssertTrue(html.contains("<span class=\"mdl busy\" id=\"mdl\"><span class=\"lb\">Modelo</span>Geral"))
         XCTAssertTrue(html.contains("class=\"sp\""))
-        XCTAssertTrue(html.contains("mc off"))
     }
 
-    func testEveryChipHasATooltipWithThreeLines() {
-        for generating in [nil, SummaryModel.geral] {
-            let html = MarkdownHTML.convert(page, controls: controls(generating: generating)).html
-            for model in SummaryModel.allCases {
-                let lines = model.tooltip.components(separatedBy: "\n")
-                XCTAssertEqual(lines.count, 3, model.rawValue)
-                XCTAssertTrue(lines[0].hasPrefix("Serve para"))
-                XCTAssertTrue(lines[1].hasPrefix("Mostra"))
-                XCTAssertTrue(lines[2].hasPrefix("Use quando"))
-                XCTAssertTrue(
-                    html.contains("data-tip=\"" + model.tooltip.replacingOccurrences(of: "\n", with: "&#10;") + "\""))
-            }
+    func testWithoutSummaryTheButtonAsksToChoose() {
+        let html = MarkdownHTML.convert(page, controls: .init(shown: nil, generating: nil, hint: "")).html
+        XCTAssertTrue(html.contains("<span class=\"lb\">Modelo</span>Escolher"))
+        XCTAssertFalse(html.contains("class=\"hint\""))
+    }
+
+    func testSectionChipsPointAtEverySectionInThreeGroups() {
+        let html = MarkdownHTML.convert(page, controls: controls(), collapsed: []).html
+        let toc = html.components(separatedBy: "<nav class=\"toc\"")[1].components(separatedBy: "</nav>")[0]
+        let titles = MarkdownHTML.sectionTitles(page)
+        XCTAssertEqual(titles.count, 7)
+        for (index, title) in titles.enumerated() {
+            XCTAssertTrue(toc.contains("href=\"minuta://goto/\(index)\">\(MarkdownHTML.escape(title))</a>"), title)
+            XCTAssertTrue(html.contains("id=\"s-\(index)\""), "a seção \(title) é o alvo do chip")
         }
+        XCTAssertTrue(toc.contains("<a href=\"minuta://goto/2\">Decisões</a>"), "seção do modelo em destaque")
+        XCTAssertTrue(toc.contains("<a class=\"fx\" href=\"minuta://goto/0\">Resumo</a>"))
+        XCTAssertTrue(toc.contains("<a class=\"fx\" href=\"minuta://goto/6\">Transcrição</a>"))
+        XCTAssertEqual(toc.components(separatedBy: "class=\"sep\"").count - 1, 2, "abertura, modelo e fechamento")
+        XCTAssertFalse(toc.contains("Ir para"), "sem rótulo")
     }
 
     func testTooltipsUseDataTipAndNeverTheSystemTitle() {
         let html = MarkdownHTML.convert(page, renamable: true, controls: controls()).html
         XCTAssertFalse(html.contains("title=\""), "title mostraria o tooltip do sistema junto com o balão")
-        for tip in ["Renomear", "Refazer este resumo", "Resumo gerado"] {
+        for tip in ["Renomear", "Modelo de resumo", "Salvar como HTML", "Salvar como PDF"] {
             XCTAssertTrue(html.contains("data-tip=\"\(tip)\""), tip)
         }
-        XCTAssertTrue(html.contains("aria-label=\"Resumo gerado\""), "o ponto continua descrito para o VoiceOver")
+    }
+
+    func testModelTooltipsKeepTheirThreeLines() {
+        for model in SummaryModel.allCases {
+            let lines = model.tooltip.components(separatedBy: "\n")
+            XCTAssertEqual(lines.count, 3, model.rawValue)
+            XCTAssertTrue(lines[1].hasPrefix("Mostra"), "o menu usa a linha Mostra")
+        }
     }
 
     func testPageIsACenteredCardWithoutWidthLimitOnTheBody() {
@@ -223,10 +241,29 @@ final class ModelChipsTests: XCTestCase {
         XCTAssertFalse(body.contains("max-width"))
     }
 
-    func testWithoutControlsThereAreNoChipsOrTitlePencil() {
+    func testWithoutControlsThereIsNoBarOrTitlePencil() {
         let html = MarkdownHTML.convert(page).html
-        XCTAssertFalse(html.contains("class=\"models\""))
+        XCTAssertFalse(html.contains("class=\"bar\""))
+        XCTAssertFalse(html.contains("class=\"toc\""))
         XCTAssertFalse(html.contains("minuta://title"))
+        XCTAssertTrue(html.contains("<p class=\"sub\">"))
+    }
+}
+
+final class ExportTests: XCTestCase {
+    func testExportedPageIsStandaloneWithTheTranscriptOpen() {
+        let md =
+            "---\ninicio: 2026-09-30T14:02:00-03:00\nduracao_segundos: 60\nmodelo: decisao\n---\n\n# T\n\n"
+            + "## Decisões\n- D. [00:00:01](#t-000001)\n\n## Transcrição\n"
+            + "<a id=\"t-000001\"></a>**[00:00:01] Eu:** Oi.\n"
+        let html = AtaExport.html(md)
+        XCTAssertFalse(html.contains("minuta://"), "nada depende do app")
+        XCTAssertTrue(html.contains("<style>"), "CSS embutido")
+        XCTAssertFalse(html.contains("<link"))
+        XCTAssertTrue(html.contains("<p class=\"tl\" id=\"t-000001\">"), "a transcrição vai sempre")
+        XCTAssertFalse(html.contains("sec hide"))
+        XCTAssertTrue(html.contains("<a class=\"chip\" href=\"#t-000001\">00:00:01</a>"), "citação vira âncora")
+        XCTAssertTrue(html.contains("@media print"))
     }
 }
 

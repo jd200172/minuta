@@ -5,11 +5,12 @@ import WebKit
 /// One reading window per minutes file: the Markdown rendered as a page, with JavaScript off and no
 /// navigation away from the document (only jumps to transcript anchors). The pencil next to a participant
 /// starts an in-place rename (`ParticipantRename`), and so does the pencil next to the title (`TitleRename`).
-/// Meetings written by the model flow of ADR 0017 also show the five summary models as chips under the title:
-/// a click shows the summary of that model, generating it first when it does not exist yet. Chips and pencils
-/// are `minuta://` links that this controller intercepts. So are the section headings (`minuta://section/<title>`,
-/// collapse and expand the section, remembered per meeting) and the citation chips (`minuta://cite/...`,
-/// a balloon with the cited text; its times jump to the transcript).
+/// Meetings written by the model flow of ADR 0017 also get a bar under the title (ADR 0027): the model button opens
+/// a menu of the summary models (choosing one shows its summary, generating it first when it does not exist yet),
+/// the export buttons save the minutes as HTML or PDF, and a chip per section jumps to it. Buttons, chips and
+/// pencils are `minuta://` links that this controller intercepts. So are the section headings
+/// (`minuta://section/<title>`, collapse and expand the section, remembered per meeting) and the citation chips
+/// (`minuta://cite/...`, a balloon with the cited text; its times jump to the transcript).
 @MainActor
 final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegate {
     static let shared = AtaViewerController()
@@ -185,33 +186,29 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
             collapsed: SectionState.collapsed(in: text))
     }
 
-    /// The chips under the title: which model is shown, which already have a summary, and the line below.
+    /// The bar under the title: the model whose summary is shown, the one being generated, and the line below.
     private func controls(for url: URL, text: String) -> MarkdownHTML.Controls? {
         guard AtaStore.isManaged(text) else { return nil }
         let classification = AtaStore.sidecar(forMarkdown: text, in: url.deletingLastPathComponent())
         let sidecar = classification?.sidecar
         let running = SummaryService.shared.running[url]
         let chosen = AtaStore.model(in: text)
-        let shown = running ?? chosen
-        let chips = SummaryModel.allCases.map {
-            MarkdownHTML.Controls.Chip(model: $0, selected: $0 == shown, has: sidecar?.has($0) == true)
-        }
         let hint: String
         if running == nil, let chosen, sidecar?.isOutdated(chosen) == true {
-            hint = "A transcrição foi corrigida depois deste resumo. Use o ícone de refazer para atualizá-lo."
+            hint =
+                "A transcrição foi corrigida depois deste resumo. Para atualizá-lo, use Refazer este resumo, no menu Modelo."
         } else if let running {
             hint = "Gerando o resumo no modelo \(running.title)…"
         } else if let suggestion = sidecar?.classification?.suggestion, let reason = sidecar?.classification?.reason {
             hint = "Sugerido: \(suggestion.title). \(reason)"
         } else if chosen == nil, AtaStore.frontMatter(text)["modelo"] != nil {
-            hint = "Este resumo usa um modelo que não existe mais. Escolha um dos modelos acima."
+            hint = "Este resumo usa um modelo que não existe mais. Escolha outro no menu Modelo."
         } else if chosen == nil {
-            hint = "Não foi possível sugerir um modelo. Escolha um, ou use Geral."
+            hint = "Não foi possível sugerir um modelo. Escolha um no menu Modelo, ou use Geral."
         } else {
             hint = ""
         }
-        return MarkdownHTML.Controls(
-            chips: chips, generating: running, hint: hint, canRedo: running == nil && chosen != nil)
+        return MarkdownHTML.Controls(shown: chosen, generating: running, hint: hint)
     }
 
     /// Reads the file again and shows it, keeping the scroll position.
@@ -227,7 +224,7 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         }
     }
 
-    /// Reloads the pages whose generation started or ended, so the chips show it.
+    /// Reloads the pages whose generation started or ended, so the model button shows it.
     private func runningChanged() {
         for url in panes.keys where shownRunning[url] != SummaryService.shared.running[url] { reload(url) }
     }
@@ -244,6 +241,60 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
                 reload(url)
             }
         }
+    }
+
+    /// The menu of the model button, below it: the four models, the current one checked, then the redo item.
+    private func showModelMenu(_ web: WKWebView) {
+        guard let url = url(of: web), let text = texts[url], SummaryService.shared.running[url] == nil else { return }
+        let sidecar = AtaStore.sidecar(forMarkdown: text, in: url.deletingLastPathComponent())?.sidecar
+        let chosen = AtaStore.model(in: text)
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        for model in SummaryModel.allCases {
+            let item = MenuAction.item("") { [weak self] in self?.generate(model, url: url, force: false) }
+            item.attributedTitle = Self.menuTitle(model, has: model != chosen && sidecar?.has(model) == true)
+            item.setAccessibilityLabel(model.title)
+            item.state = model == chosen ? .on : .off
+            menu.addItem(item)
+        }
+        menu.addItem(.separator())
+        let redo = MenuAction.item("Refazer este resumo") { [weak self] in
+            if let chosen { self?.generate(chosen, url: url, force: true) }
+        }
+        redo.isEnabled = chosen != nil
+        menu.addItem(redo)
+        panes[url]?.tips?.hide()
+        measure(web, id: "mdl") { rect in
+            menu.popUp(positioning: nil, at: NSPoint(x: rect.minX, y: rect.maxY + 4), in: web)
+        }
+    }
+
+    /// The model's name, "resumo gerado" when it already has one, and on a second line what it shows.
+    private static func menuTitle(_ model: SummaryModel, has: Bool) -> NSAttributedString {
+        let font = NSFont.menuFont(ofSize: 0)
+        let small = NSFont.menuFont(ofSize: NSFont.smallSystemFontSize)
+        let title = NSMutableAttributedString(string: model.title, attributes: [.font: font])
+        if has {
+            title.append(
+                NSAttributedString(
+                    string: "  resumo gerado",
+                    attributes: [.font: small, .foregroundColor: NSColor.secondaryLabelColor]))
+        }
+        let shows = model.tooltip.components(separatedBy: "\n").first { $0.hasPrefix("Mostra") } ?? ""
+        title.append(
+            NSAttributedString(
+                string: "\n" + shows, attributes: [.font: small, .foregroundColor: NSColor.secondaryLabelColor]))
+        return title
+    }
+
+    // MARK: Export
+
+    private func export(_ kind: AtaExport.Kind, web: WKWebView) {
+        guard let url = url(of: web), let window = windows[url],
+            let text = try? String(contentsOf: url, encoding: .utf8)
+        else { return }
+        panes[url]?.tips?.hide()
+        AtaExport.save(text, from: url, as: kind, in: window)
     }
 
     private func url(of web: WKWebView) -> URL? {
@@ -276,6 +327,21 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
                     self?.goTo(id, url: url)
                 }
             }
+        }
+    }
+
+    /// Scrolls to section `index` (its chip), expanding it first when it is collapsed.
+    private func goToSection(_ index: Int, url: URL) {
+        guard let pane = panes[url], let text = texts[url] else { return }
+        let titles = MarkdownHTML.sectionTitles(text)
+        guard titles.indices.contains(index) else { return }
+        let id = "s-\(index)"
+        if SectionState.isCollapsed(titles[index], in: text) {
+            SectionState.set(collapsed: false, titles[index], for: text)
+            anchorToShow = id
+            reload(url)
+        } else {
+            showAnchor(id, in: pane.web)
         }
     }
 
@@ -426,14 +492,14 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
                 if parts.count == 2, let ref = Int(parts[parts.startIndex + 1]) {
                     showCitation(webView, segment: parts[parts.startIndex], ref: ref)
                 }
-            case "model":
-                if let model = SummaryModel(rawValue: url?.lastPathComponent ?? ""), let file = self.url(of: webView) {
-                    generate(model, url: file, force: false)
+            case "models":
+                showModelMenu(webView)
+            case "goto":
+                if let index = Int(url?.lastPathComponent ?? ""), let file = self.url(of: webView) {
+                    goToSection(index, url: file)
                 }
-            case "redo":
-                if let file = self.url(of: webView), let text = texts[file], let model = AtaStore.model(in: text) {
-                    generate(model, url: file, force: true)
-                }
+            case "export":
+                if let kind = AtaExport.Kind(rawValue: url?.lastPathComponent ?? "") { export(kind, web: webView) }
             default:
                 break
             }
@@ -454,4 +520,22 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
             showAnchor(id, in: webView)
         }
     }
+}
+
+/// A menu item that runs a closure; the item keeps the closure alive.
+@MainActor
+private final class MenuAction: NSObject {
+    private let run: () -> Void
+
+    private init(_ run: @escaping () -> Void) { self.run = run }
+
+    static func item(_ title: String, _ run: @escaping () -> Void) -> NSMenuItem {
+        let action = MenuAction(run)
+        let item = NSMenuItem(title: title, action: #selector(fire), keyEquivalent: "")
+        item.target = action
+        item.representedObject = action
+        return item
+    }
+
+    @objc private func fire() { run() }
 }

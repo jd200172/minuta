@@ -2,12 +2,14 @@ import AppKit
 import SwiftUI
 
 /// What every balloon of the app shares, so they read as one language: the `BalloonPanel` (system material, the
-/// corner radius and horizontal padding of the page's model chips, an arrow that points at its element), 12 pt text,
-/// semibold leads, and the link-colour tint the reading page uses for its chips and its selected line. The tooltip
+/// corner radius and horizontal padding the page's model chips had before ADR 0027, an arrow that points at its
+/// element), 12 pt text, semibold leads, and the link-colour tint the reading page uses for its chips and its
+/// selected line. The tooltip
 /// balloons (`TipBalloon`, `PageTips`, `.balloonTip`) and the citation balloon (`CitationBalloon`) read from here.
 enum BalloonStyle {
     static let fontSize: CGFloat = 12
-    /// The padding of a model chip of the page (`.mc`: 8 px by 14 px) and its corner radius.
+    /// The padding and corner radius of the former model chips of the page (8 px by 14 px, 16 px), kept as the shape of
+    /// every balloon.
     static let insets = NSEdgeInsets(top: 8, left: 14, bottom: 8, right: 14)
     static let radius: CGFloat = 16
     static let arrowHeight: CGFloat = 8

@@ -9,20 +9,15 @@ enum MarkdownHTML {
         var html: String
     }
 
-    /// The summary-model chips under the title of a meeting written by the model flow (ADR 0017).
+    /// The controls under the title of a meeting written by the model flow (ADR 0027): the model menu button,
+    /// the export buttons, a line of hint and the section chips.
     struct Controls {
-        struct Chip {
-            var model: SummaryModel
-            var selected: Bool
-            /// The model already has a summary in the sidecar.
-            var has: Bool
-        }
-        var chips: [Chip]
-        /// The model being generated: the chips stop being links and the chip shows a spinner.
+        /// The model whose summary is in the file; nil when there is no summary yet.
+        var shown: SummaryModel?
+        /// The model being generated: the menu button stops being a link and shows a spinner.
         var generating: SummaryModel?
-        /// One line under the chips: the suggestion, or what is happening.
+        /// One line under the bar: the suggestion, or what is happening.
         var hint: String
-        var canRedo: Bool
     }
 
     /// Counts the citation chips of one page, so each one gets its own element id (`rf-N`) for the viewer to measure.
@@ -37,8 +32,11 @@ enum MarkdownHTML {
     /// hidden when its title is in the set. Without it the sections are plain, as in the file.
     /// With `renamable`, each participant in the "Participantes" list gets an id on its text (`sp-N`, for the
     /// viewer to measure) and a pencil link (`minuta://rename/N`) that the viewer turns into an in-place rename.
-    /// With `controls`, the title gets a pencil (`minuta://title`, text in `#ti`) and the model chips follow the
-    /// date line; chips and the redo icon are `minuta://model/<id>` and `minuta://redo` links.
+    /// With `controls`, the title gets a pencil (`minuta://title`, text in `#ti`), and the date line becomes a bar
+    /// with the model menu button (`minuta://models`, measured by its id `mdl`) and the export buttons
+    /// (`minuta://export/html` and `/pdf`; e-mail is shown but inactive). Below it, one chip per "##" section
+    /// (`minuta://goto/N`, where N is the section's place in `sectionTitles`), with the sections of the shown
+    /// model highlighted. Every "##" heading gets the id `s-N`, the target of its chip.
     static func convert(
         _ markdown: String, renamable: Bool = false, controls: Controls? = nil, citations: Bool = false,
         collapsed: Set<String>? = nil
@@ -59,6 +57,8 @@ enum MarkdownHTML {
         }
 
         let segmentCount = markdown.components(separatedBy: "<a id=\"t-").count - 1
+        let sections = sectionTitles(markdown)
+        var sectionIndex = 0
         var title = ""
         var body = ""
         var paragraph: [String] = []
@@ -100,7 +100,11 @@ enum MarkdownHTML {
                     controls == nil
                     ? escape(title)
                     : "<span id=\"ti\">\(escape(title))</span><a class=\"pen\" href=\"minuta://title\" data-tip=\"Renomear\" aria-label=\"Renomear reunião\">\(pencil)</a>"
-                body += "<h1>\(heading)</h1>\n\(subtitle(meta))\(controls.map(controlsHTML) ?? "")"
+                if let controls {
+                    body += "<h1>\(heading)</h1>\n\(controlsHTML(controls, meta: meta, sections: sections))"
+                } else {
+                    body += "<h1>\(heading)</h1>\n\(subtitle(meta))"
+                }
             } else if line.hasPrefix("## ") {
                 flush()
                 section = String(line.dropFirst(3))
@@ -108,13 +112,15 @@ enum MarkdownHTML {
                     body += "</div>\n"
                     inSection = false
                 }
+                let id = "s-\(sectionIndex)"
+                sectionIndex += 1
                 if let collapsed {
                     body += sectionHeading(
-                        section, collapsed: collapsed.contains(section),
+                        section, id: id, collapsed: collapsed.contains(section),
                         count: section == SectionState.transcript ? segmentCount : nil)
                     inSection = true
                 } else {
-                    body += "<h2>\(escape(section))</h2>\n"
+                    body += "<h2 id=\"\(id)\">\(escape(section))</h2>\n"
                 }
             } else if line.hasPrefix("### ") {
                 flush()
@@ -140,8 +146,17 @@ enum MarkdownHTML {
     private static let pencil =
         #"<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2.828 2.828 0 0 0-4-4L4 16v4"/><path d="M13.5 6.5l4 4"/></svg>"#
 
-    private static let refresh =
-        #"<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.9-3M4 5v4h4"/><path d="M4 13a8 8 0 0 0 14.9 3M20 19v-4h-4"/></svg>"#
+    private static let selector =
+        #"<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4"/><path d="M16 15l-4 4-4-4"/></svg>"#
+
+    private static let mail =
+        #"<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>"#
+
+    private static let htmlIcon =
+        #"<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8l-4 4 4 4"/><path d="M16 8l4 4-4 4"/><path d="M13.5 5l-3 14"/></svg>"#
+
+    private static let pdfIcon =
+        #"<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>"#
 
     static func escape(_ text: String) -> String {
         text.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
@@ -197,7 +212,7 @@ enum MarkdownHTML {
 
     /// A section heading as a toggle, and the opening of the block that holds the section. The transcript also
     /// says how many segments it has.
-    private static func sectionHeading(_ title: String, collapsed: Bool, count: Int?) -> String {
+    private static func sectionHeading(_ title: String, id: String, collapsed: Bool, count: Int?) -> String {
         let label =
             (collapsed ? "Expandir " : "Recolher ")
             + (title == SectionState.transcript ? "a transcrição" : "a seção \(title)")
@@ -205,7 +220,7 @@ enum MarkdownHTML {
         let encoded = title.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? ""
         let tip = escape(label)
         return
-            "<h2 class=\"disc\(collapsed ? "" : " open")\"><a href=\"minuta://section/\(encoded)\" data-tip=\"\(tip)\" aria-label=\"\(tip)\" aria-expanded=\"\(collapsed ? "false" : "true")\">\(chevron)\(escape(title))\(amount.map { "<span class=\"ct\">\($0)</span>" } ?? "")</a></h2>\n<div class=\"sec\(collapsed ? " hide" : "")\">\n"
+            "<h2 class=\"disc\(collapsed ? "" : " open")\" id=\"\(id)\"><a href=\"minuta://section/\(encoded)\" data-tip=\"\(tip)\" aria-label=\"\(tip)\" aria-expanded=\"\(collapsed ? "false" : "true")\">\(chevron)\(escape(title))\(amount.map { "<span class=\"ct\">\($0)</span>" } ?? "")</a></h2>\n<div class=\"sec\(collapsed ? " hide" : "")\">\n"
     }
 
     /// `<a id="t-000010"></a>**[00:00:10] Participante 1:** texto`
@@ -254,37 +269,57 @@ enum MarkdownHTML {
         return html + "</table>\n"
     }
 
-    private static func controlsHTML(_ controls: Controls) -> String {
-        var html = "<div class=\"models\" role=\"group\" aria-label=\"Resumo no modelo\">\n"
-        for chip in controls.chips {
-            let busy = controls.generating == chip.model
-            var css = "mc"
-            if chip.selected || busy { css += " on" }
-            if controls.generating != nil && !busy { css += " off" }
-            var inner = escape(chip.model.title)
-            let tip = escape(chip.model.tooltip).replacingOccurrences(of: "\n", with: "&#10;")
-            if busy {
-                inner += "<i class=\"sp\"></i>"
-            } else if chip.has {
-                inner += "<i class=\"dt\" data-tip=\"Resumo gerado\" role=\"img\" aria-label=\"Resumo gerado\"></i>"
-            }
-            if controls.generating != nil {
-                html += "<span class=\"\(css)\" data-tip=\"\(tip)\" aria-description=\"\(tip)\">\(inner)</span>\n"
-            } else {
-                html +=
-                    "<a class=\"\(css)\" href=\"minuta://model/\(chip.model.rawValue)\" data-tip=\"\(tip)\" aria-description=\"\(tip)\"\(chip.selected ? " aria-current=\"true\"" : "")>\(inner)</a>\n"
-            }
-        }
-        if controls.canRedo {
+    /// The titles of the "##" sections, in order; the chip `minuta://goto/N` points at the N-th.
+    static func sectionTitles(_ markdown: String) -> [String] {
+        markdown.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
+            .filter { $0.hasPrefix("## ") }.map { String($0.dropFirst(3)) }
+    }
+
+    /// The date line with the model menu button and the export buttons, the hint, and the section chips.
+    private static func controlsHTML(_ controls: Controls, meta: [String: String], sections: [String]) -> String {
+        var html = "<div class=\"bar\">\n"
+        let date = subtitleText(meta)
+        if !date.isEmpty { html += "<span class=\"sub\">\(escape(date))</span>\n" }
+        let name = escape(controls.generating?.title ?? controls.shown?.title ?? "Escolher")
+        let label = "<span class=\"lb\">Modelo</span>"
+        if controls.generating != nil {
+            html += "<span class=\"mdl busy\" id=\"mdl\">\(label)\(name)<i class=\"sp\"></i></span>\n"
+        } else {
             html +=
-                "<a class=\"pen redo\" href=\"minuta://redo\" data-tip=\"Refazer este resumo\" aria-label=\"Refazer este resumo\">\(refresh)</a>\n"
+                "<a class=\"mdl\" id=\"mdl\" href=\"minuta://models\" data-tip=\"Modelo de resumo\" aria-haspopup=\"menu\" aria-label=\"Modelo de resumo: \(name)\">\(label)\(name)\(selector)</a>\n"
         }
-        html += "</div>\n"
+        html += "<span class=\"grow\"></span>\n<span class=\"acts\" role=\"group\" aria-label=\"Exportar a ata\">"
+        html +=
+            "<span class=\"act off\" data-tip=\"Enviar por e-mail (em breve)\" role=\"button\" aria-disabled=\"true\" aria-label=\"Enviar por e-mail\">\(mail)</span>"
+        html +=
+            "<a class=\"act\" href=\"minuta://export/html\" data-tip=\"Salvar como HTML\" aria-label=\"Salvar como HTML\">\(htmlIcon)</a>"
+        html +=
+            "<a class=\"act\" href=\"minuta://export/pdf\" data-tip=\"Salvar como PDF\" aria-label=\"Salvar como PDF\">\(pdfIcon)</a>"
+        html += "</span>\n</div>\n"
         if !controls.hint.isEmpty { html += "<p class=\"hint\">\(escape(controls.hint))</p>\n" }
-        return html
+        guard !sections.isEmpty else { return html }
+        // Three groups: the opening sections, the sections of the model, and the closing ones.
+        let own = Set(controls.shown?.sections.map(\.title) ?? [])
+        html += "<nav class=\"toc\" aria-label=\"Seções da ata\">"
+        var group = 0
+        var seenModel = false
+        for (index, title) in sections.enumerated() {
+            let isModel = own.contains(title)
+            if isModel { seenModel = true }
+            let current = isModel ? 1 : (seenModel ? 2 : 0)
+            if index > 0 && current != group { html += "<span class=\"sep\" aria-hidden=\"true\"></span>" }
+            group = current
+            html += "<a\(isModel ? "" : " class=\"fx\"") href=\"minuta://goto/\(index)\">\(escape(title))</a>"
+        }
+        return html + "</nav>\n"
     }
 
     private static func subtitle(_ meta: [String: String]) -> String {
+        let text = subtitleText(meta)
+        return text.isEmpty ? "" : "<p class=\"sub\">\(escape(text))</p>\n"
+    }
+
+    private static func subtitleText(_ meta: [String: String]) -> String {
         var parts: [String] = []
         if let value = meta["inicio"], let date = ISO8601DateFormatter().date(from: value) {
             let time = DateFormatter()
@@ -296,7 +331,7 @@ enum MarkdownHTML {
         if let value = meta["duracao_segundos"], let seconds = Double(value) {
             parts.append(Fmt.shortDuration(seconds))
         }
-        return parts.isEmpty ? "" : "<p class=\"sub\">\(escape(parts.joined(separator: " · ")))</p>\n"
+        return parts.joined(separator: " · ")
     }
 
     private static func page(title: String, body: String) -> String {
@@ -314,17 +349,27 @@ enum MarkdownHTML {
         h1 { font-size: 22px; font-weight: 600; margin: 0 0 2px; }
         h1 a.pen { margin-left: 10px; vertical-align: 3px; }
         .sub { color: GrayText; font-size: 13px; margin: 0 0 18px; }
-        .models { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 8px; margin: 0; }
-        .mc { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; line-height: 1; padding: 8px 14px; border-radius: 16px; border: 1px solid color-mix(in srgb, CanvasText 20%, transparent); color: CanvasText; background: Canvas; white-space: nowrap; }
-        a.mc:hover { background: color-mix(in srgb, CanvasText 7%, transparent); }
-        .mc.on { background: color-mix(in srgb, LinkText 14%, transparent); border-color: color-mix(in srgb, LinkText 50%, transparent); color: LinkText; font-weight: 600; }
-        .mc.off { opacity: 0.45; }
-        .mc .dt { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.55; }
-        .mc .sp { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid currentColor; border-top-color: transparent; animation: spin 0.8s linear infinite; }
+        .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0; }
+        .bar .sub { margin: 0; }
+        .bar .grow { flex: 1; }
+        .mdl { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; line-height: 1; padding: 5px 8px 5px 10px; border-radius: 6px; border: 0.5px solid color-mix(in srgb, CanvasText 28%, transparent); color: CanvasText; background: Canvas; white-space: nowrap; }
+        a.mdl:hover { background: color-mix(in srgb, CanvasText 6%, Canvas); }
+        .mdl .lb { color: GrayText; }
+        .mdl svg { color: GrayText; }
+        .mdl .sp { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid currentColor; border-top-color: transparent; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        a.redo { margin-left: 6px; padding: 6px; }
-        .hint { color: GrayText; font-size: 12px; line-height: 1.5; margin: 14px 0 0; }
-        .hint + h2, .models + h2, .sub + h2 { margin-top: 30px; }
+        .acts { display: inline-flex; gap: 2px; }
+        .act { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; color: GrayText; }
+        a.act:hover { background: color-mix(in srgb, CanvasText 7%, transparent); color: CanvasText; }
+        .act.off { opacity: 0.4; }
+        .hint { color: GrayText; font-size: 12px; line-height: 1.5; margin: 12px 0 0; }
+        .toc { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 14px 0 0; }
+        .toc a { font-size: 12px; line-height: 1.3; padding: 3px 10px; border-radius: 5px; background: color-mix(in srgb, LinkText 14%, transparent); white-space: nowrap; }
+        .toc a.fx { background: transparent; color: GrayText; box-shadow: inset 0 0 0 0.5px color-mix(in srgb, CanvasText 25%, transparent); }
+        .toc a:hover { background: color-mix(in srgb, LinkText 22%, transparent); }
+        .toc a.fx:hover { color: CanvasText; background: color-mix(in srgb, CanvasText 6%, transparent); }
+        .toc .sep { width: 1px; height: 14px; margin: 0 4px; background: color-mix(in srgb, CanvasText 22%, transparent); }
+        .hint + h2, .toc + h2, .bar + h2, .sub + h2 { margin-top: 30px; }
         h2 { font-size: 13px; font-weight: 600; color: GrayText; margin: 24px 0 6px; }
         h3 { font-size: 14px; font-weight: 600; margin: 14px 0 2px; }
         p { margin: 6px 0; }
@@ -341,7 +386,10 @@ enum MarkdownHTML {
         p.tl:target { background: color-mix(in srgb, LinkText 16%, transparent); }
         a.chip svg { vertical-align: -1px; margin-right: 3px; }
         h2.disc { margin: 22px 0 6px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
-        .hint + h2.disc, .models + h2.disc, .sub + h2.disc { margin-top: 26px; }
+        .hint + h2.disc, .toc + h2.disc, .bar + h2.disc, .sub + h2.disc { margin-top: 26px; }
+        h2 { scroll-margin-top: 12px; }
+        h2:target { animation: flash 1.6s ease-out; border-radius: 6px; }
+        @keyframes flash { from { background: color-mix(in srgb, LinkText 18%, transparent); } to { background: transparent; } }
         h2.disc a { display: inline-flex; align-items: center; gap: 6px; color: GrayText; }
         h2.disc a:hover { color: CanvasText; }
         h2.disc .cv { transition: transform 0.12s; }
@@ -350,6 +398,14 @@ enum MarkdownHTML {
         h2.disc .ct::before { content: "· "; }
         .sec.hide { display: none; }
         .tm { color: GrayText; font-size: 12px; font-variant-numeric: tabular-nums; }
+        @media print {
+            :root { color-scheme: light; }
+            html, body { background: none; }
+            body { padding: 0; }
+            .card { max-width: none; padding: 0; border: none; border-radius: 0; }
+            h2, h3 { break-after: avoid; }
+            p.tl, li, tr { break-inside: avoid; }
+        }
         </style></head><body>
         <div class="card" id="card">
         \(body)</div></body></html>
