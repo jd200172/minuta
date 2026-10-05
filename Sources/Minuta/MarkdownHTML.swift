@@ -10,15 +10,20 @@ enum MarkdownHTML {
     }
 
     /// The controls under the title of a meeting written by the model flow (ADR 0027): the model menu button,
-    /// the export buttons, a line of hint and the section chips.
+    /// the export buttons, a line of state and the section chips.
     struct Controls {
         /// The model whose summary is in the file; nil when there is no summary yet.
         var shown: SummaryModel?
         /// The model being generated: the menu button stops being a link and shows a spinner.
         var generating: SummaryModel?
-        /// One line under the bar: the suggestion, or what is happening.
+        /// One line under the model button: what is happening or what is wrong. Empty when there is nothing to say.
         var hint: String
+        /// The title of the section whose chip is filled, the one at the top of the pane; the first section when nil
+        /// or when the file has no such section. The viewer moves the fill itself while the pane scrolls.
+        var selected: String?
     }
+
+    static let transcriptTitle = "Transcrição"
 
     /// Counts the citation chips of one page, so each one gets its own element id (`rf-N`) for the viewer to measure.
     final class Refs {
@@ -28,19 +33,19 @@ enum MarkdownHTML {
     /// With `citations`, a transcript chip (`[00:00:10](#t-000010)`) is a `minuta://cite/<segment>/<N>` link that
     /// the viewer turns into a balloon with the cited text, and the element carries the id `rf-N`. Without it, the
     /// chip is a plain anchor to the transcript line, which also works in a browser.
-    /// With `collapsed`, every "##" section heading is a `minuta://section/<title>` toggle, and what is below it is
-    /// hidden when its title is in the set. Without it the sections are plain, as in the file.
     /// With `renamable`, each participant in the "Participantes" list gets an id on its text (`sp-N`, for the
     /// viewer to measure) and a pencil link (`minuta://rename/N`) that the viewer turns into an in-place rename.
     /// With `controls`, the title gets a pencil (`minuta://title`, text in `#ti`), and the date line becomes a bar
     /// with the model menu button (`minuta://models`, measured by its id `mdl`) and the export buttons
     /// (`minuta://export/html` and `/pdf`; e-mail is shown but inactive). Below it, one chip per "##" section
-    /// (`minuta://goto/N`, where N is the section's place in `sectionTitles`), all alike. Every "##" heading gets the id `s-N`, the target of its chip.
+    /// (`minuta://goto/N`, where N is the section's place in `sectionTitles`), all alike. The page is a fixed head
+    /// (title, bar, model button and chips) over a pane that holds every section; the pane scrolls and the head does
+    /// not. Every "##" heading gets the id `s-N`, the target of its chip.
     /// With `details`, for a page that runs outside the app, every "##" section is a `<details>` that starts closed
-    /// and opens and closes with no script. `details` takes the place of `collapsed`.
+    /// and opens and closes with no script.
     static func convert(
         _ markdown: String, renamable: Bool = false, controls: Controls? = nil, citations: Bool = false,
-        collapsed: Set<String>? = nil, details: Bool = false
+        details: Bool = false
     ) -> Document {
         let refs: Refs? = citations ? Refs() : nil
         var inSection = false
@@ -102,7 +107,8 @@ enum MarkdownHTML {
                     ? escape(title)
                     : "<span id=\"ti\">\(escape(title))</span><a class=\"pen\" href=\"minuta://title\" data-tip=\"Renomear\" aria-label=\"Renomear reunião\">\(pencil)</a>"
                 if let controls {
-                    body += "<h1>\(heading)</h1>\n\(controlsHTML(controls, meta: meta, sections: sections))"
+                    body +=
+                        "<header class=\"head\">\n<h1>\(heading)</h1>\n\(controlsHTML(controls, meta: meta, sections: sections))</header>\n<main class=\"pane\" id=\"pane\">\n"
                 } else {
                     body += "<h1>\(heading)</h1>\n\(subtitle(meta))"
                 }
@@ -110,22 +116,20 @@ enum MarkdownHTML {
                 flush()
                 section = String(line.dropFirst(3))
                 if inSection {
-                    body += details ? "</details>\n" : "</div>\n"
+                    body += "</details>\n"
                     inSection = false
                 }
                 let id = "s-\(sectionIndex)"
                 sectionIndex += 1
                 if details {
                     body += detailsHeading(
-                        section, id: id, count: section == SectionState.transcript ? segmentCount : nil)
-                    inSection = true
-                } else if let collapsed {
-                    body += sectionHeading(
-                        section, id: id, collapsed: collapsed.contains(section),
-                        count: section == SectionState.transcript ? segmentCount : nil)
+                        section, id: id, count: section == transcriptTitle ? segmentCount : nil)
                     inSection = true
                 } else {
-                    body += "<h2 id=\"\(id)\">\(escape(section))</h2>\n"
+                    let count = controls != nil && section == transcriptTitle ? segmentCount : nil
+                    let amount = count.map { $0 == 1 ? "1 segmento" : "\($0) segmentos" }
+                    body +=
+                        "<h2 id=\"\(id)\">\(escape(section))\(amount.map { "<span class=\"ct\">\($0)</span>" } ?? "")</h2>\n"
                 }
             } else if line.hasPrefix("### ") {
                 flush()
@@ -142,8 +146,10 @@ enum MarkdownHTML {
             }
         }
         flush()
-        if inSection { body += details ? "</details>\n" : "</div>\n" }
-        return Document(title: title, html: page(title: title.isEmpty ? "Ata" : title, body: body))
+        if inSection { body += "</details>\n" }
+        if controls != nil { body += "</main>\n" }
+        return Document(
+            title: title, html: page(title: title.isEmpty ? "Ata" : title, body: body, app: controls != nil))
     }
 
     // MARK: Pieces
@@ -222,19 +228,6 @@ enum MarkdownHTML {
             "<details class=\"dt\" id=\"\(id)\"><summary>\(chevron)\(escape(title))\(amount.map { "<span class=\"ct\">\($0)</span>" } ?? "")</summary>\n"
     }
 
-    /// A section heading as a toggle, and the opening of the block that holds the section. The transcript also
-    /// says how many segments it has.
-    private static func sectionHeading(_ title: String, id: String, collapsed: Bool, count: Int?) -> String {
-        let label =
-            (collapsed ? "Expandir " : "Recolher ")
-            + (title == SectionState.transcript ? "a transcrição" : "a seção \(title)")
-        let amount = count.map { $0 == 1 ? "1 segmento" : "\($0) segmentos" }
-        let encoded = title.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? ""
-        let tip = escape(label)
-        return
-            "<h2 class=\"disc\(collapsed ? "" : " open")\" id=\"\(id)\"><a href=\"minuta://section/\(encoded)\" data-tip=\"\(tip)\" aria-label=\"\(tip)\" aria-expanded=\"\(collapsed ? "false" : "true")\">\(chevron)\(escape(title))\(amount.map { "<span class=\"ct\">\($0)</span>" } ?? "")</a></h2>\n<div class=\"sec\(collapsed ? " hide" : "")\">\n"
-    }
-
     /// `<a id="t-000010"></a>**[00:00:10] Participante 1:** texto`
     private static func transcriptLine(_ text: String) -> String? {
         let pattern = #"^<a id="(t-\d+)"></a>\*\*\[(\d{2}:\d{2}:\d{2})\] (.+?):\*\* ?(.*)$"#
@@ -287,20 +280,15 @@ enum MarkdownHTML {
             .filter { $0.hasPrefix("## ") }.map { String($0.dropFirst(3)) }
     }
 
-    /// The date line with the model menu button and the export buttons, the hint, and the section chips.
+    /// Four blocks: the date line with the export buttons (they belong to the title above it), the model menu button,
+    /// the line of state, and the section chips.
     private static func controlsHTML(_ controls: Controls, meta: [String: String], sections: [String]) -> String {
         var html = "<div class=\"bar\">\n"
         let date = subtitleText(meta)
-        if !date.isEmpty { html += "<span class=\"sub\">\(escape(date))</span>\n" }
-        let name = escape(controls.generating?.title ?? controls.shown?.title ?? "Escolher")
-        let label = "<span class=\"lb\">Modelo</span>"
-        if controls.generating != nil {
-            html += "<span class=\"mdl busy\" id=\"mdl\">\(label)\(name)<i class=\"sp\"></i></span>\n"
-        } else {
-            html +=
-                "<a class=\"mdl\" id=\"mdl\" href=\"minuta://models\" data-tip=\"Modelo de resumo\" aria-haspopup=\"menu\" aria-label=\"Modelo de resumo: \(name)\">\(label)\(name)\(selector)</a>\n"
+        if !date.isEmpty {
+            html += "<span class=\"sub\">\(escape(date))</span>\n<span class=\"dv\" aria-hidden=\"true\"></span>\n"
         }
-        html += "<span class=\"grow\"></span>\n<span class=\"acts\" role=\"group\" aria-label=\"Exportar a ata\">"
+        html += "<span class=\"acts\" role=\"group\" aria-label=\"Exportar a ata\">"
         html +=
             "<span class=\"act off\" data-tip=\"Enviar por e-mail (em breve)\" role=\"button\" aria-disabled=\"true\" aria-label=\"Enviar por e-mail\">\(mail)</span>"
         html +=
@@ -308,12 +296,24 @@ enum MarkdownHTML {
         html +=
             "<a class=\"act\" href=\"minuta://export/pdf\" data-tip=\"Salvar como PDF\" aria-label=\"Salvar como PDF\">\(pdfIcon)</a>"
         html += "</span>\n</div>\n"
+        let name = escape(controls.generating?.title ?? controls.shown?.title ?? "Escolher")
+        let label = "<span class=\"lb\">Modelo</span>"
+        html += "<div class=\"mdlrow\">"
+        if controls.generating != nil {
+            html += "<span class=\"mdl busy\" id=\"mdl\">\(label)\(name)<i class=\"sp\"></i></span>"
+        } else {
+            html +=
+                "<a class=\"mdl\" id=\"mdl\" href=\"minuta://models\" data-tip=\"Modelo de resumo\" aria-haspopup=\"menu\" aria-label=\"Modelo de resumo: \(name)\">\(label)\(name)\(selector)</a>"
+        }
+        html += "</div>\n"
         if !controls.hint.isEmpty { html += "<p class=\"hint\">\(escape(controls.hint))</p>\n" }
         guard !sections.isEmpty else { return html }
-        // One chip per section, in the order of the file, all alike.
+        // One chip per section, in the order of the file; the one whose section the page shows is filled.
+        let current = controls.selected.flatMap { sections.firstIndex(of: $0) } ?? 0
         html += "<nav class=\"toc\" aria-label=\"Seções da ata\">"
         for (index, title) in sections.enumerated() {
-            html += "<a href=\"minuta://goto/\(index)\">\(escape(title))</a>"
+            let on = index == current ? " class=\"on\" aria-current=\"true\"" : ""
+            html += "<a\(on) href=\"minuta://goto/\(index)\">\(escape(title))</a>"
         }
         return html + "</nav>\n"
     }
@@ -338,7 +338,7 @@ enum MarkdownHTML {
         return parts.joined(separator: " · ")
     }
 
-    private static func page(title: String, body: String) -> String {
+    private static func page(title: String, body: String, app: Bool) -> String {
         """
         <!doctype html>
         <html lang="pt-BR"><head><meta charset="utf-8">
@@ -353,24 +353,34 @@ enum MarkdownHTML {
         h1 { font-size: 22px; line-height: 1.3; font-weight: 600; margin: 0 0 6px; }
         h1 a.pen { margin-left: 10px; vertical-align: 3px; }
         .sub { color: GrayText; font-size: 13px; margin: 0 0 18px; }
-        .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0; }
+        .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0; }
         .bar .sub { margin: 0; }
-        .bar .grow { flex: 1; }
+        .bar .dv { width: 1px; height: 14px; background: color-mix(in srgb, CanvasText 22%, transparent); }
+        .mdlrow { margin: 24px 0 0; }
         .mdl { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; line-height: 1; padding: 5px 8px 5px 10px; border-radius: 6px; border: 0.5px solid color-mix(in srgb, CanvasText 28%, transparent); color: CanvasText; background: Canvas; white-space: nowrap; }
         a.mdl:hover { background: color-mix(in srgb, CanvasText 6%, Canvas); }
         .mdl .lb { color: GrayText; }
         .mdl svg { color: GrayText; }
         .mdl .sp { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid currentColor; border-top-color: transparent; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .acts { display: inline-flex; gap: 2px; }
-        .act { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; color: GrayText; }
+        .acts { display: inline-flex; gap: 0; margin-left: -6px; }
+        .act { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; color: GrayText; }
         a.act:hover { background: color-mix(in srgb, CanvasText 7%, transparent); color: CanvasText; }
         .act.off { opacity: 0.4; }
-        .hint { color: GrayText; font-size: 12px; line-height: 1.5; margin: 16px 0 0; }
-        .toc { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 18px 0 0; }
+        .hint { color: GrayText; font-size: 12px; line-height: 1.5; margin: 14px 0 0; }
+        .toc { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 20px 0 0; }
         .toc a { font-size: 12px; line-height: 1.3; padding: 3px 10px; border-radius: 5px; background: color-mix(in srgb, LinkText 14%, transparent); white-space: nowrap; }
         .toc a:hover { background: color-mix(in srgb, LinkText 22%, transparent); }
-        .hint + h2, .toc + h2, .bar + h2, .sub + h2 { margin-top: 34px; }
+        .toc a.on, .toc a.on:hover { background: LinkText; color: Canvas; }
+        body.app { overflow: hidden; }
+        .card.app { display: flex; flex-direction: column; height: calc(100vh - 52px); min-height: 240px; padding: 0; overflow: hidden; }
+        .head { flex: none; padding: 28px 36px 20px; border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
+        .pane { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 4px 36px 32px; }
+        .pane > h2 { margin: 30px 0 10px; padding-top: 18px; border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
+        .pane > h2:first-child { margin-top: 24px; padding-top: 0; border-top: none; }
+        h2 .ct { font-weight: 400; font-size: 12px; margin-left: 6px; }
+        h2 .ct::before { content: "· "; }
+        .hint + h2, .toc + h2, .mdlrow + h2, .bar + h2, .sub + h2 { margin-top: 34px; }
         h2 { font-size: 13px; font-weight: 600; color: GrayText; margin: 30px 0 10px; }
         h3 { font-size: 14px; font-weight: 600; margin: 18px 0 4px; }
         p { margin: 8px 0; }
@@ -386,20 +396,11 @@ enum MarkdownHTML {
         p.tl { display: grid; grid-template-columns: 64px 1fr; gap: 8px; padding: 3px 8px; margin: 0 -8px; border-radius: 6px; }
         p.tl:target { background: color-mix(in srgb, LinkText 16%, transparent); }
         a.chip svg { vertical-align: -1px; margin-right: 3px; }
-        h2.disc { margin: 30px 0 10px; padding-top: 18px; border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
-        .hint + h2.disc, .toc + h2.disc, .bar + h2.disc, .sub + h2.disc { margin-top: 32px; }
         h2 { scroll-margin-top: 12px; }
         h2:target { animation: flash 1.6s ease-out; border-radius: 6px; }
         @keyframes flash { from { background: color-mix(in srgb, LinkText 18%, transparent); } to { background: transparent; } }
-        h2.disc a { display: inline-flex; align-items: center; gap: 6px; color: GrayText; }
-        h2.disc a:hover { color: CanvasText; }
-        h2.disc .cv { transition: transform 0.12s; }
-        h2.disc.open .cv { transform: rotate(90deg); }
-        h2.disc .ct { font-weight: 400; font-size: 12px; color: GrayText; }
-        h2.disc .ct::before { content: "· "; }
-        .sec.hide { display: none; }
         details.dt { margin: 30px 0 10px; padding-top: 18px; border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
-        .hint + details.dt, .toc + details.dt, .bar + details.dt, .sub + details.dt { margin-top: 32px; }
+        .hint + details.dt, .toc + details.dt, .mdlrow + details.dt, .bar + details.dt, .sub + details.dt { margin-top: 32px; }
         details.dt > summary { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: GrayText; cursor: pointer; list-style: none; }
         details.dt > summary::-webkit-details-marker { display: none; }
         details.dt > summary:hover { color: CanvasText; }
@@ -417,8 +418,8 @@ enum MarkdownHTML {
             h2, h3 { break-after: avoid; }
             p.tl, li, tr { break-inside: avoid; }
         }
-        </style></head><body>
-        <div class="card" id="card">
+        </style></head><body\(app ? " class=\"app\"" : "")>
+        <div class="card\(app ? " app" : "")" id="card">
         \(body)</div></body></html>
         """
     }

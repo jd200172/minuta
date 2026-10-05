@@ -160,11 +160,11 @@ final class ReadingBarTests: XCTestCase {
         + "## Itens de ação\nNenhuma.\n\n## Pontos em aberto\nNenhum.\n\n## Transcrição\n"
         + "<a id=\"t-000001\"></a>**[00:00:01] Eu:** Oi.\n"
 
-    private func controls(generating: SummaryModel? = nil) -> MarkdownHTML.Controls {
-        MarkdownHTML.Controls(shown: .decisao, generating: generating, hint: "Sugerido: Decisão. <motivo>")
+    private func controls(generating: SummaryModel? = nil, selected: String? = nil) -> MarkdownHTML.Controls {
+        MarkdownHTML.Controls(shown: .decisao, generating: generating, hint: "Aviso <de estado>", selected: selected)
     }
 
-    func testBarHasTheFormatButtonAndTheExportButtons() {
+    func testHeaderHasFourBlocksInOrder() {
         let html = MarkdownHTML.convert(page, controls: controls()).html
         XCTAssertTrue(html.contains("id=\"mdl\" href=\"minuta://models\""))
         XCTAssertTrue(html.contains("<span class=\"lb\">Modelo</span>Decisão"))
@@ -176,15 +176,18 @@ final class ReadingBarTests: XCTestCase {
         XCTAssertFalse(html.contains("minuta://model/"), "o modelo é escolhido no menu nativo")
         XCTAssertTrue(html.contains("href=\"minuta://title\""))
         XCTAssertTrue(html.contains("<span id=\"ti\">Título &amp; &lt;b&gt;</span>"))
-        XCTAssertTrue(html.contains("Sugerido: Decisão. &lt;motivo&gt;"), "o texto da linha é escapado")
+        XCTAssertTrue(html.contains("Aviso &lt;de estado&gt;"), "o texto da linha é escapado")
         let order = [
             html.range(of: "<h1>")!.lowerBound, html.range(of: "class=\"bar\"")!.lowerBound,
-            html.range(of: "class=\"hint\"")!.lowerBound, html.range(of: "class=\"toc\"")!.lowerBound,
-            html.range(of: ">Resumo</h2>")!.lowerBound,
+            html.range(of: "class=\"mdlrow\"")!.lowerBound, html.range(of: "class=\"hint\"")!.lowerBound,
+            html.range(of: "class=\"toc\"")!.lowerBound, html.range(of: ">Resumo</h2>")!.lowerBound,
         ]
-        XCTAssertEqual(order, order.sorted(), "barra, linha de dica e chips ficam entre o título e o resumo")
+        XCTAssertEqual(order, order.sorted(), "título, data e ícones, modelo, aviso, chips, seções")
         let bar = html.components(separatedBy: "class=\"bar\"")[1].components(separatedBy: "</div>")[0]
-        XCTAssertTrue(bar.contains("class=\"sub\""), "a data fica na mesma linha do menu")
+        XCTAssertTrue(bar.contains("class=\"sub\""), "a data fica na linha dos ícones")
+        XCTAssertTrue(bar.contains("class=\"dv\""), "um traço liga a data aos ícones")
+        XCTAssertTrue(bar.contains("minuta://export/pdf"), "os ícones são subordinados ao título")
+        XCTAssertFalse(bar.contains("id=\"mdl\""), "o botão de modelo fica fora desse bloco")
     }
 
     func testWhileGeneratingTheFormatButtonIsNotALink() {
@@ -197,22 +200,49 @@ final class ReadingBarTests: XCTestCase {
     func testWithoutSummaryTheButtonAsksToChoose() {
         let html = MarkdownHTML.convert(page, controls: .init(shown: nil, generating: nil, hint: "")).html
         XCTAssertTrue(html.contains("<span class=\"lb\">Modelo</span>Escolher"))
-        XCTAssertFalse(html.contains("class=\"hint\""))
+        XCTAssertFalse(html.contains("class=\"hint\""), "sem aviso, não há linha")
     }
 
-    func testSectionChipsPointAtEverySectionAndAreAlike() {
-        let html = MarkdownHTML.convert(page, controls: controls(), collapsed: []).html
+    func testSectionChipsPointAtEverySectionAndTheSelectedOneIsFilled() {
+        let html = MarkdownHTML.convert(page, controls: controls(selected: "Decisões")).html
         let toc = html.components(separatedBy: "<nav class=\"toc\"")[1].components(separatedBy: "</nav>")[0]
         let titles = MarkdownHTML.sectionTitles(page)
         XCTAssertEqual(titles.count, 7)
         for (index, title) in titles.enumerated() {
             XCTAssertTrue(toc.contains("href=\"minuta://goto/\(index)\">\(MarkdownHTML.escape(title))</a>"), title)
-            XCTAssertTrue(html.contains("id=\"s-\(index)\""), "a seção \(title) é o alvo do chip")
         }
         XCTAssertEqual(toc.components(separatedBy: "<a ").count - 1, titles.count)
-        XCTAssertFalse(toc.contains("class="), "todos os chips têm o mesmo estilo, sem grupos nem traços")
-        XCTAssertFalse(toc.contains("<span"))
+        XCTAssertEqual(toc.components(separatedBy: "class=\"on\"").count - 1, 1, "só o chip da seção mostrada")
+        XCTAssertTrue(toc.contains("<a class=\"on\" aria-current=\"true\" href=\"minuta://goto/2\">Decisões</a>"))
+        XCTAssertFalse(toc.contains("<span"), "sem grupos nem traços")
         XCTAssertFalse(toc.contains("Ir para"), "sem rótulo")
+    }
+
+    func testPageHasAFixedHeadOverAPaneWithEverySection() {
+        let html = MarkdownHTML.convert(page, controls: controls(selected: "Decisões")).html
+        let titles = MarkdownHTML.sectionTitles(page)
+        for (index, title) in titles.enumerated() {
+            let count = title == "Transcrição" ? "<span class=\"ct\">1 segmento</span>" : ""
+            XCTAssertTrue(html.contains("<h2 id=\"s-\(index)\">\(MarkdownHTML.escape(title))\(count)</h2>"), title)
+        }
+        XCTAssertTrue(html.contains("Texto."), "o texto do Resumo está na página")
+        XCTAssertTrue(html.contains("<p class=\"tl\" id=\"t-000001\">"), "e a transcrição também")
+        let order = [
+            html.range(of: "<header class=\"head\">")!.lowerBound, html.range(of: "class=\"toc\"")!.lowerBound,
+            html.range(of: "</header>")!.lowerBound, html.range(of: "<main class=\"pane\" id=\"pane\">")!.lowerBound,
+            html.range(of: "<h2 id=\"s-0\">")!.lowerBound, html.range(of: "</main>")!.lowerBound,
+        ]
+        XCTAssertEqual(order, order.sorted(), "cabeçalho com os chips, depois o painel com as seções")
+        XCTAssertTrue(html.contains("<body class=\"app\">"))
+        XCTAssertTrue(html.contains(".pane { flex: 1;"), "o painel rola e o cabeçalho não")
+    }
+
+    func testFirstChipIsFilledWhenNothingOrAnUnknownTitleIsSelected() {
+        for selected in [nil, "Não existe"] {
+            let html = MarkdownHTML.convert(page, controls: controls(selected: selected)).html
+            XCTAssertTrue(html.contains("<a class=\"on\" aria-current=\"true\" href=\"minuta://goto/0\">Resumo</a>"))
+            XCTAssertEqual(html.components(separatedBy: "class=\"on\"").count - 1, 1)
+        }
     }
 
     func testTooltipsUseDataTipAndNeverTheSystemTitle() {

@@ -51,25 +51,4 @@ final class TranscriptSegmentTests: XCTestCase {
         XCTAssertEqual(TranscriptSegment.window(around: "t-000002", in: segments).map(\.segment.id), ["t-000002"])
         XCTAssertTrue(TranscriptSegment.window(around: "t-999999", in: segments).isEmpty)
     }
-
-    func testEverySectionIsAToggleAndOnlyTheCollapsedOnesAreHidden() {
-        let md = "# T\n\n## Resumo\nTexto.\n\n## Itens de ação\nNenhuma.\n\n## Transcrição\n"
-        let html = MarkdownHTML.convert(md, collapsed: ["Itens de ação"]).html
-        XCTAssertTrue(html.contains("minuta://section/Resumo"))
-        XCTAssertTrue(html.contains("minuta://section/Transcri"))
-        XCTAssertEqual(html.components(separatedBy: "<div class=\"sec\">").count - 1, 2)
-        XCTAssertEqual(html.components(separatedBy: "<div class=\"sec hide\">").count - 1, 1)
-        XCTAssertFalse(MarkdownHTML.convert(md).html.contains("minuta://section"))
-    }
-
-    func testSectionStateIsRememberedPerMeetingAndTheTranscriptStartsCollapsed() throws {
-        let defaults = UserDefaults(suiteName: "minuta-sections-\(UUID().uuidString)")!
-        let md = "---\ninicio: 2026-10-02T10:00:00-03:00\n---\n"
-        XCTAssertEqual(SectionState.collapsed(in: md, defaults: defaults), ["Transcrição"])
-        SectionState.set(collapsed: true, "Resumo", for: md, defaults: defaults)
-        SectionState.set(collapsed: false, "Transcrição", for: md, defaults: defaults)
-        XCTAssertEqual(SectionState.collapsed(in: md, defaults: defaults), ["Resumo"])
-        SectionState.set(collapsed: false, "Resumo", for: md, defaults: defaults)
-        XCTAssertTrue(SectionState.collapsed(in: md, defaults: defaults).isEmpty)
-    }
 }

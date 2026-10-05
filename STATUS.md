@@ -4,7 +4,7 @@ Atualizado em: 2026-10-05
 
 ## Em andamento
 
-ADR 0027 implementado (menu de modelo, chips de seção, exportação em HTML e PDF). O HTML exportado tem seções colapsáveis e fechadas. Chips de seção de cor única, espaçamento Moderado e janela de 900 px com tamanho lembrado, commitado. 93 testes passam. O app instalado em `/Applications/Minuta.app` está sem os ADRs 0026 e 0027; `./scripts/install.sh` instala a versão atual.
+ADR 0027 implementado (menu de modelo, chips de seção, exportação em HTML e PDF). O HTML exportado tem seções colapsáveis e fechadas. Chips de seção de cor única, espaçamento Moderado e janela de 900 px com tamanho lembrado, commitados. Cabeçalho reorganizado (ícones junto da data, modelo em linha própria, sem a justificativa da sugestão). 93 testes passam. O app instalado em `/Applications/Minuta.app` está sem os ADRs 0026 e 0027; `./scripts/install.sh` instala a versão atual.
 
 ### Estado do app por área
 
@@ -14,7 +14,7 @@ ADR 0027 implementado (menu de modelo, chips de seção, exportação em HTML e 
 - **Transcrição, classificação e resumo** (ADRs 0002, 0008, 0012, 0017 e 0018): Gemini 3.5 Transcribe; Claude Sonnet 5.5 sugere um de quatro modelos (Decisão, Problemas e ideias, Informativa, Geral) e o título, e gera o resumo sugerido. Todos os resumos ficam no `.resumos.json`; o escolhido é copiado no `.md`.
 - **Áudio** (ADR 0022): depois da ata criada, os dois arquivos vão para a pasta de atas das configurações (antes: Application Support; o que sobrou lá é movido na inicialização) com o radical do secundário e seguem a ata para a Lixeira. Atas anteriores não têm áudio.
 - **Janela de atas** (ADR 0015): tabela no estilo do Finder, com menu de contexto, gravações em andamento como linhas e verificação da pasta.
-- **Janela de leitura** (ADRs 0015 a 0019, 0026 e 0027): todas as seções colapsáveis (estado por reunião); botão "Refazer a transcrição", ativo só com áudio guardado; card centralizado. Na linha da data, botão "Modelo" com menu nativo dos modelos e "Refazer este resumo", e à direita os botões de e-mail (inativo), HTML e PDF. Abaixo, chips de seção, todas do mesmo estilo, que rolam até a seção. Espaçamento no nível "Moderado" (card 28 × 36 px, entrelinha 1,65). A janela abre com 900 × 780 px e lembra o tamanho. Lápis no título e nos participantes, transcrição colapsável lembrada por reunião, balão de citação com o trecho e um segmento de cada lado. Todos os balões e dicas usam `BalloonPanel`, com a forma das antigas chips de modelo.
+- **Janela de leitura** (ADRs 0015 a 0019, 0026 e 0027): cabeçalho fixo sobre um painel de texto contínuo (o chip rola até a seção e o chip da seção no topo fica preenchido); botão "Refazer a transcrição", ativo só com áudio guardado; card centralizado. Cabeçalho em blocos: título; data com os botões de e-mail (inativo), HTML e PDF à esquerda; botão "Modelo" com menu nativo dos modelos e "Refazer este resumo"; linha de estado só quando há aviso; chips de seção, todas do mesmo estilo, que rolam até a seção. Espaçamento no nível "Moderado" (card 28 × 36 px, entrelinha 1,65). A janela abre com 900 × 780 px e lembra o tamanho. Lápis no título e nos participantes, transcrição colapsável lembrada por reunião, balão de citação com o trecho e um segmento de cada lado. Todos os balões e dicas usam `BalloonPanel`, com a forma das antigas chips de modelo.
 - **Janela de correção** (ADR 0025): toca o áudio a partir de cada fala, edita o texto, troca o falante, apaga e restaura; correções marcam os resumos como desatualizados, com aviso nas duas janelas.
 - **Configurações** (ADRs 0011, 0012 e 0023): página única com chaves e modelos, permissões com teste de captura, preferências e a versão no rodapé.
 - **Padrão de escrita** (`.agents/STYLE.md`, `.agents/GLOSSARY.md`): em "Ajustes deste projeto", frase de procedimento até 20 palavras, descritiva até 25, parágrafo até 6 frases, formato "Decisão: X. Motivo: Y." e lista de palavras vagas. O glossário tem 16 termos, confirmados pelo usuário. O `AGENTS.md` foi revisado contra as regras; ADRs 0001 a 0025 ficam como estão, e as regras valem para ADRs novos.
@@ -30,7 +30,7 @@ ADR 0027 implementado (menu de modelo, chips de seção, exportação em HTML e 
 ### Sem teste manual
 
 - Menu de modelo, chips de seção e exportação (ADR 0027): testes unitários do HTML; página renderizada pela WebKit fora do app nos modos claro e escuro; PDF de uma ata real gerado por script com o mesmo caminho do `PDFExport` (14 páginas A4 com texto). Falta no app: posição do menu, troca e refazer pelo menu, salto com seção recolhida, painel de salvar e o PDF pelo próprio app.
-- Seções colapsáveis e "Refazer a transcrição" (ADR 0026): só testes unitários (substituição do secundário, estado das seções, HTML); falta ver no app e chamar o STT de verdade.
+- "Refazer a transcrição" (ADR 0026): só testes unitários (substituição do secundário, HTML); falta ver no app e chamar o STT de verdade.
 
 - Chamada real com alto-falante e cancelamento de eco ligado: a fala do usuário e o efeito com fone Bluetooth (ADR 0023).
 - Gravação real passando pela guarda do áudio, e falha ao mover o áudio.
@@ -78,6 +78,7 @@ ADR 0027 implementado (menu de modelo, chips de seção, exportação em HTML e 
 - Python com `pystray`, `pyobjc` e `customtkinter` (ADR 0009). Notion e Supabase como destino (ADR 0001). LLM multimodal único (ADR 0002). Mixagem em mono (ADR 0004). "Outros" como bloco único (ADR 0006).
 - Banco de dados ou pasta interna para as atas; submenu por ata no menu (ADR 0015). Botões nas linhas da lista de atas e ícone no título.
 - Folha única com todos os participantes; anotações "(canal do microfone)" e "nome informado por você" (ADR 0016).
+- Seções colapsáveis e transcrição colapsável na leitura (ADRs 0019 e 0026): trocadas por cabeçalho fixo e painel de texto contínuo (ADR 0027). Rolagem da página inteira com o cabeçalho que some: o usuário pediu o cabeçalho fixo. Uma seção por vez, trocada pelo chip: implementada e substituída pelo texto contínuo a pedido do usuário.
 - Chips de seção em três grupos de cores diferentes e traços verticais (ADR 0027): o usuário não entendeu a diferença de cor. Faixa fixa, índice lateral e controles na barra da janela para o cabeçalho que some ao rolar: descartados, fica a estrutura atual. Respiro Generoso (card 36 × 48 px): custa cerca de 35% de altura.
 - Chips de modelo de resumo na leitura (ADR 0017): o usuário as lia como assuntos da ata; trocadas por menu de modelo (ADR 0027). Rótulo "Formato" dos mockups trocado por "Modelo", o termo do glossário. Controle de segmentos, frase de estado, controle na barra da janela, cartões por modelo, chips só das seções do modelo e rótulo "Ir para" (ADR 0027). `NSPopover` como balão de dica: trocado pelo `BalloonPanel`, com a forma das chips.
 - Barra de rolagem no balão de citação: o balão cresce em altura antes de largura, e as falas vizinhas são cortadas.
@@ -85,6 +86,7 @@ ADR 0027 implementado (menu de modelo, chips de seção, exportação em HTML e 
 - Levar limites de frase e palavras vagas para a skill `project-governance` e para a fonte global agora: sem validação fora do Minuta. Só o procedimento do glossário entrou na skill (versão 3.4.0).
 
 ## Próximos
+- Testar no app o painel de texto contínuo: clicar nos chips, rolar com roda, teclado e barra e ver o chip da seção atual mudar, horário de citação que leva à Transcrição, trocar de modelo estando em outra seção e janela estreita. Salto por âncora e leitura da seção no topo foram verificados numa `WKWebView` à parte.
 - Instalar e testar o ADR 0027 no app: menu de modelo, chips de seção com seção recolhida, salvar HTML e PDF. Conferir com o usuário se a confusão das chips acabou.
 - Planejar o envio por e-mail (próxima etapa, ADR próprio); o botão já está na leitura, inativo.
 - Gravar uma chamada real com alto-falante e o cancelamento ligado; conferir duplicatas, a fala do usuário e o nível do canal do sistema. Só um resultado ruim reabre o ADR 0024.

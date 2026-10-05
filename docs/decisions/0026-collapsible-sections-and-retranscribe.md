@@ -1,6 +1,6 @@
 # 0026. Seções colapsáveis e refazer a transcrição
 
-Status: aceita; implementada
+Status: aceita; implementada; as seções colapsáveis foram substituídas pelo `docs/decisions/0027-model-menu-section-chips-and-export.md` (cabeçalho fixo e painel de texto contínuo). Refazer a transcrição continua valendo.
 Data: 2026-10-02
 Complementa: `docs/decisions/0019-collapsible-transcript-and-citation-balloons.md` e `docs/decisions/0022-keep-audio.md`.
 

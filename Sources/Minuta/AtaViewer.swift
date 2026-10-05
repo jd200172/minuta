@@ -7,10 +7,10 @@ import WebKit
 /// starts an in-place rename (`ParticipantRename`), and so does the pencil next to the title (`TitleRename`).
 /// Meetings written by the model flow of ADR 0017 also get a bar under the title (ADR 0027): the model button opens
 /// a menu of the summary models (choosing one shows its summary, generating it first when it does not exist yet),
-/// the export buttons save the minutes as HTML or PDF, and a chip per section jumps to it. Buttons, chips and
-/// pencils are `minuta://` links that this controller intercepts. So are the section headings
-/// (`minuta://section/<title>`, collapse and expand the section, remembered per meeting) and the citation chips
-/// (`minuta://cite/...`, a balloon with the cited text; its times jump to the transcript).
+/// the export buttons save the minutes as HTML or PDF, and a chip per section scrolls to that section. The page
+/// keeps the head fixed, scrolls the text under it, and the app fills the chip of the section at the top. Buttons, chips and pencils are `minuta://` links that
+/// this controller intercepts. So are the citation chips (`minuta://cite/...`, a balloon with the cited text; its
+/// times show the transcript at that line).
 @MainActor
 final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegate {
     static let shared = AtaViewerController()
@@ -21,11 +21,14 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
     private var texts: [URL: String] = [:]
     /// The model each page showed as being generated, to reload only when that changes.
     private var shownRunning: [URL: SummaryModel] = [:]
+    /// The title of the section at the top of each page's pane, whose chip is filled; the first one until the pane
+    /// scrolls or a chip is clicked.
+    private var selected: [URL: String] = [:]
+    private var scrollMonitor: Any?
+    private var spyWork: DispatchWorkItem?
     private var renaming: ParticipantRename?
     private var renamingTitle: TitleRename?
     private var scrollToRestore: Double?
-    /// A transcript line to scroll to once the page that is loading is shown.
-    private var anchorToShow: String?
 
     /// The parts of one window besides the window itself.
     @MainActor private final class Pane {
@@ -125,6 +128,7 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         window.addTitlebarAccessoryViewController(accessory)
 
         windows[url] = window
+        startWatchingScroll()
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
     }
@@ -200,11 +204,11 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         shownRunning[url] = SummaryService.shared.running[url]
         defer { updateRedoButton(url) }
         return MarkdownHTML.convert(
-            text, renamable: true, controls: controls(for: url, text: text), citations: true,
-            collapsed: SectionState.collapsed(in: text))
+            text, renamable: true, controls: controls(for: url, text: text), citations: true)
     }
 
-    /// The bar under the title: the model whose summary is shown, the one being generated, and the line below.
+    /// The controls under the title: the model whose summary is shown, the one being generated, and the line of state
+    /// below them, which is empty when there is nothing to warn about.
     private func controls(for url: URL, text: String) -> MarkdownHTML.Controls? {
         guard AtaStore.isManaged(text) else { return nil }
         let classification = AtaStore.sidecar(forMarkdown: text, in: url.deletingLastPathComponent())
@@ -217,26 +221,27 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
                 "A transcrição foi corrigida depois deste resumo. Para atualizá-lo, use Refazer este resumo, no menu Modelo."
         } else if let running {
             hint = "Gerando o resumo no modelo \(running.title)…"
-        } else if let suggestion = sidecar?.classification?.suggestion, let reason = sidecar?.classification?.reason {
-            hint = "Sugerido: \(suggestion.title). \(reason)"
         } else if chosen == nil, AtaStore.frontMatter(text)["modelo"] != nil {
             hint = "Este resumo usa um modelo que não existe mais. Escolha outro no menu Modelo."
+        } else if chosen == nil, sidecar?.classification?.suggestion != nil {
+            hint = "Resumo ainda não gerado. Escolha um modelo no menu Modelo."
         } else if chosen == nil {
             hint = "Não foi possível sugerir um modelo. Escolha um no menu Modelo, ou use Geral."
         } else {
             hint = ""
         }
-        return MarkdownHTML.Controls(shown: chosen, generating: running, hint: hint)
+        return MarkdownHTML.Controls(shown: chosen, generating: running, hint: hint, selected: selected[url])
     }
 
-    /// Reads the file again and shows it, keeping the scroll position.
+    /// Reads the file again and shows it, keeping the scroll position of the pane.
     private func reload(_ url: URL) {
         guard let pane = panes[url], let text = try? String(contentsOf: url, encoding: .utf8) else { return }
         pane.tips?.hide()
         pane.balloon.close()
         let document = convert(text, url: url, pane: pane)
         windows[url]?.title = document.title.isEmpty ? url.deletingPathExtension().lastPathComponent : document.title
-        pane.web.evaluateJavaScript("window.scrollY") { [weak self] value, _ in
+        pane.web.evaluateJavaScript("(document.getElementById('pane')||document.scrollingElement).scrollTop") {
+            [weak self] value, _ in
             self?.scrollToRestore = (value as? NSNumber)?.doubleValue
             pane.web.loadHTMLString(document.html, baseURL: nil)
         }
@@ -321,12 +326,6 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
 
     // MARK: Transcript and citations
 
-    private func toggleSection(_ title: String, url: URL) {
-        guard let text = texts[url] else { return }
-        SectionState.set(collapsed: !SectionState.isCollapsed(title, in: text), title, for: text)
-        reload(url)
-    }
-
     /// Opens the balloon of the chip `ref`, which cites segment `id`.
     private func showCitation(_ web: WKWebView, segment id: String, ref: Int) {
         guard let url = url(of: web), let pane = panes[url], let text = texts[url] else { return }
@@ -348,31 +347,72 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         }
     }
 
-    /// Scrolls to section `index` (its chip), expanding it first when it is collapsed.
+    /// Scrolls the pane to the section of chip `index` and fills that chip.
     private func goToSection(_ index: Int, url: URL) {
         guard let pane = panes[url], let text = texts[url] else { return }
         let titles = MarkdownHTML.sectionTitles(text)
         guard titles.indices.contains(index) else { return }
-        let id = "s-\(index)"
-        if SectionState.isCollapsed(titles[index], in: text) {
-            SectionState.set(collapsed: false, titles[index], for: text)
-            anchorToShow = id
-            reload(url)
-        } else {
-            showAnchor(id, in: pane.web)
+        showAnchor("s-\(index)", in: pane.web)
+        fill(index, titles: titles, url: url)
+        // The scroll this click causes must not be read back as the reader's own.
+        spyWork?.cancel()
+    }
+
+    /// Scrolls the pane to a transcript line.
+    private func goTo(_ id: String, url: URL) {
+        guard let pane = panes[url], id.allSatisfy({ $0.isLetter || $0.isNumber || $0 == "-" }) else { return }
+        showAnchor(id, in: pane.web)
+        scheduleSpy(url)
+    }
+
+    // MARK: Chip of the section on screen
+
+    /// Marks chip `index` as the current one, in the page and in `selected`.
+    private func fill(_ index: Int, titles: [String], url: URL) {
+        guard titles.indices.contains(index), let pane = panes[url] else { return }
+        selected[url] = titles[index]
+        pane.web.evaluateJavaScript(
+            "document.querySelectorAll('.toc a').forEach(function(e,n){e.classList.toggle('on',n===\(index));"
+                + "if(n===\(index)){e.setAttribute('aria-current','true')}else{e.removeAttribute('aria-current')}})")
+    }
+
+    /// The pane scrolls with no script of its own, so the app watches the wheel, the keys and the mouse, and a
+    /// moment after each asks the page which section is at the top.
+    private func startWatchingScroll() {
+        guard scrollMonitor == nil else { return }
+        scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: [.scrollWheel, .keyDown, .leftMouseUp]) {
+            [weak self] event in
+            if let self, let url = self.windows.first(where: { $0.value === event.window })?.key {
+                self.scheduleSpy(url)
+            }
+            return event
         }
     }
 
-    /// Scrolls to a transcript line, expanding the transcript first when it is collapsed.
-    private func goTo(_ id: String, url: URL) {
-        guard let pane = panes[url], let text = texts[url], id.allSatisfy({ $0.isLetter || $0.isNumber || $0 == "-" })
-        else { return }
-        if SectionState.isCollapsed(SectionState.transcript, in: text) {
-            SectionState.set(collapsed: false, SectionState.transcript, for: text)
-            anchorToShow = id
-            reload(url)
-        } else {
-            showAnchor(id, in: pane.web)
+    private func scheduleSpy(_ url: URL) {
+        spyWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.spy(url) }
+        spyWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: work)
+    }
+
+    /// The last section whose heading is at or above the top of the pane; the last one when the pane is at its end.
+    private func spy(_ url: URL) {
+        guard let pane = panes[url], let text = texts[url] else { return }
+        let script = """
+            (function(){var p=document.getElementById('pane');if(!p)return null;
+            var top=p.getBoundingClientRect().top+40;var hs=p.querySelectorAll('h2[id^="s-"]');var best=0;
+            for(var i=0;i<hs.length;i++){if(hs[i].getBoundingClientRect().top<=top){best=parseInt(hs[i].id.slice(2));}}
+            if(hs.length&&p.scrollTop>0&&p.scrollHeight>p.clientHeight+2&&p.scrollTop+p.clientHeight>=p.scrollHeight-2){
+            best=parseInt(hs[hs.length-1].id.slice(2));}
+            return best;})()
+            """
+        pane.web.evaluateJavaScript(script) { [weak self] value, _ in
+            guard let self, let index = (value as? NSNumber)?.intValue else { return }
+            let titles = MarkdownHTML.sectionTitles(text)
+            if titles.indices.contains(index), self.selected[url] != titles[index] {
+                self.fill(index, titles: titles, url: url)
+            }
         }
     }
 
@@ -427,6 +467,8 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
             texts[old] = nil
             shownRunning[new] = shownRunning[old]
             shownRunning[old] = nil
+            selected[new] = selected[old]
+            selected[old] = nil
         }
         reload(new)
     }
@@ -486,6 +528,12 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
             panes[url] = nil
             texts[url] = nil
             shownRunning[url] = nil
+            selected[url] = nil
+        }
+        if windows.isEmpty, let scrollMonitor {
+            NSEvent.removeMonitor(scrollMonitor)
+            self.scrollMonitor = nil
+            spyWork?.cancel()
         }
     }
 
@@ -501,10 +549,6 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
                 if let index = Int(url?.lastPathComponent ?? "") { beginRename(webView, index: index) }
             case "title":
                 beginTitleRename(webView)
-            case "section":
-                if let file = self.url(of: webView), let title = url?.lastPathComponent, !title.isEmpty {
-                    toggleSection(title, url: file)
-                }
             case "cite":
                 let parts = url?.pathComponents.dropFirst() ?? []
                 if parts.count == 2, let ref = Int(parts[parts.startIndex + 1]) {
@@ -531,11 +575,8 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         if let y = scrollToRestore {
             scrollToRestore = nil
-            webView.evaluateJavaScript("window.scrollTo(0, \(y))")
-        }
-        if let id = anchorToShow {
-            anchorToShow = nil
-            showAnchor(id, in: webView)
+            webView.evaluateJavaScript(
+                "var p=document.getElementById('pane');if(p){p.scrollTop=\(y)}else{window.scrollTo(0,\(y))}")
         }
     }
 }

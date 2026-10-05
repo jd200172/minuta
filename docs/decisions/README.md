@@ -22,14 +22,14 @@ Um arquivo por decisão, numerado na ordem em que foi tomada. Decisão substitu�
 | [0016](0016-manual-participant-names.md) | Nomes de participantes dados pelo usuário | Em vigor |
 | [0017](0017-summary-models-on-demand.md) | Resumos por tipo de reunião, guardados por modelo | Em vigor; modelos redefinidos pelo 0018; chips de modelo substituídas pelo 0027 (desvio das HIG no balão) |
 | [0018](0018-four-summary-models.md) | Quatro modelos de resumo | Em vigor |
-| [0019](0019-collapsible-transcript-and-citation-balloons.md) | Transcrição colapsável e balão de citação | Em vigor |
+| [0019](0019-collapsible-transcript-and-citation-balloons.md) | Transcrição colapsável e balão de citação | Balão em vigor; transcrição colapsável substituída pelo 0027 |
 | 0020 | Envio da ata por e-mail | Descartada antes do registro; arquivo removido |
 | [0021](0021-echo-removal-in-transcript.md) | Filtro de eco pelo texto da transcrição | Substituída pelo 0024; código retirado |
 | [0022](0022-keep-audio.md) | Guardar o áudio de todas as reuniões (na pasta de atas desde 2026-10-02) | Em vigor |
 | [0023](0023-echo-cancellation-at-capture.md) | Cancelamento de eco na captura | Em vigor; falta chamada real |
 | [0024](0024-follow-market-practice-for-capture.md) | Captura e atribuição pelo padrão de mercado | Em vigor |
 | [0025](0025-transcript-correction-window.md) | Janela de correção da transcrição | Em vigor |
-| [0026](0026-collapsible-sections-and-retranscribe.md) | Seções colapsáveis e refazer a transcrição | Em vigor |
+| [0026](0026-collapsible-sections-and-retranscribe.md) | Seções colapsáveis e refazer a transcrição | Refazer em vigor; seções colapsáveis substituídas pelo 0027 |
 | [0027](0027-model-menu-section-chips-and-export.md) | Menu de modelo, chips de seção e exportação da ata | Em vigor (desvio das HIG no botão de modelo e nas chips de seção) |
 
 Formato de cada arquivo: título com número, `Status`, `Data`, relação com outras decisões (`Substitui`, `Complementa`, `Confirma`), Contexto, Decisão, Alternativas descartadas e Consequências. Decisão nova recebe o próximo número e uma linha nesta tabela; a substituída tem a linha `Status` atualizada.

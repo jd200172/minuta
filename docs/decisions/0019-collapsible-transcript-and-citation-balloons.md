@@ -1,6 +1,6 @@
 # 0019. Transcrição colapsável e balões de citação
 
-Status: aceita; implementada
+Status: aceita; implementada; a transcrição colapsável foi substituída pelo `docs/decisions/0027-model-menu-section-chips-and-export.md` (cabeçalho fixo e painel de texto contínuo). O balão de citação continua valendo.
 Data: 2026-10-01
 Complementa: `docs/decisions/0015-minutes-library.md` e `docs/decisions/0017-summary-models-on-demand.md`.
 

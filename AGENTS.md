@@ -10,7 +10,7 @@ Fonte: `docs/project-brief.md` (documento original, 2026-09-30). As decisões em
 
 Dentro:
 - macOS 13+. Windows 10/11 em fase posterior (ADR 0003).
-- Interface: menu da bandeja e quatro janelas: configurações, atas, leitura da ata (ADR 0015) e correção da transcrição com o áudio (ADR 0025). A leitura tem transcrição colapsável e balões de citação (ADR 0019). Também tem menu de modelo, chips de seção e exportação em HTML e PDF (ADR 0027). Sem janela contínua de gravação.
+- Interface: menu da bandeja e quatro janelas: configurações, atas, leitura da ata (ADR 0015) e correção da transcrição com o áudio (ADR 0025). A leitura tem cabeçalho fixo sobre um painel que rola, com menu de modelo, chips de seção e exportação em HTML e PDF (ADR 0027), e balões de citação (ADR 0019). Sem janela contínua de gravação.
 - Resumo da reunião em quatro modelos: Decisão, Problemas e ideias, Informativa e Geral. O sugerido é gerado automaticamente e os demais, sob demanda (ADRs 0017 e 0018, que substituem o prompt único do ADR 0005). Informativa é reunião em que alguém expõe conteúdo e o grupo pergunta; reunião de status é Geral.
 
 Fora do MVP:
@@ -97,7 +97,7 @@ Detalhe de cada tela e de cada fluxo fica no ADR indicado; aqui, só a estrutura
   - Geral: Resumo por tema, com um tema por pessoa em reunião de status.
 - **Resumos.** O modelo é escolhido no menu Modelo da leitura (ADR 0027). Trocar de modelo reaproveita o que existe e gera o que falta; nada é descartado. "Refazer este resumo" substitui o guardado daquele modelo. O título pertence à reunião, não ao modelo.
 - **Correção (ADR 0025).** Corrigir, trocar falante, apagar ou restaurar uma fala reescreve o secundário e a ata. A versão do modelo fica em `originals`. Os resumos já gerados ficam marcados como desatualizados até serem refeitos.
-- **Refazer a transcrição (ADR 0026).** Botão da janela de leitura, ativo só com áudio guardado. Transcreve de novo e substitui `segments`. Descarta correções e nomes. Marca os resumos como desatualizados. Toda seção `##` da leitura é colapsável, com o estado lembrado por reunião.
+- **Refazer a transcrição (ADR 0026).** Botão da janela de leitura, ativo só com áudio guardado. Transcreve de novo e substitui `segments`. Descarta correções e nomes. Marca os resumos como desatualizados.
 - **Atas (ADR 0015).** Os arquivos da pasta são a fonte da verdade, e a lista é refeita lendo a pasta. Apagar move para a Lixeira, com o áudio. Ao ler a pasta, o app avisa pasta ausente ou ilegível e marca arquivos de ata com problema. Não detecta ata apagada.
 - **Telas:**
   - menu da bandeja (ADRs 0011, 0014 e 0015);
@@ -147,6 +147,7 @@ Instrução do usuário no chat > `AGENTS.md` > `.agents/STYLE.md` > skill. Em s
 - 2026-10-03: `.agents/STYLE.md` ampliado a pedido do usuário (limites de frase e parágrafo, formato "Decisão: X. Motivo: Y.", palavras a evitar). `.agents/GLOSSARY.md` criado e confirmado pelo usuário, e incluído na leitura obrigatória do Padrão de escrita.
 - 2026-10-03: revisão do `AGENTS.md` contra as regras novas, a pedido do usuário: frases longas quebradas, "adequado" removido, sem mudar o sentido das regras. Entradas anteriores do Histórico e ADRs 0001 a 0025 ficam como estão; as regras valem para ADRs novos.
 - 2026-10-05: ADR 0027, a pedido do usuário, depois de mockups aprovados. As chips de modelo saem, porque o usuário as lia como assuntos da ata. No lugar, menu "Modelo", chips de seção e botões de exportação (HTML e PDF; e-mail visível e inativo). Escopo de interface e desvios das HIG atualizados com confirmação do usuário.
+- 2026-10-05: a leitura passa a ter o cabeçalho fixo sobre um painel de texto contínuo, com o chip da seção atual preenchido, a pedido do usuário (opção B dos mockups; a opção A, uma seção por vez, foi implementada antes e substituída). Substitui as seções e a transcrição colapsáveis (ADRs 0019 e 0026) na leitura; o HTML exportado as mantém. Escopo de interface alterado a partir dessa instrução.
 
 ## Sincronização
 
