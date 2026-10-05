@@ -25,10 +25,17 @@ Decisão: botão na página que abre menu nativo. Motivo: a página roda sem Jav
 
 **Chips de seção.** Abaixo da linha de sugestão, uma chip por seção `##` da ata, sem rótulo. O clique rola até a seção (`minuta://goto/N`, alvo `s-N`). Seção recolhida (ADR 0026) é expandida antes do salto. O título da seção pisca em azul por 1,6 s, por CSS.
 
-As chips formam três grupos, separados por um traço vertical:
-- abertura (Resumo, Participantes): cinza, com borda;
-- seções do modelo de resumo atual: tinta azul;
-- fechamento (Itens de ação, Pontos em aberto, Transcrição): cinza, com borda.
+Todas as chips têm o mesmo estilo (tinta azul), na ordem das seções da ata, sem grupos nem traços. A primeira versão separava as seções do modelo atual (azul) das fixas (cinza com borda); o usuário não entendeu a diferença de cor e pediu cor única.
+
+**Espaçamento (nível "Moderado" dos mockups, a pedido do usuário).** A página estava apertada. Mudanças, de antes para depois:
+- card: 22 × 28 px para 28 × 36 px; margem da janela de 16 para 20 px;
+- entrelinha do texto: 1,55 para 1,65 (1,3 no título);
+- título para a linha da data: 2 para 6 px; linha da data para a dica: 12 para 16 px;
+- entre chips: 6 para 8 px;
+- entre seções: 22 para 30 px, com 18 px acima do filete; título da seção para o texto: 6 para 10 px;
+- entre itens de lista: 3 para 5 px; entre parágrafos: 6 para 8 px.
+**Tamanho da janela.** Os 720 px de largura da abertura eram menores que o máximo do card (760 px), então o card nunca chegava a esse máximo. A janela passa a abrir com 900 × 780 px e a lembrar o tamanho em que o usuário a deixou (`readingWindowSize` em `UserDefaults`, um valor para todas as janelas de leitura, gravado ao fim de um redimensionamento). O máximo do card continua em 760 px, pelo comprimento da linha de texto.
+O custo do respiro é cerca de 15% a mais de altura por ata. O HTML exportado usa o mesmo CSS.
 
 **Botões de exportação.** No fim da linha da data, alinhados à direita, três botões só com ícone e dica:
 - "Enviar por e-mail (em breve)": visível e inativo. O envio é da próxima etapa e terá ADR próprio.
@@ -54,7 +61,9 @@ O conteúdo exportado é a ata do arquivo `.md`, com o modelo de resumo atual e 
 - O modelo de resumo deixa de ter dica de três linhas na página; o menu mostra só a linha "Mostra".
 - O rótulo do botão é "Modelo", o mesmo termo do glossário (`.agents/GLOSSARY.md`). "Formato", usado nos mockups, foi descartado para não criar um segundo termo para o modelo de resumo.
 - As chips de seção usam a mesma tinta das chips de citação. As de citação têm ícone de balão e horário, e as de seção, texto.
+- A chip não indica quais seções mudam com o modelo. O menu Modelo e o texto de cada seção dão essa informação.
 - Em janela estreita, as chips de seção quebram em duas linhas.
+- Ao clicar numa chip de seção distante, o cabeçalho (título, modelo e chips) sai da tela. Ficou como está por decisão do usuário; faixa fixa, índice lateral e barra da janela foram descartados.
 - No HTML exportado, uma citação aponta para uma fala dentro de seção fechada. Chrome e Firefox abrem a seção ao seguir o link; o Safari pode não abrir, e a fala fica oculta até o usuário abrir a seção.
 - Nova peça: `AtaExport` e `PDFExport` (`Sources/Minuta/Export.swift`). `MarkdownHTML.sectionTitles` dá a ordem das seções para as chips e para o app.
 - Os links `minuta://model/<modelo>` e `minuta://redo` deixam de existir.

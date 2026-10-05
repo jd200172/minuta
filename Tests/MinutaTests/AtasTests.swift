@@ -200,7 +200,7 @@ final class ReadingBarTests: XCTestCase {
         XCTAssertFalse(html.contains("class=\"hint\""))
     }
 
-    func testSectionChipsPointAtEverySectionInThreeGroups() {
+    func testSectionChipsPointAtEverySectionAndAreAlike() {
         let html = MarkdownHTML.convert(page, controls: controls(), collapsed: []).html
         let toc = html.components(separatedBy: "<nav class=\"toc\"")[1].components(separatedBy: "</nav>")[0]
         let titles = MarkdownHTML.sectionTitles(page)
@@ -209,10 +209,9 @@ final class ReadingBarTests: XCTestCase {
             XCTAssertTrue(toc.contains("href=\"minuta://goto/\(index)\">\(MarkdownHTML.escape(title))</a>"), title)
             XCTAssertTrue(html.contains("id=\"s-\(index)\""), "a seção \(title) é o alvo do chip")
         }
-        XCTAssertTrue(toc.contains("<a href=\"minuta://goto/2\">Decisões</a>"), "seção do modelo em destaque")
-        XCTAssertTrue(toc.contains("<a class=\"fx\" href=\"minuta://goto/0\">Resumo</a>"))
-        XCTAssertTrue(toc.contains("<a class=\"fx\" href=\"minuta://goto/6\">Transcrição</a>"))
-        XCTAssertEqual(toc.components(separatedBy: "class=\"sep\"").count - 1, 2, "abertura, modelo e fechamento")
+        XCTAssertEqual(toc.components(separatedBy: "<a ").count - 1, titles.count)
+        XCTAssertFalse(toc.contains("class="), "todos os chips têm o mesmo estilo, sem grupos nem traços")
+        XCTAssertFalse(toc.contains("<span"))
         XCTAssertFalse(toc.contains("Ir para"), "sem rótulo")
     }
 

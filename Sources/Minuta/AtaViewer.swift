@@ -86,7 +86,7 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         let window = ClosableWindow(contentViewController: controller)
         window.title = document.title.isEmpty ? url.deletingPathExtension().lastPathComponent : document.title
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
-        window.setContentSize(NSSize(width: 720, height: 780))
+        window.setContentSize(Self.savedSize())
         window.contentMinSize = NSSize(width: 480, height: 320)
         window.isReleasedWhenClosed = false
         window.acceptsMouseMovedEvents = true
@@ -127,6 +127,24 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         windows[url] = window
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
+    }
+
+    /// The size the user left a reading window at, shared by every reading window; the first one opens wide enough
+    /// for the card to reach its 760 px with a margin on each side.
+    private static let sizeKey = "readingWindowSize"
+    private static let defaultSize = NSSize(width: 900, height: 780)
+
+    private static func savedSize() -> NSSize {
+        guard let values = UserDefaults.standard.array(forKey: sizeKey) as? [Double], values.count == 2,
+            values[0] >= 480, values[1] >= 320
+        else { return defaultSize }
+        return NSSize(width: values[0], height: values[1])
+    }
+
+    func windowDidEndLiveResize(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        let size = window.contentRect(forFrameRect: window.frame).size
+        UserDefaults.standard.set([Double(size.width.rounded()), Double(size.height.rounded())], forKey: Self.sizeKey)
     }
 
     func close(_ url: URL) {

@@ -35,8 +35,7 @@ enum MarkdownHTML {
     /// With `controls`, the title gets a pencil (`minuta://title`, text in `#ti`), and the date line becomes a bar
     /// with the model menu button (`minuta://models`, measured by its id `mdl`) and the export buttons
     /// (`minuta://export/html` and `/pdf`; e-mail is shown but inactive). Below it, one chip per "##" section
-    /// (`minuta://goto/N`, where N is the section's place in `sectionTitles`), with the sections of the shown
-    /// model highlighted. Every "##" heading gets the id `s-N`, the target of its chip.
+    /// (`minuta://goto/N`, where N is the section's place in `sectionTitles`), all alike. Every "##" heading gets the id `s-N`, the target of its chip.
     /// With `details`, for a page that runs outside the app, every "##" section is a `<details>` that starts closed
     /// and opens and closes with no script. `details` takes the place of `collapsed`.
     static func convert(
@@ -311,18 +310,10 @@ enum MarkdownHTML {
         html += "</span>\n</div>\n"
         if !controls.hint.isEmpty { html += "<p class=\"hint\">\(escape(controls.hint))</p>\n" }
         guard !sections.isEmpty else { return html }
-        // Three groups: the opening sections, the sections of the model, and the closing ones.
-        let own = Set(controls.shown?.sections.map(\.title) ?? [])
+        // One chip per section, in the order of the file, all alike.
         html += "<nav class=\"toc\" aria-label=\"Seções da ata\">"
-        var group = 0
-        var seenModel = false
         for (index, title) in sections.enumerated() {
-            let isModel = own.contains(title)
-            if isModel { seenModel = true }
-            let current = isModel ? 1 : (seenModel ? 2 : 0)
-            if index > 0 && current != group { html += "<span class=\"sep\" aria-hidden=\"true\"></span>" }
-            group = current
-            html += "<a\(isModel ? "" : " class=\"fx\"") href=\"minuta://goto/\(index)\">\(escape(title))</a>"
+            html += "<a href=\"minuta://goto/\(index)\">\(escape(title))</a>"
         }
         return html + "</nav>\n"
     }
@@ -357,9 +348,9 @@ enum MarkdownHTML {
         :root { color-scheme: light dark; --page: color-mix(in srgb, CanvasText 5%, Canvas); }
         @media (prefers-color-scheme: dark) { :root { --page: color-mix(in srgb, black 25%, Canvas); } }
         html { background: var(--page); }
-        body { font: 14px/1.55 -apple-system, sans-serif; margin: 0; padding: 20px 16px 24px; color: CanvasText; background: var(--page); }
-        .card { box-sizing: border-box; max-width: 760px; margin: 0 auto; padding: 22px 28px; background: Canvas; border: 0.5px solid color-mix(in srgb, CanvasText 20%, transparent); border-radius: 10px; }
-        h1 { font-size: 22px; font-weight: 600; margin: 0 0 2px; }
+        body { font: 14px/1.65 -apple-system, sans-serif; margin: 0; padding: 24px 20px 28px; color: CanvasText; background: var(--page); }
+        .card { box-sizing: border-box; max-width: 760px; margin: 0 auto; padding: 28px 36px; background: Canvas; border: 0.5px solid color-mix(in srgb, CanvasText 20%, transparent); border-radius: 10px; }
+        h1 { font-size: 22px; line-height: 1.3; font-weight: 600; margin: 0 0 6px; }
         h1 a.pen { margin-left: 10px; vertical-align: 3px; }
         .sub { color: GrayText; font-size: 13px; margin: 0 0 18px; }
         .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0; }
@@ -375,22 +366,19 @@ enum MarkdownHTML {
         .act { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; color: GrayText; }
         a.act:hover { background: color-mix(in srgb, CanvasText 7%, transparent); color: CanvasText; }
         .act.off { opacity: 0.4; }
-        .hint { color: GrayText; font-size: 12px; line-height: 1.5; margin: 12px 0 0; }
-        .toc { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 14px 0 0; }
+        .hint { color: GrayText; font-size: 12px; line-height: 1.5; margin: 16px 0 0; }
+        .toc { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 18px 0 0; }
         .toc a { font-size: 12px; line-height: 1.3; padding: 3px 10px; border-radius: 5px; background: color-mix(in srgb, LinkText 14%, transparent); white-space: nowrap; }
-        .toc a.fx { background: transparent; color: GrayText; box-shadow: inset 0 0 0 0.5px color-mix(in srgb, CanvasText 25%, transparent); }
         .toc a:hover { background: color-mix(in srgb, LinkText 22%, transparent); }
-        .toc a.fx:hover { color: CanvasText; background: color-mix(in srgb, CanvasText 6%, transparent); }
-        .toc .sep { width: 1px; height: 14px; margin: 0 4px; background: color-mix(in srgb, CanvasText 22%, transparent); }
-        .hint + h2, .toc + h2, .bar + h2, .sub + h2 { margin-top: 30px; }
-        h2 { font-size: 13px; font-weight: 600; color: GrayText; margin: 24px 0 6px; }
-        h3 { font-size: 14px; font-weight: 600; margin: 14px 0 2px; }
-        p { margin: 6px 0; }
+        .hint + h2, .toc + h2, .bar + h2, .sub + h2 { margin-top: 34px; }
+        h2 { font-size: 13px; font-weight: 600; color: GrayText; margin: 30px 0 10px; }
+        h3 { font-size: 14px; font-weight: 600; margin: 18px 0 4px; }
+        p { margin: 8px 0; }
         ul { margin: 0; padding-left: 20px; }
-        li { margin: 3px 0; }
+        li { margin: 5px 0; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 4px 0; }
         th { text-align: left; color: GrayText; font-weight: 500; }
-        th, td { padding: 6px 10px 6px 0; vertical-align: top; border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
+        th, td { padding: 8px 12px 8px 0; vertical-align: top; border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
         a { color: LinkText; text-decoration: none; }
         a.pen { display: inline-block; margin-left: 6px; color: GrayText; vertical-align: -2px; opacity: 0.7; }
         a.pen:hover { color: LinkText; opacity: 1; }
@@ -398,8 +386,8 @@ enum MarkdownHTML {
         p.tl { display: grid; grid-template-columns: 64px 1fr; gap: 8px; padding: 3px 8px; margin: 0 -8px; border-radius: 6px; }
         p.tl:target { background: color-mix(in srgb, LinkText 16%, transparent); }
         a.chip svg { vertical-align: -1px; margin-right: 3px; }
-        h2.disc { margin: 22px 0 6px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
-        .hint + h2.disc, .toc + h2.disc, .bar + h2.disc, .sub + h2.disc { margin-top: 26px; }
+        h2.disc { margin: 30px 0 10px; padding-top: 18px; border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
+        .hint + h2.disc, .toc + h2.disc, .bar + h2.disc, .sub + h2.disc { margin-top: 32px; }
         h2 { scroll-margin-top: 12px; }
         h2:target { animation: flash 1.6s ease-out; border-radius: 6px; }
         @keyframes flash { from { background: color-mix(in srgb, LinkText 18%, transparent); } to { background: transparent; } }
@@ -410,8 +398,8 @@ enum MarkdownHTML {
         h2.disc .ct { font-weight: 400; font-size: 12px; color: GrayText; }
         h2.disc .ct::before { content: "· "; }
         .sec.hide { display: none; }
-        details.dt { margin: 22px 0 6px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
-        .hint + details.dt, .toc + details.dt, .bar + details.dt, .sub + details.dt { margin-top: 26px; }
+        details.dt { margin: 30px 0 10px; padding-top: 18px; border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
+        .hint + details.dt, .toc + details.dt, .bar + details.dt, .sub + details.dt { margin-top: 32px; }
         details.dt > summary { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: GrayText; cursor: pointer; list-style: none; }
         details.dt > summary::-webkit-details-marker { display: none; }
         details.dt > summary:hover { color: CanvasText; }
@@ -419,7 +407,7 @@ enum MarkdownHTML {
         details.dt[open] > summary .cv { transform: rotate(90deg); }
         details.dt .ct { font-weight: 400; font-size: 12px; }
         details.dt .ct::before { content: "· "; }
-        details.dt[open] > summary { margin-bottom: 6px; }
+        details.dt[open] > summary { margin-bottom: 10px; }
         .tm { color: GrayText; font-size: 12px; font-variant-numeric: tabular-nums; }
         @media print {
             :root { color-scheme: light; }
