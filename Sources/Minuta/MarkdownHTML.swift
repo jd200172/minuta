@@ -37,9 +37,11 @@ enum MarkdownHTML {
     /// (`minuta://export/html` and `/pdf`; e-mail is shown but inactive). Below it, one chip per "##" section
     /// (`minuta://goto/N`, where N is the section's place in `sectionTitles`), with the sections of the shown
     /// model highlighted. Every "##" heading gets the id `s-N`, the target of its chip.
+    /// With `details`, for a page that runs outside the app, every "##" section is a `<details>` that starts closed
+    /// and opens and closes with no script. `details` takes the place of `collapsed`.
     static func convert(
         _ markdown: String, renamable: Bool = false, controls: Controls? = nil, citations: Bool = false,
-        collapsed: Set<String>? = nil
+        collapsed: Set<String>? = nil, details: Bool = false
     ) -> Document {
         let refs: Refs? = citations ? Refs() : nil
         var inSection = false
@@ -109,12 +111,16 @@ enum MarkdownHTML {
                 flush()
                 section = String(line.dropFirst(3))
                 if inSection {
-                    body += "</div>\n"
+                    body += details ? "</details>\n" : "</div>\n"
                     inSection = false
                 }
                 let id = "s-\(sectionIndex)"
                 sectionIndex += 1
-                if let collapsed {
+                if details {
+                    body += detailsHeading(
+                        section, id: id, count: section == SectionState.transcript ? segmentCount : nil)
+                    inSection = true
+                } else if let collapsed {
                     body += sectionHeading(
                         section, id: id, collapsed: collapsed.contains(section),
                         count: section == SectionState.transcript ? segmentCount : nil)
@@ -137,7 +143,7 @@ enum MarkdownHTML {
             }
         }
         flush()
-        if inSection { body += "</div>\n" }
+        if inSection { body += details ? "</details>\n" : "</div>\n" }
         return Document(title: title, html: page(title: title.isEmpty ? "Ata" : title, body: body))
     }
 
@@ -208,6 +214,13 @@ enum MarkdownHTML {
             out = out.replacingCharacters(in: m.range, with: replacement) as NSString
         }
         return out as String
+    }
+
+    /// A section as a closed `<details>`: the title is its summary, and the section's content follows it.
+    private static func detailsHeading(_ title: String, id: String, count: Int?) -> String {
+        let amount = count.map { $0 == 1 ? "1 segmento" : "\($0) segmentos" }
+        return
+            "<details class=\"dt\" id=\"\(id)\"><summary>\(chevron)\(escape(title))\(amount.map { "<span class=\"ct\">\($0)</span>" } ?? "")</summary>\n"
     }
 
     /// A section heading as a toggle, and the opening of the block that holds the section. The transcript also
@@ -397,6 +410,16 @@ enum MarkdownHTML {
         h2.disc .ct { font-weight: 400; font-size: 12px; color: GrayText; }
         h2.disc .ct::before { content: "· "; }
         .sec.hide { display: none; }
+        details.dt { margin: 22px 0 6px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
+        .hint + details.dt, .toc + details.dt, .bar + details.dt, .sub + details.dt { margin-top: 26px; }
+        details.dt > summary { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: GrayText; cursor: pointer; list-style: none; }
+        details.dt > summary::-webkit-details-marker { display: none; }
+        details.dt > summary:hover { color: CanvasText; }
+        details.dt .cv { transition: transform 0.12s; }
+        details.dt[open] > summary .cv { transform: rotate(90deg); }
+        details.dt .ct { font-weight: 400; font-size: 12px; }
+        details.dt .ct::before { content: "· "; }
+        details.dt[open] > summary { margin-bottom: 6px; }
         .tm { color: GrayText; font-size: 12px; font-variant-numeric: tabular-nums; }
         @media print {
             :root { color-scheme: light; }

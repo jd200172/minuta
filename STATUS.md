@@ -4,7 +4,7 @@ Atualizado em: 2026-10-05
 
 ## Em andamento
 
-ADR 0027 implementado (menu de modelo, chips de seção, exportação em HTML e PDF), commitado. 91 testes passam. O app instalado em `/Applications/Minuta.app` está sem os ADRs 0026 e 0027; `./scripts/install.sh` instala a versão atual.
+ADR 0027 implementado (menu de modelo, chips de seção, exportação em HTML e PDF). O HTML exportado tem seções colapsáveis e fechadas, commitado. 93 testes passam. O app instalado em `/Applications/Minuta.app` está sem os ADRs 0026 e 0027; `./scripts/install.sh` instala a versão atual.
 
 ### Estado do app por área
 

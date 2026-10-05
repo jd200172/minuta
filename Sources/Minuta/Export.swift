@@ -3,8 +3,9 @@ import UniformTypeIdentifiers
 import WebKit
 
 /// Saves a minutes file as a standalone page or as a PDF (ADR 0027). Both are the reading page without its
-/// controls: the CSS is embedded, every section is open, the transcript is always included, and the citation
-/// chips are plain anchors to the transcript line instead of balloons.
+/// controls: the CSS is embedded, the transcript is always included, and the citation chips are plain anchors to
+/// the transcript line instead of balloons. The HTML has every section collapsible and closed on opening; the
+/// PDF has every section open, because a closed section would not print.
 enum AtaExport {
     enum Kind: String {
         case html, pdf
@@ -12,8 +13,10 @@ enum AtaExport {
         var type: UTType { self == .html ? .html : .pdf }
     }
 
-    static func html(_ markdown: String) -> String {
-        MarkdownHTML.convert(markdown).html
+    /// The standalone page; `collapsible` makes each section a closed `<details>` (the HTML file), and without it
+    /// every section is open (the PDF).
+    static func html(_ markdown: String, collapsible: Bool = true) -> String {
+        MarkdownHTML.convert(markdown, details: collapsible).html
     }
 
     /// Asks where to save, in a sheet on `window`, and writes the file.
@@ -33,7 +36,7 @@ enum AtaExport {
                     failed(error)
                 }
             case .pdf:
-                PDFExport.start(html: html(markdown), to: target) { error in
+                PDFExport.start(html: html(markdown, collapsible: false), to: target) { error in
                     if let error { failed(error) }
                 }
             }

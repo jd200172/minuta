@@ -251,7 +251,7 @@ final class ReadingBarTests: XCTestCase {
 }
 
 final class ExportTests: XCTestCase {
-    func testExportedPageIsStandaloneWithTheTranscriptOpen() {
+    func testExportedPageIsStandaloneWithTheTranscriptIncluded() {
         let md =
             "---\ninicio: 2026-09-30T14:02:00-03:00\nduracao_segundos: 60\nmodelo: decisao\n---\n\n# T\n\n"
             + "## Decisões\n- D. [00:00:01](#t-000001)\n\n## Transcrição\n"
@@ -262,8 +262,34 @@ final class ExportTests: XCTestCase {
         XCTAssertFalse(html.contains("<link"))
         XCTAssertTrue(html.contains("<p class=\"tl\" id=\"t-000001\">"), "a transcrição vai sempre")
         XCTAssertFalse(html.contains("sec hide"))
+        XCTAssertFalse(html.contains("<script"))
         XCTAssertTrue(html.contains("<a class=\"chip\" href=\"#t-000001\">00:00:01</a>"), "citação vira âncora")
         XCTAssertTrue(html.contains("@media print"))
+    }
+
+    private let md =
+        "---\ninicio: 2026-09-30T14:02:00-03:00\nduracao_segundos: 60\nmodelo: decisao\n---\n\n# T\n\n"
+        + "## Resumo\nTexto.\n\n## Decisões\n- D.\n\n## Transcrição\n"
+        + "<a id=\"t-000001\"></a>**[00:00:01] Eu:** Oi.\n"
+
+    func testExportedHTMLHasEverySectionCollapsibleAndClosed() {
+        let html = AtaExport.html(md)
+        XCTAssertEqual(html.components(separatedBy: "<details class=\"dt\" id=\"s-").count - 1, 3)
+        XCTAssertEqual(html.components(separatedBy: "</details>").count - 1, 3, "cada seção fecha")
+        XCTAssertFalse(html.contains("<details open"), "ao abrir, tudo fechado")
+        XCTAssertFalse(html.contains(" open>"))
+        XCTAssertTrue(html.contains("<summary>"))
+        XCTAssertTrue(html.contains("1 segmento"), "a transcrição diz quantos segmentos tem")
+        XCTAssertFalse(html.contains("minuta://"))
+        let transcript = html.components(separatedBy: "<details class=\"dt\" id=\"s-2\">")[1]
+        XCTAssertTrue(transcript.contains("id=\"t-000001\""), "a fala fica dentro da seção Transcrição")
+    }
+
+    func testExportedPDFHasNoCollapsibleSections() {
+        let html = AtaExport.html(md, collapsible: false)
+        XCTAssertFalse(html.contains("<details"), "seção fechada não sairia na impressão")
+        XCTAssertTrue(html.contains("id=\"t-000001\""))
+        XCTAssertTrue(html.contains("<h2 id=\"s-0\">Resumo</h2>"))
     }
 }
 

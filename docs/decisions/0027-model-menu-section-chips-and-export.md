@@ -35,7 +35,7 @@ As chips formam três grupos, separados por um traço vertical:
 - "Salvar como HTML": um arquivo autônomo, com o CSS embutido.
 - "Salvar como PDF": em páginas do tamanho de papel do sistema, com margem de 40 pt.
 
-O conteúdo exportado é a ata do arquivo `.md`, com o modelo de resumo atual e as correções. Não leva a barra, os lápis nem as chips de seção. Todas as seções vão abertas, e a transcrição vai sempre. As citações viram âncoras para a linha da transcrição, sem balão. O PDF é impresso por uma `WKWebView` fora da tela, em aparência clara, com regras `@media print` (sem card, sem quebra dentro de uma fala).
+O conteúdo exportado é a ata do arquivo `.md`, com o modelo de resumo atual e as correções. Não leva a barra, os lápis nem as chips de seção. A transcrição vai sempre. No HTML, cada seção `##` é um bloco colapsável (`<details>` e `<summary>`, sem script) e abre sempre fechada, com o chevron e a contagem de segmentos da transcrição. No PDF, todas as seções vão abertas, porque seção fechada não sai na impressão. As citações viram âncoras para a linha da transcrição, sem balão. O PDF é impresso por uma `WKWebView` fora da tela, em aparência clara, com regras `@media print` (sem card, sem quebra dentro de uma fala).
 
 **Desvio das HIG.** O botão de modelo imita um botão pop-up do macOS dentro da página, e o menu é nativo. As chips de seção são próprias. Os balões de dica e de citação mantêm a forma que vinha das chips de modelo (raio de 16 px), para não mudar a linguagem dos balões (ADR 0019).
 
@@ -55,5 +55,6 @@ O conteúdo exportado é a ata do arquivo `.md`, com o modelo de resumo atual e 
 - O rótulo do botão é "Modelo", o mesmo termo do glossário (`.agents/GLOSSARY.md`). "Formato", usado nos mockups, foi descartado para não criar um segundo termo para o modelo de resumo.
 - As chips de seção usam a mesma tinta das chips de citação. As de citação têm ícone de balão e horário, e as de seção, texto.
 - Em janela estreita, as chips de seção quebram em duas linhas.
+- No HTML exportado, uma citação aponta para uma fala dentro de seção fechada. Chrome e Firefox abrem a seção ao seguir o link; o Safari pode não abrir, e a fala fica oculta até o usuário abrir a seção.
 - Nova peça: `AtaExport` e `PDFExport` (`Sources/Minuta/Export.swift`). `MarkdownHTML.sectionTitles` dá a ordem das seções para as chips e para o app.
 - Os links `minuta://model/<modelo>` e `minuta://redo` deixam de existir.
