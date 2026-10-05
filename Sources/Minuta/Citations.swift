@@ -44,7 +44,7 @@ private struct CitationRows: View {
                     Button(action: { goTo(row.segment.id) }) {
                         Text(row.segment.clock)
                             .font(.system(size: BalloonStyle.chipFontSize).monospacedDigit())
-                            .foregroundStyle(Color.primary)
+                            .foregroundStyle(.secondary)
                             .padding(.horizontal, 6)
                             .background(
                                 Color.primary.opacity(BalloonStyle.chipTint),

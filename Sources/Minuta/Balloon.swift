@@ -17,9 +17,9 @@ enum BalloonStyle {
     static let maxTextWidth: CGFloat = 260
     /// Pause over an element before its tooltip opens.
     static let delay: TimeInterval = 0.4
-    /// The chip of the page (`a.chip`): 11 pt digits on an 8 % neutral tint, 5 pt corners.
+    /// The chip of the page (`a.chip`): 11 pt digits on a 6 % neutral tint, 5 pt corners.
     static let chipFontSize: CGFloat = 11
-    static let chipTint = 0.08
+    static let chipTint = 0.06
     static let chipRadius: CGFloat = 5
     /// The selected line of the page (`p.tl:target`): 10 % neutral tint, 6 pt corners.
     static let rowTint = 0.10

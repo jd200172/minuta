@@ -430,7 +430,7 @@ struct TranscriptRow: View {
             } label: {
                 Text(Fmt.clock(row.segment.start))
                     .font(.system(size: BalloonStyle.chipFontSize).monospacedDigit())
-                    .foregroundStyle(Color.primary)
+                    .foregroundStyle(.secondary)
                     .padding(.horizontal, 6)
                     .background(
                         Color.primary.opacity(BalloonStyle.chipTint),

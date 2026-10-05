@@ -29,6 +29,8 @@ ADR 0027 implementado (menu de modelo, chips de seção, exportação em HTML e 
 
 ### Sem teste manual
 
+- Segmentação por pausa e duração (ADR 0030): testes unitários e uma reunião real de 17 min pelo `--process` (136 para 78 segmentos); falta decidir se `pauseLimit` (3,0 s) sobe para 4 a 5 s.
+
 - Tipografia e cor da leitura (ADR 0029, revisado): título 28 px, chips e títulos de seção em 15 px, app monocromático (cor só em erro e no botão da barra de menus); falta ver no app a altura do cabeçalho e a quebra das chips em janela estreita.
 
 - Aparência (ADR 0028): compila; falta ver no app o seletor, as janelas, a leitura e o ícone da barra de menus nos três modos.

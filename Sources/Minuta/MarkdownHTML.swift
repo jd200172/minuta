@@ -347,6 +347,8 @@ enum MarkdownHTML {
         <style>
         :root { color-scheme: light dark; --page: color-mix(in srgb, CanvasText 5%, Canvas); }
         @media (prefers-color-scheme: dark) { :root { --page: color-mix(in srgb, black 25%, Canvas); } }
+        :root { --pane: #f6f4f0; --head: #fbfaf8; --strong: #1d1d1f; --body: #38383b; --rule: rgba(60, 50, 30, 0.12); --chip: rgba(60, 50, 30, 0.07); --chip-on: rgba(60, 50, 30, 0.17); --chip-lite: rgba(60, 50, 30, 0.06); }
+        @media (prefers-color-scheme: dark) { :root { --pane: #1b1b1d; --head: #252527; --strong: #f5f5f7; --body: rgba(245, 245, 247, 0.82); --rule: rgba(255, 255, 255, 0.09); --chip: rgba(255, 255, 255, 0.07); --chip-on: rgba(255, 255, 255, 0.2); --chip-lite: rgba(255, 255, 255, 0.06); } }
         html { background: var(--page); }
         body { font: 14px/1.65 -apple-system, sans-serif; margin: 0; padding: 24px 20px 28px; color: CanvasText; background: var(--page); }
         .card { box-sizing: border-box; max-width: 760px; margin: 0 auto; padding: 28px 36px; background: Canvas; border: 0.5px solid color-mix(in srgb, CanvasText 20%, transparent); border-radius: 10px; }
@@ -368,15 +370,16 @@ enum MarkdownHTML {
         .act.off { opacity: 0.4; }
         .hint { color: GrayText; font-size: 12px; line-height: 1.5; margin: 14px 0 0; }
         .toc { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 20px 0 0; }
-        .toc a { font-size: 15px; font-weight: 500; line-height: 1.3; padding: 3px 10px; border-radius: 5px; color: CanvasText; background: color-mix(in srgb, CanvasText 8%, transparent); white-space: nowrap; }
-        .toc a:hover { background: color-mix(in srgb, CanvasText 14%, transparent); }
-        .toc a.on, .toc a.on:hover { background: CanvasText; color: Canvas; }
-        html:has(body.app) { background: Canvas; }
-        body.app { overflow: hidden; padding: 0; background: Canvas; }
+        .toc a { font-size: 15px; font-weight: 400; line-height: 1.3; padding: 3px 10px; border-radius: 5px; color: var(--body); background: var(--chip); white-space: nowrap; }
+        .toc a:hover { background: var(--chip-on); }
+        .toc a.on, .toc a.on:hover { background: var(--chip-on); color: var(--strong); }
+        html:has(body.app) { background: var(--pane); }
+        body.app { overflow: hidden; padding: 0; background: var(--pane); color: var(--body); line-height: 1.75; }
+        body.app h1, body.app h2, body.app .mdl { color: var(--strong); }
         .card.app { display: flex; flex-direction: column; height: 100vh; min-height: 240px; max-width: none; margin: 0; padding: 0; overflow: hidden; border: none; border-radius: 0; background: transparent; }
-        .head { flex: none; padding: 28px max(32px, calc((100% - 900px) / 2)) 20px; border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
-        .pane { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 4px max(32px, calc((100% - 900px) / 2)) 32px; }
-        .pane > h2 { margin: 30px 0 10px; padding-top: 18px; border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
+        .head { flex: none; padding: 28px max(32px, calc((100% - 720px) / 2)) 20px; background: var(--head); border-bottom: 1px solid var(--rule); }
+        .pane { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 4px max(32px, calc((100% - 720px) / 2)) 32px; }
+        .pane > h2 { margin: 30px 0 10px; padding-top: 18px; border-top: 1px solid var(--rule); }
         .pane > h2:first-child { margin-top: 24px; padding-top: 0; border-top: none; }
         h2 .ct { font-weight: 400; font-size: 12px; margin-left: 6px; }
         h2 .ct::before { content: "· "; }
@@ -392,10 +395,10 @@ enum MarkdownHTML {
         a { color: CanvasText; text-decoration: none; }
         a.pen { display: inline-block; margin-left: 6px; color: GrayText; vertical-align: -2px; opacity: 0.7; }
         a.pen:hover { color: CanvasText; opacity: 1; }
-        a.chip { font-size: 11px; padding: 0 6px; border-radius: 5px; background: color-mix(in srgb, CanvasText 8%, transparent); margin-left: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        a.chip { font-size: 11px; padding: 0 6px; border-radius: 5px; color: GrayText; background: var(--chip-lite); margin-left: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
         p.tl { display: grid; grid-template-columns: 64px 1fr; gap: 8px; padding: 3px 8px; margin: 0 -8px; border-radius: 6px; }
         p.tl:target { background: color-mix(in srgb, CanvasText 10%, transparent); }
-        a.chip svg { vertical-align: -1px; margin-right: 3px; }
+        a.chip svg { display: none; }
         h2 { scroll-margin-top: 12px; }
         h2:target { animation: flash 1.6s ease-out; border-radius: 6px; }
         @keyframes flash { from { background: color-mix(in srgb, CanvasText 14%, transparent); } to { background: transparent; } }

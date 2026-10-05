@@ -32,6 +32,41 @@ final class MinutesTests: XCTestCase {
         XCTAssertEqual(Set(transcript.segments.map(\.id)).count, 2)
     }
 
+    func testBuilderKeepsThinkingPausesInOneSegment() {
+        let mic = (
+            text: "",
+            words: words([("Então", nil, 0.0, 0.4), ("é", nil, 2.2, 2.4), ("isso", nil, 4.9, 5.2)])
+        )
+        let transcript = TranscriptBuilder.build(
+            mic: mic, system: (text: "", words: []), micOffset: 0, systemOffset: 0)
+        XCTAssertEqual(transcript.segments.map(\.text), ["Então é isso"])
+    }
+
+    func testBuilderSplitsAfterALongPause() {
+        let mic = (text: "", words: words([("Primeiro", nil, 0.0, 0.5), ("segundo", nil, 4.0, 4.5)]))
+        let transcript = TranscriptBuilder.build(
+            mic: mic, system: (text: "", words: []), micOffset: 0, systemOffset: 0)
+        XCTAssertEqual(transcript.segments.map(\.text), ["Primeiro", "segundo"])
+    }
+
+    func testBuilderSplitsWhenTheSpeakerChanges() {
+        let system = (
+            text: "",
+            words: words([("a", "spk_1", 0.0, 0.3), ("b", "spk_2", 0.8, 1.0), ("c", "spk_1", 1.5, 1.8)])
+        )
+        let transcript = TranscriptBuilder.build(
+            mic: (text: "", words: []), system: system, micOffset: 0, systemOffset: 0)
+        XCTAssertEqual(transcript.segments.map(\.speaker), ["Participante 1", "Participante 2", "Participante 1"])
+    }
+
+    func testBuilderCapsTheLengthOfASegment() {
+        let run = (0..<30).map { ("p\($0)", String?.none, Double($0) * 2, Double($0) * 2 + 0.5) }
+        let transcript = TranscriptBuilder.build(
+            mic: (text: "", words: words(run)), system: (text: "", words: []), micOffset: 0, systemOffset: 0)
+        XCTAssertEqual(transcript.segments.count, 2)
+        XCTAssertTrue(transcript.segments[0].text.hasSuffix("p22"))
+    }
+
     func testRendererValidatesSourcesAndNames() {
         UserDefaults.standard.set("Juliano", forKey: Config.userNameKey)
         let transcript = Transcript(segments: [

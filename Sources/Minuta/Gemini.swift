@@ -122,6 +122,11 @@ struct GeminiTranscriber: Transcriber {
 }
 
 enum TranscriptBuilder {
+    /// A pause longer than this ends a segment. Thinking pauses inside one line of thought last 1 to 2.5 s.
+    static let pauseLimit = 3.0
+    /// A segment never runs longer than this, so a citation points at a short excerpt.
+    static let maxSegmentSeconds = 45.0
+
     /// Groups words into utterances and labels the speakers.
     /// The microphone channel carries the user; the system channel is labelled "Participante N".
     static func build(
@@ -161,7 +166,9 @@ enum TranscriptBuilder {
         var output: [(start: Double, speaker: String?, text: String)] = []
         var current: (start: Double, speaker: String?, words: [String], end: Double)?
         for word in result.words {
-            if let c = current, c.speaker == word.speaker, word.start - c.end <= 1.2 {
+            if let c = current, c.speaker == word.speaker, word.start - c.end <= pauseLimit,
+                word.end - c.start <= maxSegmentSeconds
+            {
                 current = (c.start, c.speaker, c.words + [word.text], word.end)
             } else {
                 if let c = current { output.append((c.start + offset, c.speaker, c.words.joined(separator: " "))) }
