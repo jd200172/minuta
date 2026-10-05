@@ -38,6 +38,7 @@ struct SettingsView: View {
     @AppStorage(Config.userNameKey) private var userName = ""
     @AppStorage(Config.echoCancellationKey) private var echoCancellation = true
     @AppStorage(Config.outputDirKey) private var outputDir = ""
+    @AppStorage(Config.appearanceKey) private var appearance = AppearanceMode.system.rawValue
     @State private var launchAtLogin = false
     @State private var loginMessage: String?
     @State private var hasMic = true
@@ -96,6 +97,11 @@ struct SettingsView: View {
                             Button("Escolher…") { chooseFolder() }
                         }
                     }
+                    Picker("Aparência", selection: $appearance) {
+                        ForEach(AppearanceMode.allCases) { Text($0.label).tag($0.rawValue) }
+                    }
+                    .pickerStyle(.segmented)
+                    .onChange(of: appearance) { _ in AppearanceMode.apply() }
                     Toggle("Cancelar o eco do microfone", isOn: $echoCancellation)
                     Text(
                         "Evita que a voz da chamada, saindo pelo alto-falante, entre no seu microfone. Com fone de ouvido, pode desligar."

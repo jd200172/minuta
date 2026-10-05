@@ -78,6 +78,7 @@ enum Config {
     static let userNameKey = "userName"
     static let echoCancellationKey = "echoCancellation"
     static let outputDirKey = "outputDir"
+    static let appearanceKey = "appearance"
 
     static var userName: String {
         let name = UserDefaults.standard.string(forKey: userNameKey) ?? ""
@@ -243,5 +244,37 @@ func httpCheck(_ response: URLResponse, _ data: Data, provider: Provider) throws
     }
     guard (200..<300).contains(http.statusCode) else {
         throw AppError.http(status: http.statusCode, provider: provider, body: data)
+    }
+}
+
+/// The app's color mode (ADR 0028): follow the system or force light or dark.
+enum AppearanceMode: String, CaseIterable, Identifiable {
+    case system, light, dark
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .system: "Sistema"
+        case .light: "Claro"
+        case .dark: "Escuro"
+        }
+    }
+
+    /// `nil` makes the app follow the system.
+    var appearance: NSAppearance? {
+        switch self {
+        case .system: nil
+        case .light: NSAppearance(named: .aqua)
+        case .dark: NSAppearance(named: .darkAqua)
+        }
+    }
+
+    static var current: AppearanceMode {
+        AppearanceMode(rawValue: UserDefaults.standard.string(forKey: Config.appearanceKey) ?? "") ?? .system
+    }
+
+    @MainActor static func apply(_ mode: AppearanceMode = current) {
+        NSApp.appearance = mode.appearance
     }
 }

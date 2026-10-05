@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // The developer CLI mode runs headless: no status item, no pending-recording prompts.
         guard !CLI.requested() else { return }
         MainActor.assumeIsolated {
+            AppearanceMode.apply()
             statusItem = StatusItemController(model: AppModel.shared)
             AudioArchive.migrateLegacy(from: Config.legacyAudioDir, to: Config.audioDir)
             AtaLibrary.shared.refresh()

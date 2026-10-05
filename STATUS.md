@@ -16,7 +16,7 @@ ADR 0027 implementado (menu de modelo, chips de seção, exportação em HTML e 
 - **Janela de atas** (ADR 0015): tabela no estilo do Finder, com menu de contexto, gravações em andamento como linhas e verificação da pasta.
 - **Janela de leitura** (ADRs 0015 a 0019, 0026 e 0027): cabeçalho fixo sobre um painel de texto contínuo (o chip rola até a seção e o chip da seção no topo fica preenchido); botão "Refazer a transcrição", ativo só com áudio guardado; janela sem moldura, margem de 32 px e coluna de até 900 px sempre centralizada, com o cabeçalho na mesma coluna. Cabeçalho em blocos: título; data com os botões de e-mail (inativo), HTML e PDF logo abaixo, à esquerda; botão "Modelo" com menu nativo dos modelos e "Refazer este resumo"; linha de estado só quando há aviso; chips de seção, todas do mesmo estilo, que rolam até a seção. Espaçamento no nível "Moderado" (card 28 × 36 px, entrelinha 1,65). A janela abre com 964 × 780 px e lembra o tamanho. Lápis no título e nos participantes, transcrição colapsável lembrada por reunião, balão de citação com o trecho e um segmento de cada lado. Todos os balões e dicas usam `BalloonPanel`, com a forma das antigas chips de modelo.
 - **Janela de correção** (ADR 0025): toca o áudio a partir de cada fala, edita o texto, troca o falante, apaga e restaura; correções marcam os resumos como desatualizados, com aviso nas duas janelas.
-- **Configurações** (ADRs 0011, 0012 e 0023): página única com chaves e modelos, permissões com teste de captura, preferências e a versão no rodapé.
+- **Configurações** (ADRs 0011, 0012, 0023 e 0028): página única com chaves e modelos, permissões com teste de captura, preferências (inclui Aparência: Sistema, Claro ou Escuro) e a versão no rodapé.
 - **Padrão de escrita** (`.agents/STYLE.md`, `.agents/GLOSSARY.md`): em "Ajustes deste projeto", frase de procedimento até 20 palavras, descritiva até 25, parágrafo até 6 frases, formato "Decisão: X. Motivo: Y." e lista de palavras vagas. O glossário tem 16 termos, confirmados pelo usuário. O `AGENTS.md` foi revisado contra as regras; ADRs 0001 a 0025 ficam como estão, e as regras valem para ADRs novos.
 
 ### Verificado
@@ -28,6 +28,8 @@ ADR 0027 implementado (menu de modelo, chips de seção, exportação em HTML e 
 - Cancelamento de eco medido com voz tocando no alto-falante: microfone de -33,5 dB para -72,3 dB, correlação com a chamada de 0,95 para 0,29 (ADR 0023).
 
 ### Sem teste manual
+
+- Aparência (ADR 0028): compila; falta ver no app o seletor, as janelas, a leitura e o ícone da barra de menus nos três modos.
 
 - Menu de modelo, chips de seção e exportação (ADR 0027): testes unitários do HTML; página renderizada pela WebKit fora do app nos modos claro e escuro; PDF de uma ata real gerado por script com o mesmo caminho do `PDFExport` (14 páginas A4 com texto). Falta no app: posição do menu, troca e refazer pelo menu, salto com seção recolhida, painel de salvar e o PDF pelo próprio app.
 - "Refazer a transcrição" (ADR 0026): só testes unitários (substituição do secundário, HTML); falta ver no app e chamar o STT de verdade.
