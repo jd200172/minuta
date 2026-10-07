@@ -96,10 +96,67 @@ final class MarkdownHTMLTests: XCTestCase {
         XCTAssertTrue(html.contains("&lt;script&gt;"))
     }
 
+    func testConsecutiveLinesOfOneSpeakerShareATurn() {
+        let md = """
+            ## Transcrição
+
+            <a id="t-000001"></a>**[00:00:01] Daiane:** Primeira.
+
+            <a id="t-000005"></a>**[00:00:05] Daiane:** Segunda.
+
+            <a id="t-000009"></a>**[00:00:09] Juliano:** Terceira.
+
+            <a id="t-000012"></a>**[00:00:12] Daiane:** Quarta.
+
+            """
+        let html = MarkdownHTML.convert(md).html
+        XCTAssertEqual(html.components(separatedBy: "<div class=\"turn\">").count - 1, 3)
+        XCTAssertEqual(html.components(separatedBy: "<strong>Daiane</strong>").count - 1, 2)
+        XCTAssertTrue(html.contains("Primeira.</span> <span class=\"s\" id=\"t-000005\""), "uma só frase corrida")
+        XCTAssertEqual(
+            html.components(separatedBy: "<div class=\"turn\">").count - 1,
+            html.components(separatedBy: "</div>\n").count - 1
+                - (html.components(separatedBy: "<div class=\"turnhd\">").count - 1),
+            "todo turno fecha")
+    }
+
+    func testConversationPageShowsBubblesWithMineOnTheRight() {
+        let md = """
+            ---
+            inicio: 2026-10-05T10:00:00-03:00
+            ---
+            # Ata
+
+            ## Transcrição
+
+            <a id="t-000001"></a>**[00:00:01] Juliano:** Oi.
+
+            <a id="t-000005"></a>**[00:00:05] Daiane:** Oi, tudo bem?
+
+            <a id="t-000009"></a>**[00:00:09] Daiane:** Vamos começar.
+
+            """
+        let html = ConversationHTML.page(markdown: md, mine: "Juliano")
+        XCTAssertTrue(html.contains("<div class=\"b me tail\" id=\"t-000001\">Oi."))
+        XCTAssertEqual(
+            html.components(separatedBy: "<div class=\"n\">Daiane</div>").count - 1, 1, "nome só no 1º balão")
+        XCTAssertTrue(html.contains("id=\"t-000009\">Vamos começar."))
+        XCTAssertFalse(html.contains("<div class=\"n\">Juliano"))
+        XCTAssertEqual(html.components(separatedBy: "class=\"day\"").count - 1, 1)
+    }
+
+    func testChatButtonOpensTheConversationWindow() {
+        let md = "# Ata\n\n## Resumo\n\nTexto.\n"
+        let controls = MarkdownHTML.Controls(shown: nil, generating: nil, hint: "", selected: nil)
+        let html = MarkdownHTML.convert(md, controls: controls).html
+        XCTAssertTrue(html.contains("href=\"minuta://conversation\""))
+        XCTAssertFalse(html.contains("aria-pressed"))
+    }
+
     func testTranscriptLineGetsAnchorAndTime() {
         let md = "<a id=\"t-000010\"></a>**[00:00:10] Participante 1:** Oi <b>x</b>\n"
         let html = MarkdownHTML.convert(md).html
-        XCTAssertTrue(html.contains("<p class=\"tl\" id=\"t-000010\">"))
+        XCTAssertTrue(html.contains("<span class=\"s\" id=\"t-000010\" data-tip=\"00:00:10\">"))
         XCTAssertTrue(html.contains("<span class=\"tm\">00:00:10</span>"))
         XCTAssertTrue(html.contains("&lt;b&gt;x&lt;/b&gt;"))
     }
@@ -229,7 +286,7 @@ final class ReadingBarTests: XCTestCase {
             XCTAssertTrue(html.contains("<h2 id=\"s-\(index)\">\(MarkdownHTML.escape(title))\(count)</h2>"), title)
         }
         XCTAssertTrue(html.contains("Texto."), "o texto do Resumo está na página")
-        XCTAssertTrue(html.contains("<p class=\"tl\" id=\"t-000001\">"), "e a transcrição também")
+        XCTAssertTrue(html.contains("<span class=\"s\" id=\"t-000001\""), "e a transcrição também")
         let order = [
             html.range(of: "<header class=\"head\">")!.lowerBound, html.range(of: "class=\"toc\"")!.lowerBound,
             html.range(of: "</header>")!.lowerBound, html.range(of: "<main class=\"pane\" id=\"pane\">")!.lowerBound,
@@ -292,7 +349,7 @@ final class ExportTests: XCTestCase {
         XCTAssertFalse(html.contains("minuta://"), "nada depende do app")
         XCTAssertTrue(html.contains("<style>"), "CSS embutido")
         XCTAssertFalse(html.contains("<link"))
-        XCTAssertTrue(html.contains("<p class=\"tl\" id=\"t-000001\">"), "a transcrição vai sempre")
+        XCTAssertTrue(html.contains("<span class=\"s\" id=\"t-000001\""), "a transcrição vai sempre")
         XCTAssertFalse(html.contains("sec hide"))
         XCTAssertFalse(html.contains("<script"))
         XCTAssertTrue(html.contains("<a class=\"chip\" href=\"#t-000001\">00:00:01</a>"), "citação vira âncora")

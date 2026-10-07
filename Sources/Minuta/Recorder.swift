@@ -106,10 +106,9 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
             if inputFormat.sampleRate > 0, inputFormat.channelCount > 0 {
                 let file = try makeFile(micURL)
                 micFile = file
-                micConverter = AVAudioConverter(from: inputFormat, to: file.processingFormat)
-                // Voice processing can hand over several channels; the first one is the processed microphone.
-                if inputFormat.channelCount > 1 { micConverter?.channelMap = [0] }
-                input.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, time in
+                // A nil format makes the tap follow the node's own format. An explicit one that no longer matches the
+                // hardware (after voice processing changes it) raises an Objective-C exception that Swift cannot catch.
+                input.installTap(onBus: 0, bufferSize: 4096, format: nil) { [weak self] buffer, time in
                     self?.handleMic(buffer, time)
                 }
                 NotificationCenter.default.addObserver(
@@ -158,7 +157,13 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     private func handleMic(_ buffer: AVAudioPCMBuffer, _ time: AVAudioTime) {
-        guard !paused, let file = micFile, let converter = micConverter else { return }
+        guard !paused, let file = micFile else { return }
+        if micConverter == nil {
+            micConverter = AVAudioConverter(from: buffer.format, to: file.processingFormat)
+            // Voice processing can hand over several channels; the first one is the processed microphone.
+            if buffer.format.channelCount > 1 { micConverter?.channelMap = [0] }
+        }
+        guard let converter = micConverter else { return }
         if micStart == nil {
             micStart = AVAudioTime.seconds(forHostTime: time.hostTime)
         }

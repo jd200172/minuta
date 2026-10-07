@@ -230,7 +230,8 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
         } else {
             hint = ""
         }
-        return MarkdownHTML.Controls(shown: chosen, generating: running, hint: hint, selected: selected[url])
+        return MarkdownHTML.Controls(
+            shown: chosen, generating: running, hint: hint, selected: selected[url])
     }
 
     /// Reads the file again and shows it, keeping the scroll position of the pane.
@@ -560,6 +561,8 @@ final class AtaViewerController: NSObject, WKNavigationDelegate, NSWindowDelegat
                 if let index = Int(url?.lastPathComponent ?? ""), let file = self.url(of: webView) {
                     goToSection(index, url: file)
                 }
+            case "conversation":
+                if let file = self.url(of: webView) { ConversationWindowController.shared.open(file) }
             case "export":
                 if let kind = AtaExport.Kind(rawValue: url?.lastPathComponent ?? "") { export(kind, web: webView) }
             default:

@@ -70,6 +70,27 @@ enum MarkdownHTML {
         var paragraph: [String] = []
         var list: [String] = []
         var table: [String] = []
+        var turnSpeaker: String?
+
+        /// Consecutive transcript lines of one speaker are one turn: the name once, then the sentences as a
+        /// running paragraph, each with its own anchor.
+        func closeTurn() {
+            if turnSpeaker != nil { body += "</p>\n</div>\n" }
+            turnSpeaker = nil
+        }
+
+        func addTurnLine(_ line: TranscriptParts) {
+            if turnSpeaker == line.speaker {
+                body += " "
+            } else {
+                closeTurn()
+                body +=
+                    "<div class=\"turn\">\n<div class=\"turnhd\"><strong>\(escape(line.speaker))</strong><span class=\"tm\">\(line.time)</span></div>\n<p>"
+                turnSpeaker = line.speaker
+            }
+            body +=
+                "<span class=\"s\" id=\"\(line.id)\" data-tip=\"\(line.time)\">\(escape(line.text))</span>"
+        }
 
         func listItem(_ item: String) -> String {
             guard section == "Participantes", let head = ParticipantEditor.listHead("- " + item),
@@ -81,16 +102,22 @@ enum MarkdownHTML {
 
         func flush() {
             if !paragraph.isEmpty {
-                body +=
-                    transcriptLine(paragraph.joined(separator: " "))
-                    ?? "<p>\(inline(paragraph.joined(separator: " "), refs: refs))</p>\n"
+                let joined = paragraph.joined(separator: " ")
+                if let line = transcriptParts(joined) {
+                    addTurnLine(line)
+                } else {
+                    closeTurn()
+                    body += "<p>\(inline(joined, refs: refs))</p>\n"
+                }
                 paragraph = []
             }
             if !list.isEmpty {
+                closeTurn()
                 body += "<ul>\n" + list.map { listItem($0) }.joined() + "</ul>\n"
                 list = []
             }
             if !table.isEmpty {
+                closeTurn()
                 body += tableHTML(table, refs: refs)
                 table = []
             }
@@ -101,6 +128,7 @@ enum MarkdownHTML {
                 flush()
             } else if line.hasPrefix("# ") {
                 flush()
+                closeTurn()
                 title = String(line.dropFirst(2))
                 let heading =
                     controls == nil
@@ -114,6 +142,7 @@ enum MarkdownHTML {
                 }
             } else if line.hasPrefix("## ") {
                 flush()
+                closeTurn()
                 section = String(line.dropFirst(3))
                 if inSection {
                     body += "</details>\n"
@@ -133,6 +162,7 @@ enum MarkdownHTML {
                 }
             } else if line.hasPrefix("### ") {
                 flush()
+                closeTurn()
                 body += "<h3>\(escape(String(line.dropFirst(4))))</h3>\n"
             } else if line.hasPrefix("- ") {
                 if !paragraph.isEmpty || !table.isEmpty { flush() }
@@ -146,6 +176,7 @@ enum MarkdownHTML {
             }
         }
         flush()
+        closeTurn()
         if inSection { body += "</details>\n" }
         if controls != nil { body += "</main>\n" }
         return Document(
@@ -165,6 +196,9 @@ enum MarkdownHTML {
 
     private static let htmlIcon =
         #"<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8l-4 4 4 4"/><path d="M16 8l4 4-4 4"/><path d="M13.5 5l-3 14"/></svg>"#
+
+    private static let chatIcon =
+        #"<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9 11h6M9 14h4"/></svg>"#
 
     private static let pdfIcon =
         #"<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>"#
@@ -228,17 +262,22 @@ enum MarkdownHTML {
             "<details class=\"dt\" id=\"\(id)\"><summary>\(chevron)\(escape(title))\(amount.map { "<span class=\"ct\">\($0)</span>" } ?? "")</summary>\n"
     }
 
+    struct TranscriptParts {
+        var id: String
+        var time: String
+        var speaker: String
+        var text: String
+    }
+
     /// `<a id="t-000010"></a>**[00:00:10] Participante 1:** texto`
-    private static func transcriptLine(_ text: String) -> String? {
+    static func transcriptParts(_ text: String) -> TranscriptParts? {
         let pattern = #"^<a id="(t-\d+)"></a>\*\*\[(\d{2}:\d{2}:\d{2})\] (.+?):\*\* ?(.*)$"#
         guard let regex = try? NSRegularExpression(pattern: pattern),
             let m = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text))
         else { return nil }
         func group(_ i: Int) -> String { String(text[Range(m.range(at: i), in: text)!]) }
-        return """
-            <p class="tl" id="\(group(1))"><span class="tm">\(group(2))</span><span><strong>\(escape(group(3))):</strong> \(escape(group(4)))</span></p>
-
-            """
+        return TranscriptParts(
+            id: group(1), time: group(2), speaker: group(3).trimmingCharacters(in: .whitespaces), text: group(4))
     }
 
     private static func tableHTML(_ rows: [String], refs: Refs? = nil) -> String {
@@ -295,6 +334,8 @@ enum MarkdownHTML {
             "<a class=\"act\" href=\"minuta://export/html\" data-tip=\"Salvar como HTML\" aria-label=\"Salvar como HTML\">\(htmlIcon)</a>"
         html +=
             "<a class=\"act\" href=\"minuta://export/pdf\" data-tip=\"Salvar como PDF\" aria-label=\"Salvar como PDF\">\(pdfIcon)</a>"
+        html +=
+            "<a class=\"act\" href=\"minuta://conversation\" data-tip=\"Abrir a conversa em outra janela\" aria-label=\"Abrir a conversa em outra janela\">\(chatIcon)</a>"
         html += "</span>\n</div>\n"
         let name = escape(controls.generating?.title ?? controls.shown?.title ?? "Escolher")
         let label = "<span class=\"lb\">Modelo</span>"
@@ -347,8 +388,9 @@ enum MarkdownHTML {
         <style>
         :root { color-scheme: light dark; --page: color-mix(in srgb, CanvasText 5%, Canvas); }
         @media (prefers-color-scheme: dark) { :root { --page: color-mix(in srgb, black 25%, Canvas); } }
-        :root { --pane: #f6f4f0; --head: #fbfaf8; --strong: #1d1d1f; --body: #38383b; --rule: rgba(60, 50, 30, 0.12); --chip: rgba(60, 50, 30, 0.07); --chip-on: rgba(60, 50, 30, 0.17); --chip-lite: rgba(60, 50, 30, 0.06); }
-        @media (prefers-color-scheme: dark) { :root { --pane: #1b1b1d; --head: #252527; --strong: #f5f5f7; --body: rgba(245, 245, 247, 0.82); --rule: rgba(255, 255, 255, 0.09); --chip: rgba(255, 255, 255, 0.07); --chip-on: rgba(255, 255, 255, 0.2); --chip-lite: rgba(255, 255, 255, 0.06); } }
+        :root { --accent: LinkText; --on-accent: Canvas; --pane: Canvas; --head: color-mix(in srgb, CanvasText 4%, Canvas); --strong: CanvasText; --body: color-mix(in srgb, CanvasText 86%, Canvas); --rule: color-mix(in srgb, CanvasText 14%, transparent); --chip-lite: color-mix(in srgb, CanvasText 6%, transparent); }
+        @supports (color: -apple-system-control-accent) { :root { --accent: -apple-system-control-accent; --on-accent: white; } }
+        @supports (color: AccentColor) { :root { --accent: AccentColor; --on-accent: AccentColorText; } }
         html { background: var(--page); }
         body { font: 14px/1.65 -apple-system, sans-serif; margin: 0; padding: 24px 20px 28px; color: CanvasText; background: var(--page); }
         .card { box-sizing: border-box; max-width: 760px; margin: 0 auto; padding: 28px 36px; background: Canvas; border: 0.5px solid color-mix(in srgb, CanvasText 20%, transparent); border-radius: 10px; }
@@ -370,9 +412,9 @@ enum MarkdownHTML {
         .act.off { opacity: 0.4; }
         .hint { color: GrayText; font-size: 12px; line-height: 1.5; margin: 14px 0 0; }
         .toc { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 20px 0 0; }
-        .toc a { font-size: 15px; font-weight: 400; line-height: 1.3; padding: 3px 10px; border-radius: 5px; color: var(--body); background: var(--chip); white-space: nowrap; }
-        .toc a:hover { background: var(--chip-on); }
-        .toc a.on, .toc a.on:hover { background: var(--chip-on); color: var(--strong); }
+        .toc a { font-size: 15px; font-weight: 400; line-height: 1.3; padding: 3px 10px; border-radius: 5px; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); white-space: nowrap; }
+        .toc a:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+        .toc a.on, .toc a.on:hover { background: var(--accent); color: var(--on-accent); }
         html:has(body.app) { background: var(--pane); }
         body.app { overflow: hidden; padding: 0; background: var(--pane); color: var(--body); line-height: 1.75; }
         body.app h1, body.app h2, body.app .mdl { color: var(--strong); }
@@ -392,12 +434,18 @@ enum MarkdownHTML {
         table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 4px 0; }
         th { text-align: left; color: GrayText; font-weight: 500; }
         th, td { padding: 8px 12px 8px 0; vertical-align: top; border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
-        a { color: CanvasText; text-decoration: none; }
+        a { color: var(--accent); text-decoration: none; }
         a.pen { display: inline-block; margin-left: 6px; color: GrayText; vertical-align: -2px; opacity: 0.7; }
-        a.pen:hover { color: CanvasText; opacity: 1; }
-        a.chip { font-size: 11px; padding: 0 6px; border-radius: 5px; color: GrayText; background: var(--chip-lite); margin-left: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-        p.tl { display: grid; grid-template-columns: 64px 1fr; gap: 8px; padding: 3px 8px; margin: 0 -8px; border-radius: 6px; }
-        p.tl:target { background: color-mix(in srgb, CanvasText 10%, transparent); }
+        a.pen:hover { color: var(--accent); opacity: 1; }
+        a.chip { font-size: 11px; padding: 0 6px; border-radius: 5px; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); margin-left: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .turn { margin: 0 0 20px; }
+        .turnhd { display: flex; align-items: baseline; gap: 10px; margin-bottom: 2px; }
+        .turnhd strong { color: var(--strong); font-weight: 600; }
+        .turnhd .tm { font-size: 12px; }
+        .turn p { margin: 0; }
+        .s { scroll-margin-top: 24px; border-radius: 4px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+        .s:hover { background: var(--chip-lite); }
+        .s:target { background: color-mix(in srgb, var(--accent) 16%, transparent); }
         a.chip svg { display: none; }
         h2 { scroll-margin-top: 12px; }
         h2:target { animation: flash 1.6s ease-out; border-radius: 6px; }
@@ -418,7 +466,8 @@ enum MarkdownHTML {
             body { padding: 0; }
             .card { max-width: none; padding: 0; border: none; border-radius: 0; }
             h2, h3 { break-after: avoid; }
-            p.tl, li, tr { break-inside: avoid; }
+            .turnhd { break-after: avoid; }
+            li, tr { break-inside: avoid; }
         }
         </style></head><body\(app ? " class=\"app\"" : "")>
         <div class="card\(app ? " app" : "")" id="card">

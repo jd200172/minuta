@@ -1,6 +1,6 @@
 # 0029. Hierarquia tipográfica e cor da leitura
 
-Status: aceita; implementada (revisada no mesmo dia: peso das chips, título e cor)
+Status: aceita; implementada (revisada no mesmo dia). A regra de cor monocromática foi substituída pelo ADR 0033
 Data: 2026-10-05
 Complementa: `docs/decisions/0027-model-menu-section-chips-and-export.md` (chips de seção).
 

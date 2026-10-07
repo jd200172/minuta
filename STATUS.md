@@ -29,6 +29,10 @@ ADR 0027 implementado (menu de modelo, chips de seção, exportação em HTML e 
 
 ### Sem teste manual
 
+- Janela da conversa (ADR 0034): testes unitários do HTML (107 passam); falta ver no app o botão, a janela, os balões, o horário, o modo escuro e a atualização depois de correção. A visão de conversa dentro da leitura (ADR 0033) foi removida. Cores do sistema do ADR 0033: falta conferir a cor de destaque (inclusive amarela e grafite) e que `AccentColor` funciona na WebKit do macOS 13 (senão cai em `LinkText`).
+
+- Turnos de fala na transcrição (ADR 0032): testes unitários do HTML (105 passam); falta ver no app o parágrafo corrido, o realce de um segmento ao saltar de uma citação e o tooltip de horário.
+
 - Limpeza da transcrição pelo LLM (ADR 0031): testes unitários (104 passam) e uma reunião real pelo `--process` (38 de 78 segmentos alterados, 4,3% das palavras); falta ver no app e ler o texto limpo numa ata. Sem botão para ver o original (`raw`) e sem aviso quando a limpeza falha.
 
 - Segmentação por pausa e duração (ADR 0030): testes unitários e uma reunião real de 17 min pelo `--process` (136 para 78 segmentos); falta decidir se `pauseLimit` (3,0 s) sobe para 4 a 5 s.

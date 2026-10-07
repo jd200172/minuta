@@ -370,9 +370,9 @@ private struct SummaryCell: View {
             } else if let problem = ata.problem {
                 Text(problem.label).foregroundStyle(.red)
             } else if let model = ata.model {
-                Text(model.title).lineLimit(1)
+                labeled(model.title, model.tint)
             } else if ata.noSummary {
-                Text("Sem resumo").foregroundStyle(.secondary).lineLimit(1)
+                labeled("Sem resumo", .orange)
             }
         case .job(let job, let running):
             if running {
@@ -389,6 +389,25 @@ private struct SummaryCell: View {
         HStack(spacing: 6) {
             ProgressView().controlSize(.small)
             Text(text).foregroundStyle(.secondary).lineLimit(1)
+        }
+    }
+
+    private func labeled(_ text: String, _ color: Color) -> some View {
+        HStack(spacing: 7) {
+            Circle().fill(color).frame(width: 9, height: 9)
+            Text(text).lineLimit(1)
+        }
+    }
+}
+
+extension SummaryModel {
+    /// The color of the model's tag in the list. The tag always carries the name too.
+    var tint: Color {
+        switch self {
+        case .decisao: .blue
+        case .problemas: .purple
+        case .informativa: .green
+        case .geral: .gray
         }
     }
 }

@@ -3,8 +3,8 @@ import SwiftUI
 
 /// What every balloon of the app shares, so they read as one language: the `BalloonPanel` (system material, the
 /// corner radius and horizontal padding the page's model chips had before ADR 0027, an arrow that points at its
-/// element), 12 pt text, semibold leads, and the neutral tint (the text colour at low opacity) the reading page uses
-/// for its chips and its selected line. No colour: the app is monochrome except for errors. The tooltip
+/// element), 12 pt text, semibold leads, and the system accent colour at low opacity, which the reading page uses
+/// for its chips and its selected line. The tooltip
 /// balloons (`TipBalloon`, `PageTips`, `.balloonTip`) and the citation balloon (`CitationBalloon`) read from here.
 enum BalloonStyle {
     static let fontSize: CGFloat = 12
@@ -17,12 +17,12 @@ enum BalloonStyle {
     static let maxTextWidth: CGFloat = 260
     /// Pause over an element before its tooltip opens.
     static let delay: TimeInterval = 0.4
-    /// The chip of the page (`a.chip`): 11 pt digits on a 6 % neutral tint, 5 pt corners.
+    /// The chip of the page (`a.chip`): 11 pt digits on a 14 % accent tint, 5 pt corners.
     static let chipFontSize: CGFloat = 11
-    static let chipTint = 0.06
+    static let chipTint = 0.14
     static let chipRadius: CGFloat = 5
-    /// The selected line of the page (`p.tl:target`): 10 % neutral tint, 6 pt corners.
-    static let rowTint = 0.10
+    /// The selected line of the page (`.s:target`): 16 % accent tint, 6 pt corners.
+    static let rowTint = 0.16
     static let rowRadius: CGFloat = 6
     /// The padding inside a highlighted row of the citation balloon. The balloon's own margin is the insets above
     /// minus this, so the text of a row starts at the same distance from the edge as the text of a tooltip.

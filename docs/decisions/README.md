@@ -32,8 +32,11 @@ Um arquivo por decisão, numerado na ordem em que foi tomada. Decisão substitu�
 | [0026](0026-collapsible-sections-and-retranscribe.md) | Seções colapsáveis e refazer a transcrição | Refazer em vigor; seções colapsáveis substituídas pelo 0027 |
 | [0027](0027-model-menu-section-chips-and-export.md) | Menu de modelo, chips de seção e exportação da ata | Em vigor (desvio das HIG no botão de modelo e nas chips de seção) |
 | [0028](0028-appearance-setting.md) | Aparência: sistema, claro ou escuro | Em vigor; falta ver no app |
-| [0029](0029-reading-typography-hierarchy.md) | Hierarquia tipográfica e cor da leitura (título 28 px, chips e seções 15 px, chips monocromáticas) | Em vigor; falta ver no app |
+| [0029](0029-reading-typography-hierarchy.md) | Hierarquia tipográfica e cor da leitura (título 28 px, chips e seções 15 px) | Em vigor; a regra monocromática foi substituída pelo 0033 |
 | [0030](0030-segment-by-pause-and-length.md) | Segmentação da transcrição por pausa (3,0 s) e duração (45 s) | Em vigor; falta calibrar com áudio real |
 | [0031](0031-llm-transcript-cleaning.md) | Limpeza da transcrição pelo LLM, com o original guardado | Em vigor |
+| [0032](0032-transcript-turns.md) | Transcrição em turnos de fala (parágrafo corrido por falante) | Em vigor; falta ver no app |
+| [0033](0033-conversation-view-and-system-colors.md) | Visão de conversa da transcrição e cores do sistema | Substituído em parte pelo 0034 (visão de conversa); as cores do sistema continuam |
+| [0034](0034-conversation-window.md) | Janela própria da conversa, no estilo de app de mensagens | Em vigor; falta ver no app |
 
 Formato de cada arquivo: título com número, `Status`, `Data`, relação com outras decisões (`Substitui`, `Complementa`, `Confirma`), Contexto, Decisão, Alternativas descartadas e Consequências. Decisão nova recebe o próximo número e uma linha nesta tabela; a substituída tem a linha `Status` atualizada.
